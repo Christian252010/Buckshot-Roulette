@@ -405,16 +405,15 @@
                 );
 
             } catch (error) {
-
-                console.error(error);
-
+            
+                console.error("FIREBASE ERROR:", error);
+            
                 status.textContent =
-                    "Gagal menyimpan pemain.";
-
+                    "Error: " + error.message;
+            
                 enterButton.disabled = false;
-
-            }
-
+            
+              }
         }
     );
 
