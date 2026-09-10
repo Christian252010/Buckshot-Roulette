@@ -10,60 +10,415 @@
     >
 
     <title>Buckshot Online</title>
+
+    <style>
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            min-height: 100vh;
+
+            display: flex;
+            align-items: center;
+            justify-content: center;
+
+            font-family: Arial, sans-serif;
+
+            background: #111;
+            color: white;
+        }
+
+        .container {
+            width: min(90%, 400px);
+        }
+
+        h1 {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .card {
+            background: #222;
+            padding: 20px;
+            border-radius: 12px;
+        }
+
+        label {
+            display: block;
+            margin-top: 15px;
+            margin-bottom: 6px;
+        }
+
+        input {
+            width: 100%;
+            padding: 12px;
+
+            border: 1px solid #444;
+            border-radius: 8px;
+
+            background: #111;
+            color: white;
+        }
+
+        button {
+            width: 100%;
+            padding: 13px;
+
+            margin-top: 20px;
+
+            border: none;
+            border-radius: 8px;
+
+            background: #fff;
+            color: #111;
+
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        button:active {
+            transform: scale(0.98);
+        }
+
+        #status {
+            margin-top: 15px;
+            text-align: center;
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        .profile {
+            text-align: center;
+        }
+
+        .profile img {
+            width: 80px;
+            height: 80px;
+
+            object-fit: cover;
+
+            border-radius: 50%;
+
+            margin-bottom: 10px;
+        }
+
+    </style>
+
 </head>
 
 <body>
 
-    <h1>Buckshot Online</h1>
+<div class="container">
 
-    <p id="status">Menghubungkan ke Firebase...</p>
+    <h1>BUCKSHOT ONLINE</h1>
 
 
-    <script type="module">
+    <!-- ========================= -->
+    <!-- FORM PEMAIN -->
+    <!-- ========================= -->
 
-        import { initializeApp }
-            from "https://www.gstatic.com/firebasejs/12.1.0/firebase-app.js";
+    <div id="playerForm" class="card">
 
-        import {
-            getDatabase,
-            ref,
-            set
+        <label for="name">
+            Nama
+        </label>
+
+        <input
+            id="name"
+            type="text"
+            maxlength="50"
+            placeholder="Masukkan nama"
+        >
+
+
+        <label for="profile">
+            Profile URL
+        </label>
+
+        <input
+            id="profile"
+            type="url"
+            placeholder="https://..."
+        >
+
+
+        <button id="enterButton">
+            MASUK
+        </button>
+
+        <div id="status"></div>
+
+    </div>
+
+
+    <!-- ========================= -->
+    <!-- PROFILE PEMAIN -->
+    <!-- ========================= -->
+
+    <div
+        id="playerInfo"
+        class="card hidden"
+    >
+
+        <div class="profile">
+
+            <img
+                id="profileImage"
+                src=""
+                alt="Profile"
+            >
+
+            <h2 id="playerName"></h2>
+
+            <p id="playerId"></p>
+
+        </div>
+
+    </div>
+
+</div>
+
+
+<script type="module">
+
+    import {
+        initializeApp
+    }
+    from "https://www.gstatic.com/firebasejs/12.1.0/firebase-app.js";
+
+
+    import {
+        getDatabase,
+        ref,
+        push,
+        set
+    }
+    from "https://www.gstatic.com/firebasejs/12.1.0/firebase-database.js";
+
+
+    // =====================================
+    // FIREBASE CONFIG
+    // =====================================
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyBQmI-9ES6AqE5AFy49hIyP0rhul9gIlkc",
+      authDomain: "buckshotroulette-4c7a1.firebaseapp.com",
+      projectId: "buckshotroulette-4c7a1",
+      storageBucket: "buckshotroulette-4c7a1.firebasestorage.app",
+      messagingSenderId: "335951554199",
+      appId: "1:335951554199:web:8d7475fc9dda0f76b32bd2",
+      measurementId: "G-H5RLT7K97W"
+    };
+
+
+    // =====================================
+    // FIREBASE
+    // =====================================
+
+    const app = initializeApp(firebaseConfig);
+
+    const db = getDatabase(app);
+
+
+    // =====================================
+    // ELEMENT
+    // =====================================
+
+    const playerForm =
+        document.getElementById("playerForm");
+
+    const playerInfo =
+        document.getElementById("playerInfo");
+
+    const nameInput =
+        document.getElementById("name");
+
+    const profileInput =
+        document.getElementById("profile");
+
+    const enterButton =
+        document.getElementById("enterButton");
+
+    const status =
+        document.getElementById("status");
+
+    const playerName =
+        document.getElementById("playerName");
+
+    const playerId =
+        document.getElementById("playerId");
+
+    const profileImage =
+        document.getElementById("profileImage");
+
+
+    // =====================================
+    // CEK PEMAIN LAMA
+    // =====================================
+
+    const savedPlayerId =
+        localStorage.getItem("buckshotPlayerId");
+
+
+    if (savedPlayerId) {
+
+        console.log(
+            "Player ID ditemukan:",
+            savedPlayerId
+        );
+
+        // Untuk tahap sekarang,
+        // kita hanya menampilkan ID.
+        // Nanti kita ambil data pemain
+        // langsung dari Firebase.
+
+    }
+
+
+    // =====================================
+    // MASUK
+    // =====================================
+
+    enterButton.addEventListener(
+        "click",
+        async () => {
+
+            const name =
+                nameInput.value.trim();
+
+            const profile =
+                profileInput.value.trim();
+
+
+            // =============================
+            // VALIDASI
+            // =============================
+
+            if (!name) {
+
+                status.textContent =
+                    "Nama wajib diisi.";
+
+                return;
+            }
+
+
+            enterButton.disabled = true;
+
+            status.textContent =
+                "Menyimpan pemain...";
+
+
+            try {
+
+                // =============================
+                // BUAT ID PEMAIN
+                // =============================
+
+                const playersRef =
+                    ref(db, "players");
+
+                const newPlayerRef =
+                    push(playersRef);
+
+
+                const newPlayerId =
+                    newPlayerRef.key;
+
+
+                // =============================
+                // DATA PEMAIN
+                // =============================
+
+                const playerData = {
+
+                    name: name,
+
+                    profile: profile || "",
+
+                    createdAt: Date.now()
+
+                };
+
+
+                // =============================
+                // SIMPAN FIREBASE
+                // =============================
+
+                await set(
+                    newPlayerRef,
+                    playerData
+                );
+
+
+                // =============================
+                // SIMPAN ID DI BROWSER
+                // =============================
+
+                localStorage.setItem(
+                    "buckshotPlayerId",
+                    newPlayerId
+                );
+
+
+                // =============================
+                // TAMPILKAN PROFILE
+                // =============================
+
+                playerName.textContent =
+                    name;
+
+                playerId.textContent =
+                    "ID: " + newPlayerId;
+
+
+                if (profile) {
+
+                    profileImage.src =
+                        profile;
+
+                } else {
+
+                    profileImage.style.display =
+                        "none";
+
+                }
+
+
+                playerForm.classList.add(
+                    "hidden"
+                );
+
+                playerInfo.classList.remove(
+                    "hidden"
+                );
+
+
+                console.log(
+                    "Player berhasil dibuat:",
+                    newPlayerId
+                );
+
+            } catch (error) {
+
+                console.error(error);
+
+                status.textContent =
+                    "Gagal menyimpan pemain.";
+
+                enterButton.disabled = false;
+
+            }
+
         }
-        from "https://www.gstatic.com/firebasejs/12.1.0/firebase-database.js";
+    );
 
-
-        // ==============================
-        // FIREBASE CONFIG
-        // ==============================
-
-        const firebaseConfig = {
-          apiKey: "AIzaSyBQmI-9ES6AqE5AFy49hIyP0rhul9gIlkc",
-          authDomain: "buckshotroulette-4c7a1.firebaseapp.com",
-          projectId: "buckshotroulette-4c7a1",
-          storageBucket: "buckshotroulette-4c7a1.firebasestorage.app",
-          messagingSenderId: "335951554199",
-          appId: "1:335951554199:web:8d7475fc9dda0f76b32bd2",
-          measurementId: "G-H5RLT7K97W"
-        };
-
-
-        // ==============================
-        // INITIALIZE FIREBASE
-        // ==============================
-
-        const app = initializeApp(firebaseConfig);
-
-        const db = getDatabase(app);
-
-
-        // ==============================
-        // TEST CONNECTION
-        // ==============================
-
-        document.getElementById("status").textContent =
-            "Firebase berhasil terhubung!";
-
-    </script>
+</script>
 
 </body>
 
