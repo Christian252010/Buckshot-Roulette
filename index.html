@@ -4,294 +4,996 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Buckshot Roulette</title>
+
 <style>
-*{box-sizing:border-box}
-body{margin:0;font-family:Arial,sans-serif;background:#111;color:#fff;min-height:100vh;padding:20px}
-.container{max-width:600px;margin:auto}
-h1{text-align:center;margin-bottom:25px}
-.card{background:#1d1d1d;border:1px solid #444;border-radius:10px;padding:20px;margin-bottom:15px}
-input,button{width:100%;padding:12px;margin-top:8px;border-radius:6px;border:1px solid #555;font-size:16px}
-input{background:#111;color:#fff}
-button{background:#333;color:#fff;cursor:pointer}
-button:hover{background:#444}
-button:disabled{opacity:.5;cursor:not-allowed}
-.player{display:flex;align-items:center;gap:10px;background:#292929;padding:10px;border-radius:6px;margin-top:8px}
-.player img{width:45px;height:45px;border-radius:50%;object-fit:cover;background:#111}
-.status{text-align:center;padding:10px;border-radius:6px;background:#292929;margin-bottom:15px}
-.message{text-align:center;color:#aaa;font-size:14px}
-#gameScreen{text-align:center;padding:50px 20px}
-#gameScreen h2{font-size:32px}
-.hidden{display:none!important}
+/* =========================
+   GENERAL
+========================= */
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  padding: 20px;
+  min-height: 100vh;
+  background: #111;
+  color: #eee;
+  font-family: Arial, sans-serif;
+}
+
+.container {
+  width: 100%;
+  max-width: 520px;
+  margin: auto;
+}
+
+h1 {
+  margin: 5px 0 20px;
+  text-align: center;
+  font-size: 22px;
+  letter-spacing: 1px;
+}
+
+h2 {
+  margin: 0 0 14px;
+  font-size: 16px;
+  color: #ccc;
+}
+
+button,
+input {
+  font: inherit;
+}
+
+button {
+  padding: 11px 14px;
+  border: 1px solid #444;
+  border-radius: 7px;
+  background: #292929;
+  color: #fff;
+  cursor: pointer;
+  transition: 0.15s;
+}
+
+button:hover {
+  background: #383838;
+}
+
+button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+input {
+  width: 100%;
+  padding: 11px;
+  border: 1px solid #444;
+  border-radius: 7px;
+  outline: none;
+  background: #111;
+  color: #eee;
+}
+
+input:focus {
+  border-color: #777;
+}
+
+.hidden {
+  display: none !important;
+}
+
+.card {
+  margin-bottom: 14px;
+  padding: 16px;
+  border: 1px solid #333;
+  border-radius: 12px;
+  background: #1b1b1b;
+}
+
+/* =========================
+   PROFILE
+========================= */
+
+.profile-box {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.profile-box img,
+.player img {
+  width: 44px;
+  height: 44px;
+  border: 1px solid #444;
+  border-radius: 50%;
+  object-fit: cover;
+  background: #292929;
+}
+
+.profile-label {
+  margin-bottom: 3px;
+  font-size: 12px;
+  color: #888;
+}
+
+.profile-name {
+  font-weight: bold;
+}
+
+.input-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+/* =========================
+   BUTTON / ACTION
+========================= */
+
+.actions {
+  display: flex;
+  gap: 8px;
+}
+
+.actions button {
+  flex: 1;
+}
+
+.main-action {
+  width: 100%;
+}
+
+/* =========================
+   ROOM
+========================= */
+
+.status {
+  margin-bottom: 12px;
+  font-size: 13px;
+  color: #999;
+}
+
+.message {
+  margin: 10px 0 0;
+  text-align: center;
+  font-size: 13px;
+  color: #888;
+}
+
+.error {
+  color: #d66;
+}
+
+/* =========================
+   PLAYERS
+========================= */
+
+.players-card {
+  padding: 0;
+  overflow: hidden;
+}
+
+.players-title {
+  padding: 15px 16px;
+  border-bottom: 1px solid #333;
+  font-weight: bold;
+}
+
+.player-list {
+  padding: 8px;
+}
+
+.player {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  padding: 9px 8px;
+  border-radius: 8px;
+}
+
+.player + .player {
+  margin-top: 2px;
+}
+
+.player-name {
+  font-size: 14px;
+}
+
+.you {
+  margin-left: 5px;
+  font-size: 11px;
+  color: #777;
+}
+
+.empty {
+  padding: 18px;
+  text-align: center;
+  font-size: 13px;
+  color: #777;
+}
+
+/* =========================
+   GAME
+========================= */
+
+.game {
+  min-height: 220px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+}
+
+.game h2 {
+  margin-bottom: 8px;
+  font-size: 28px;
+  color: #fff;
+}
 </style>
 </head>
+
 <body>
+
 <div class="container">
-<h1>BUCKSHOT ROULETTE</h1>
 
-<div id="playerSection" class="card">
-<h2>Profil</h2>
-<input type="text" id="nameInput" placeholder="Nama" maxlength="20">
-<input type="url" id="profileInput" placeholder="URL Foto Profil (opsional)">
-<button id="savePlayerButton">SIMPAN</button>
-<p id="playerMessage" class="message"></p>
-</div>
+  <h1>BUCKSHOT ROULETTE</h1>
 
-<div id="profileSection" class="card hidden">
-<h2>Profil Saya</h2>
-<div id="myProfile"></div>
-</div>
+  <!-- =========================
+       CREATE PROFILE
+  ========================== -->
 
-<div id="roomSection" class="card hidden">
-<h2>ROOM</h2>
-<div id="roomStatus" class="status">Memuat...</div>
-<div id="roomControls">
-<button id="createRoomButton">BUAT ROOM</button>
-<button id="joinRoomButton" class="hidden">JOIN</button>
-</div>
-<h3>Pemain</h3>
-<div id="roomPlayers"></div>
-<div id="startArea" class="hidden">
-<button id="startButton">MULAI</button>
-<p id="startMessage" class="message"></p>
-</div>
-</div>
+  <div id="setupCard" class="card">
+    <div class="input-group">
+      <input
+        id="nameInput"
+        type="text"
+        maxlength="20"
+        placeholder="Nama"
+      >
 
-<div id="gameScreen" class="card hidden">
-<h2>GAME DIMULAI</h2>
-<p>Semua pemain telah masuk ke permainan.</p>
-<p class="message">Mekanik game akan dibuat pada STEP berikutnya.</p>
-</div>
+      <input
+        id="profileInput"
+        type="url"
+        placeholder="URL Foto Profil (opsional)"
+      >
+
+      <button id="savePlayerButton" class="main-action">
+        SIMPAN PROFIL
+      </button>
+    </div>
+
+    <p id="playerMessage" class="message"></p>
+  </div>
+
+  <!-- =========================
+       MY PROFILE
+  ========================== -->
+
+  <div id="profileCard" class="card hidden">
+    <div class="profile-box">
+      <img id="myProfileImage" alt="Profile">
+
+      <div>
+        <div class="profile-label">PROFILE</div>
+        <div id="myName" class="profile-name"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- =========================
+       ROOM
+  ========================== -->
+
+  <div id="roomCard" class="card hidden">
+    <div id="roomStatus" class="status">
+      Belum ada room.
+    </div>
+
+    <div id="roomActions"></div>
+
+    <p id="roomMessage" class="message"></p>
+  </div>
+
+  <!-- =========================
+       PLAYERS
+  ========================== -->
+
+  <div id="playersCard" class="card players-card hidden">
+
+    <div class="players-title">
+      Pemain
+    </div>
+
+    <div id="roomPlayers" class="player-list"></div>
+
+  </div>
+
+  <!-- =========================
+       GAME
+  ========================== -->
+
+  <div id="gameScreen" class="card game hidden">
+
+    <div>
+      <h2>GAME DIMULAI</h2>
+      <p class="message">
+        Permainan sedang berlangsung.
+      </p>
+    </div>
+
+  </div>
+
 </div>
 
 <script type="module">
-import{initializeApp}from"https://www.gstatic.com/firebasejs/12.1.0/firebase-app.js";
-import{getDatabase,ref,push,set,get,onValue}from"https://www.gstatic.com/firebasejs/12.1.0/firebase-database.js";
 
-const firebaseConfig={
-apiKey:"AIzaSyBQmI-9ES6AqE5AFy49hIyP0rhul9gIlkc",
-authDomain:"buckshotroulette-4c7a1.firebaseapp.com",
-databaseURL:"https://buckshotroulette-4c7a1-default-rtdb.asia-southeast1.firebasedatabase.app",
-projectId:"buckshotroulette-4c7a1",
-storageBucket:"buckshotroulette-4c7a1.firebasestorage.app",
-messagingSenderId:"335951554199",
-appId:"1:335951554199:web:8d7475fc9dda0f76b32bd2",
-measurementId:"G-H5RLT7K97W"
+/* =========================
+   FIREBASE
+========================= */
+
+import {
+  initializeApp
+} from "https://www.gstatic.com/firebasejs/12.1.0/firebase-app.js";
+
+import {
+  getDatabase,
+  ref,
+  push,
+  set,
+  get,
+  onValue,
+  remove,
+  runTransaction
+} from "https://www.gstatic.com/firebasejs/12.1.0/firebase-database.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyBQmI-9ES6AqE5AFy49hIyP0rhul9gIlkc",
+  authDomain: "buckshotroulette-4c7a1.firebaseapp.com",
+  databaseURL: "https://buckshotroulette-4c7a1-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "buckshotroulette-4c7a1",
+  storageBucket: "buckshotroulette-4c7a1.firebasestorage.app",
+  messagingSenderId: "335951554199",
+  appId: "1:335951554199:web:8d7475fc9dda0f76b32bd2",
+  measurementId: "G-H5RLT7K97W"
 };
 
-const app=initializeApp(firebaseConfig);
-const db=getDatabase(app);
+const app = initializeApp(firebaseConfig);
+const db = getDatabase(app);
 
-let currentPlayerId=null;
-let currentPlayer=null;
 
-const playerSection=document.getElementById("playerSection");
-const profileSection=document.getElementById("profileSection");
-const roomSection=document.getElementById("roomSection");
-const gameScreen=document.getElementById("gameScreen");
-const nameInput=document.getElementById("nameInput");
-const profileInput=document.getElementById("profileInput");
-const savePlayerButton=document.getElementById("savePlayerButton");
-const playerMessage=document.getElementById("playerMessage");
-const myProfile=document.getElementById("myProfile");
-const roomStatus=document.getElementById("roomStatus");
-const roomControls=document.getElementById("roomControls");
-const createRoomButton=document.getElementById("createRoomButton");
-const joinRoomButton=document.getElementById("joinRoomButton");
-const roomPlayers=document.getElementById("roomPlayers");
-const startArea=document.getElementById("startArea");
-const startButton=document.getElementById("startButton");
-const startMessage=document.getElementById("startMessage");
+/* =========================
+   PLAYER VARIABLES
+========================= */
 
-function showProfile(){
-playerSection.classList.add("hidden");
-profileSection.classList.remove("hidden");
-roomSection.classList.remove("hidden");
-myProfile.innerHTML="";
-const div=document.createElement("div");
-div.className="player";
-const img=document.createElement("img");
-img.src=currentPlayer.profile||"";
-img.onerror=()=>img.style.display="none";
-const span=document.createElement("span");
-span.textContent=currentPlayer.name;
-div.append(img,span);
-myProfile.appendChild(div);
-}
+let currentPlayerId = null;
+let currentPlayer = null;
 
-async function loadPlayer(){
-const savedId=localStorage.getItem("buckshotPlayerId");
-if(!savedId)return;
-try{
-const snapshot=await get(ref(db,"players/"+savedId));
-if(snapshot.exists()){
-currentPlayerId=savedId;
-currentPlayer=snapshot.val();
-showProfile();
-listenToRoom();
-}
-}catch(error){console.error(error);}
+
+/* =========================
+   HTML ELEMENTS
+========================= */
+
+const setupCard = document.getElementById("setupCard");
+const profileCard = document.getElementById("profileCard");
+const roomCard = document.getElementById("roomCard");
+const playersCard = document.getElementById("playersCard");
+const gameScreen = document.getElementById("gameScreen");
+
+const nameInput = document.getElementById("nameInput");
+const profileInput = document.getElementById("profileInput");
+const savePlayerButton = document.getElementById("savePlayerButton");
+const playerMessage = document.getElementById("playerMessage");
+
+const myProfileImage = document.getElementById("myProfileImage");
+const myName = document.getElementById("myName");
+
+const roomStatus = document.getElementById("roomStatus");
+const roomActions = document.getElementById("roomActions");
+const roomMessage = document.getElementById("roomMessage");
+const roomPlayers = document.getElementById("roomPlayers");
+
+
+/* =========================
+   UTILITY
+========================= */
+
+function normalizeName(name) {
+  return name
+    .trim()
+    .toLowerCase()
+    .replace(/\s+/g, " ");
 }
 
-savePlayerButton.addEventListener("click",async()=>{
-const name=nameInput.value.trim();
-const profile=profileInput.value.trim();
-if(!name){
-playerMessage.textContent="Nama wajib diisi.";
-return;
-}
-savePlayerButton.disabled=true;
-playerMessage.textContent="Menyimpan pemain...";
-try{
-const playersRef=ref(db,"players");
-const newPlayerRef=push(playersRef);
-currentPlayerId=newPlayerRef.key;
-currentPlayer={name:name,profile:profile,createdAt:Date.now()};
-await set(newPlayerRef,currentPlayer);
-localStorage.setItem("buckshotPlayerId",currentPlayerId);
-playerMessage.textContent="";
-showProfile();
-listenToRoom();
-}catch(error){
-console.error(error);
-playerMessage.textContent="Gagal menyimpan pemain.";
-savePlayerButton.disabled=false;
-}
-});
 
-createRoomButton.addEventListener("click",async()=>{
-try{
-const snapshot=await get(ref(db,"room"));
-if(snapshot.exists()&&snapshot.val().exists){
-alert("Room sudah tersedia.");
-return;
-}
-await set(ref(db,"room"),{
-exists:true,
-status:"lobby",
-createdAt:Date.now(),
-players:{[currentPlayerId]:true}
-});
-}catch(error){
-console.error(error);
-alert("Gagal membuat room.");
-}
-});
+/* =========================
+   PLAYER NAME
+========================= */
 
-joinRoomButton.addEventListener("click",async()=>{
-try{
-const snapshot=await get(ref(db,"room"));
-if(!snapshot.exists()||!snapshot.val().exists){
-alert("Room belum tersedia.");
-return;
-}
-const roomData=snapshot.val();
-if(roomData.status==="playing"){
-alert("Game sedang berjalan. Kamu tidak dapat JOIN.");
-return;
-}
-await set(ref(db,"room/players/"+currentPlayerId),true);
-}catch(error){
-console.error(error);
-alert("Gagal JOIN room.");
-}
-});
+async function nameExists(name) {
+  const targetName = normalizeName(name);
+  const snapshot = await get(ref(db, "players"));
 
-startButton.addEventListener("click",async()=>{
-try{
-const snapshot=await get(ref(db,"room"));
-if(!snapshot.exists()||!snapshot.val().exists){
-alert("Room tidak tersedia.");
-return;
-}
-const roomData=snapshot.val();
-if(roomData.status==="playing")return;
-const players=roomData.players||{};
-const playerCount=Object.keys(players).length;
-if(playerCount<2){
-startMessage.textContent="Minimal 2 pemain untuk memulai.";
-return;
-}
-await set(ref(db,"room/status"),"playing");
-}catch(error){
-console.error(error);
-startMessage.textContent="Gagal memulai game.";
-}
-});
+  if (!snapshot.exists()) {
+    return false;
+  }
 
-function listenToRoom(){
-onValue(ref(db,"room"),async(snapshot)=>{
-const roomData=snapshot.val();
-if(!roomData||!roomData.exists){
-roomStatus.textContent="Belum ada room.";
-roomPlayers.innerHTML="";
-roomControls.classList.remove("hidden");
-createRoomButton.classList.remove("hidden");
-joinRoomButton.classList.add("hidden");
-startArea.classList.add("hidden");
-gameScreen.classList.add("hidden");
-return;
+  const players = snapshot.val();
+
+  return Object.values(players).some(player => {
+    return normalizeName(player.name || "") === targetName;
+  });
 }
 
-const status=roomData.status||"lobby";
-const players=roomData.players||{};
-const playerIds=Object.keys(players);
 
-if(status==="playing"){
-roomStatus.textContent="GAME SEDANG BERJALAN";
-roomControls.classList.add("hidden");
-startArea.classList.add("hidden");
-gameScreen.classList.remove("hidden");
-return;
-}
+async function reserveName(name) {
+  const nameKey = normalizeName(name)
+    .replace(/[.#$/[\]]/g, "_");
 
-roomStatus.textContent="Room tersedia";
-roomControls.classList.remove("hidden");
-gameScreen.classList.add("hidden");
+  const nameRef = ref(db, "names/" + nameKey);
 
-roomPlayers.innerHTML="";
-for(const playerId of playerIds){
-try{
-const playerSnapshot=await get(ref(db,"players/"+playerId));
-if(!playerSnapshot.exists())continue;
-const playerData=playerSnapshot.val();
-const div=document.createElement("div");
-div.className="player";
-const img=document.createElement("img");
-if(playerData.profile){
-img.src=playerData.profile;
-img.onerror=()=>img.style.display="none";
-}else{
-img.style.display="none";
-}
-const span=document.createElement("span");
-span.textContent=playerData.name||"Player";
-div.append(img,span);
-roomPlayers.appendChild(div);
-}catch(error){console.error(error);}
+  const result = await runTransaction(
+    nameRef,
+    current => {
+      if (current === null) {
+        return {
+          name: name,
+          createdAt: Date.now()
+        };
+      }
+
+      return;
+    }
+  );
+
+  return result.committed;
 }
 
-const isJoined=!!players[currentPlayerId];
 
-if(isJoined){
-createRoomButton.classList.add("hidden");
-joinRoomButton.classList.add("hidden");
-startArea.classList.remove("hidden");
-if(playerIds.length<2){
-startMessage.textContent="Menunggu pemain lain...";
-startButton.disabled=true;
-}else{
-startMessage.textContent=playerIds.length+" pemain siap. Game dapat dimulai.";
-startButton.disabled=false;
+/* =========================
+   SHOW PROFILE
+========================= */
+
+function showProfile() {
+  setupCard.classList.add("hidden");
+  profileCard.classList.remove("hidden");
+  roomCard.classList.remove("hidden");
+
+  myName.textContent = currentPlayer.name;
+
+  if (currentPlayer.profile) {
+    myProfileImage.src = currentPlayer.profile;
+    myProfileImage.style.display = "block";
+
+    myProfileImage.onerror = () => {
+      myProfileImage.style.display = "none";
+    };
+  } else {
+    myProfileImage.style.display = "none";
+  }
 }
-}else{
-createRoomButton.classList.add("hidden");
-joinRoomButton.classList.remove("hidden");
-startArea.classList.add("hidden");
+
+
+/* =========================
+   CREATE PLAYER
+========================= */
+
+async function createPlayer() {
+  const name = nameInput.value.trim();
+  const profile = profileInput.value.trim();
+
+  playerMessage.classList.remove("error");
+
+  if (!name) {
+    playerMessage.textContent = "Nama wajib diisi.";
+    playerMessage.classList.add("error");
+    return;
+  }
+
+  if (name.length < 2) {
+    playerMessage.textContent = "Nama minimal 2 karakter.";
+    playerMessage.classList.add("error");
+    return;
+  }
+
+  savePlayerButton.disabled = true;
+  playerMessage.textContent = "Memeriksa nama...";
+
+  try {
+    if (await nameExists(name)) {
+      playerMessage.textContent =
+        "Nama tersebut sudah digunakan.";
+
+      playerMessage.classList.add("error");
+      savePlayerButton.disabled = false;
+      return;
+    }
+
+    const reserved = await reserveName(name);
+
+    if (!reserved) {
+      playerMessage.textContent =
+        "Nama tersebut sudah digunakan.";
+
+      playerMessage.classList.add("error");
+      savePlayerButton.disabled = false;
+      return;
+    }
+
+    const playerRef = push(ref(db, "players"));
+
+    currentPlayerId = playerRef.key;
+
+    currentPlayer = {
+      name: name,
+      profile: profile,
+      createdAt: Date.now()
+    };
+
+    await set(playerRef, currentPlayer);
+
+    localStorage.setItem(
+      "buckshotPlayerId",
+      currentPlayerId
+    );
+
+    playerMessage.textContent = "";
+
+    showProfile();
+    listenToRoom();
+
+  } catch (error) {
+    console.error(error);
+
+    playerMessage.textContent =
+      "Gagal membuat profil.";
+
+    playerMessage.classList.add("error");
+    savePlayerButton.disabled = false;
+  }
 }
-});
+
+savePlayerButton.addEventListener(
+  "click",
+  createPlayer
+);
+
+
+/* =========================
+   LOAD PLAYER
+========================= */
+
+async function loadPlayer() {
+  const savedId =
+    localStorage.getItem("buckshotPlayerId");
+
+  if (!savedId) {
+    return;
+  }
+
+  try {
+    const snapshot = await get(
+      ref(db, "players/" + savedId)
+    );
+
+    if (!snapshot.exists()) {
+      return;
+    }
+
+    currentPlayerId = savedId;
+    currentPlayer = snapshot.val();
+
+    showProfile();
+    listenToRoom();
+
+  } catch (error) {
+    console.error(error);
+  }
 }
+
+
+/* =========================
+   CREATE ROOM
+========================= */
+
+async function createRoom() {
+  try {
+    const snapshot =
+      await get(ref(db, "room"));
+
+    if (
+      snapshot.exists() &&
+      snapshot.val().exists
+    ) {
+      roomMessage.textContent =
+        "Room sudah tersedia.";
+
+      return;
+    }
+
+    await set(ref(db, "room"), {
+      exists: true,
+      status: "lobby",
+      createdAt: Date.now(),
+
+      players: {
+        [currentPlayerId]: true
+      }
+    });
+
+  } catch (error) {
+    console.error(error);
+
+    roomMessage.textContent =
+      "Gagal membuat room.";
+  }
+}
+
+
+/* =========================
+   JOIN ROOM
+========================= */
+
+async function joinRoom() {
+  try {
+    const snapshot =
+      await get(ref(db, "room"));
+
+    if (
+      !snapshot.exists() ||
+      !snapshot.val().exists
+    ) {
+      roomMessage.textContent =
+        "Room sudah tidak tersedia.";
+
+      return;
+    }
+
+    const room = snapshot.val();
+
+    if (room.status === "playing") {
+      roomMessage.textContent =
+        "Game sedang berjalan.";
+
+      return;
+    }
+
+    await set(
+      ref(db, "room/players/" + currentPlayerId),
+      true
+    );
+
+  } catch (error) {
+    console.error(error);
+
+    roomMessage.textContent =
+      "Gagal JOIN room.";
+  }
+}
+
+
+/* =========================
+   LEAVE ROOM
+========================= */
+
+async function leaveRoom() {
+  try {
+    const snapshot =
+      await get(ref(db, "room"));
+
+    if (!snapshot.exists()) {
+      return;
+    }
+
+    const room = snapshot.val();
+
+    if (room.status === "playing") {
+      roomMessage.textContent =
+        "Game sedang berjalan.";
+
+      return;
+    }
+
+    const players = room.players || {};
+
+    delete players[currentPlayerId];
+
+    const remainingPlayers =
+      Object.keys(players).length;
+
+    if (remainingPlayers === 0) {
+      await remove(ref(db, "room"));
+    } else {
+      await set(
+        ref(db, "room/players"),
+        players
+      );
+    }
+
+  } catch (error) {
+    console.error(error);
+
+    roomMessage.textContent =
+      "Gagal keluar dari room.";
+  }
+}
+
+
+/* =========================
+   START GAME
+========================= */
+
+async function startGame() {
+  try {
+    const snapshot =
+      await get(ref(db, "room"));
+
+    if (!snapshot.exists()) {
+      return;
+    }
+
+    const room = snapshot.val();
+    const players = room.players || {};
+
+    if (room.status === "playing") {
+      return;
+    }
+
+    if (Object.keys(players).length < 2) {
+      roomMessage.textContent =
+        "Minimal 2 pemain untuk memulai.";
+
+      return;
+    }
+
+    await set(
+      ref(db, "room/status"),
+      "playing"
+    );
+
+  } catch (error) {
+    console.error(error);
+
+    roomMessage.textContent =
+      "Gagal memulai game.";
+  }
+}
+
+
+/* =========================
+   CREATE BUTTON
+========================= */
+
+function createButton(
+  text,
+  handler,
+  className = ""
+) {
+  const button =
+    document.createElement("button");
+
+  button.textContent = text;
+  button.className = className;
+
+  button.addEventListener(
+    "click",
+    handler
+  );
+
+  return button;
+}
+
+
+/* =========================
+   ROOM ACTIONS
+========================= */
+
+function renderRoomActions(room) {
+  roomActions.innerHTML = "";
+
+  const players = room.players || {};
+  const joined =
+    !!players[currentPlayerId];
+
+  const status =
+    room.status || "lobby";
+
+  if (status === "playing") {
+    return;
+  }
+
+  if (joined) {
+    const actions =
+      document.createElement("div");
+
+    actions.className = "actions";
+
+    const startButton =
+      createButton(
+        "MULAI",
+        startGame
+      );
+
+    const leaveButton =
+      createButton(
+        "KELUAR",
+        leaveRoom
+      );
+
+    actions.append(
+      startButton,
+      leaveButton
+    );
+
+    roomActions.appendChild(actions);
+
+  } else {
+    const joinButton =
+      createButton(
+        "JOIN",
+        joinRoom,
+        "main-action"
+      );
+
+    roomActions.appendChild(joinButton);
+  }
+}
+
+
+/* =========================
+   RENDER PLAYERS
+========================= */
+
+async function renderPlayers(players) {
+  roomPlayers.innerHTML = "";
+
+  const playerIds =
+    Object.keys(players || {});
+
+  if (playerIds.length === 0) {
+    roomPlayers.innerHTML =
+      '<div class="empty">Belum ada pemain.</div>';
+
+    return;
+  }
+
+  for (const playerId of playerIds) {
+    const snapshot =
+      await get(
+        ref(db, "players/" + playerId)
+      );
+
+    if (!snapshot.exists()) {
+      continue;
+    }
+
+    const player =
+      snapshot.val();
+
+    const item =
+      document.createElement("div");
+
+    item.className = "player";
+
+    const image =
+      document.createElement("img");
+
+    if (player.profile) {
+      image.src = player.profile;
+
+      image.onerror = () => {
+        image.style.display = "none";
+      };
+    } else {
+      image.style.display = "none";
+    }
+
+    const name =
+      document.createElement("div");
+
+    name.className = "player-name";
+    name.textContent =
+      player.name || "Player";
+
+    if (playerId === currentPlayerId) {
+      const you =
+        document.createElement("span");
+
+      you.className = "you";
+      you.textContent = "(Anda)";
+
+      name.appendChild(you);
+    }
+
+    item.append(
+      image,
+      name
+    );
+
+    roomPlayers.appendChild(item);
+  }
+}
+
+
+/* =========================
+   ROOM REALTIME
+========================= */
+
+function listenToRoom() {
+  onValue(
+    ref(db, "room"),
+    async snapshot => {
+
+      const room =
+        snapshot.val();
+
+      roomMessage.textContent = "";
+
+      /* Tidak ada room */
+
+      if (
+        !room ||
+        !room.exists
+      ) {
+        roomStatus.textContent =
+          "Belum ada room.";
+
+        roomActions.innerHTML = "";
+
+        roomActions.appendChild(
+          createButton(
+            "BUAT ROOM",
+            createRoom,
+            "main-action"
+          )
+        );
+
+        playersCard.classList.add("hidden");
+        gameScreen.classList.add("hidden");
+
+        return;
+      }
+
+      /* Game sedang berjalan */
+
+      if (room.status === "playing") {
+        roomStatus.textContent =
+          "GAME SEDANG BERJALAN";
+
+        roomActions.innerHTML = "";
+
+        playersCard.classList.add("hidden");
+        gameScreen.classList.remove("hidden");
+
+        return;
+      }
+
+      /* Lobby */
+
+      roomStatus.textContent =
+        "Room tersedia";
+
+      gameScreen.classList.add("hidden");
+      playersCard.classList.remove("hidden");
+
+      renderRoomActions(room);
+
+      await renderPlayers(
+        room.players || {}
+      );
+    }
+  );
+}
+
+
+/* =========================
+   START APPLICATION
+========================= */
 
 loadPlayer();
+
 </script>
+
 </body>
 </html>
