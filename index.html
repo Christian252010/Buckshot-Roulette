@@ -193,12 +193,13 @@
 
 
     import {
-        getDatabase,
-        ref,
-        push,
-        set
-    }
-    from "https://www.gstatic.com/firebasejs/12.1.0/firebase-database.js";
+    getDatabase,
+    ref,
+    push,
+    set,
+    get
+}
+from "https://www.gstatic.com/firebasejs/12.1.0/firebase-database.js";
 
 
     // =====================================
@@ -264,21 +265,112 @@
 
     const savedPlayerId =
         localStorage.getItem("buckshotPlayerId");
-
-
-    if (savedPlayerId) {
-
+    
+    
+    async function loadSavedPlayer() {
+    
+        if (!savedPlayerId) {
+            return;
+        }
+    
+    
         console.log(
             "Player ID ditemukan:",
             savedPlayerId
         );
-
-        // Untuk tahap sekarang,
-        // kita hanya menampilkan ID.
-        // Nanti kita ambil data pemain
-        // langsung dari Firebase.
-
+    
+    
+        try {
+    
+            const playerRef =
+                ref(
+                    db,
+                    "players/" + savedPlayerId
+                );
+    
+    
+            const snapshot =
+                await get(playerRef);
+    
+    
+            if (!snapshot.exists()) {
+    
+                console.log(
+                    "Data pemain tidak ditemukan."
+                );
+    
+                localStorage.removeItem(
+                    "buckshotPlayerId"
+                );
+    
+                return;
+            }
+    
+    
+            const player =
+                snapshot.val();
+    
+    
+            console.log(
+                "Data pemain ditemukan:",
+                player
+            );
+    
+    
+            // =============================
+            // TAMPILKAN PROFILE
+            // =============================
+    
+            playerName.textContent =
+                player.name;
+    
+    
+            playerId.textContent =
+                "ID: " + savedPlayerId;
+    
+    
+            if (player.profile) {
+    
+                profileImage.src =
+                    player.profile;
+    
+                profileImage.style.display =
+                    "block";
+    
+            } else {
+    
+                profileImage.style.display =
+                    "none";
+    
+            }
+    
+    
+            playerForm.classList.add(
+                "hidden"
+            );
+    
+    
+            playerInfo.classList.remove(
+                "hidden"
+            );
+    
+    
+        } catch (error) {
+    
+            console.error(
+                "Gagal mengambil pemain:",
+                error
+            );
+    
+            status.textContent =
+                "Gagal mengambil data pemain.";
+    
+        }
+    
     }
+    
+    
+    loadSavedPlayer();
 
 
     // =====================================
