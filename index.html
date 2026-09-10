@@ -1,242 +1,1302 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1.0">
-<title>Buckshot Roulette</title>
-<style>
-*{box-sizing:border-box}body{margin:0;background:#111;color:#eee;font-family:Arial,sans-serif;min-height:100vh;padding:20px}.container{width:100%;max-width:520px;margin:auto}.card{background:#1b1b1b;border:1px solid #333;border-radius:12px;padding:16px;margin-bottom:14px}h1{font-size:22px;text-align:center;margin:5px 0 20px;letter-spacing:1px}h2{font-size:16px;margin:0 0 14px;color:#ccc}button,input{font:inherit}button{border:1px solid #444;background:#292929;color:#fff;border-radius:7px;padding:11px 14px;cursor:pointer;transition:.15s}button:hover{background:#383838}button:disabled{opacity:.45;cursor:not-allowed}.profile-box{display:flex;align-items:center;gap:12px}.profile-box img,.player img{width:44px;height:44px;border-radius:50%;object-fit:cover;background:#292929;border:1px solid #444}.profile-name{font-weight:bold}.profile-label{font-size:12px;color:#888;margin-bottom:3px}.input-group{display:flex;flex-direction:column;gap:8px}input{width:100%;background:#111;color:#eee;border:1px solid #444;border-radius:7px;padding:11px;outline:none}input:focus{border-color:#777}.actions{display:flex;gap:8px}.actions button{flex:1}.main-action{width:100%}.status{font-size:13px;color:#999;margin-bottom:12px}.players-card{padding:0;overflow:hidden}.players-title{padding:15px 16px;border-bottom:1px solid #333;font-weight:bold}.player-list{padding:8px}.player{display:flex;align-items:center;gap:11px;padding:9px 8px;border-radius:8px}.player+.player{margin-top:2px}.player-name{font-size:14px}.you{font-size:11px;color:#777;margin-left:5px}.empty{text-align:center;color:#777;padding:18px;font-size:13px}.message{text-align:center;color:#888;font-size:13px;margin:10px 0 0}.error{color:#d66}.hidden{display:none!important}.game{min-height:220px;display:flex;align-items:center;justify-content:center;text-align:center}.game h2{font-size:28px;color:#fff;margin-bottom:8px}
-</style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <title>Buckshot Roulette</title>
+
+  <script src="https://unpkg.com/lucide@latest"></script>
+
+  <style>
+    /* =========================
+       GENERAL
+    ========================= */
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      background: #1f1f1f;
+      color: white;
+      font-family: Arial, sans-serif;
+    }
+
+    button,
+    input {
+      font: inherit;
+    }
+
+    button {
+      cursor: pointer;
+    }
+
+    .hidden {
+      display: none !important;
+    }
+
+
+    /* =========================
+       HEADER
+    ========================= */
+
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 12px;
+
+      background: #1a1a1a;
+      border-bottom: 2.6px solid #dc143ccb;
+    }
+
+    .h-right {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .profile {
+      display: flex;
+      width: 38px;
+      height: 38px;
+
+      justify-content: center;
+      align-items: center;
+
+      background: #dc143c;
+      border-radius: 50%;
+
+      color: white;
+      font-size: 20px;
+      font-weight: bold;
+
+      overflow: hidden;
+    }
+
+    .profile img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    .nama {
+      color: white;
+      font-size: 22px;
+    }
+
+    .list {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+
+      padding: 6px 10px;
+
+      background: #2f2f2f;
+      border-radius: 8px;
+
+      color: white;
+      font-size: 24px;
+    }
+
+    .online {
+      min-width: 20px;
+      text-align: center;
+    }
+
+
+    /* =========================
+       ROOM BUTTONS
+    ========================= */
+
+    .btns-top {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+
+      padding: 14px;
+
+      justify-content: center;
+      align-items: center;
+    }
+
+    .btns-top button {
+      display: flex;
+      width: 100%;
+      height: 45px;
+
+      justify-content: center;
+      align-items: center;
+      gap: 8px;
+
+      border: none;
+      border-radius: 6px;
+
+      background: crimson;
+      color: white;
+
+      font-size: 22px;
+      font-weight: bold;
+    }
+
+    .btns-top button:disabled {
+      opacity: 0.45;
+      cursor: not-allowed;
+    }
+
+    .start-left {
+      display: flex;
+      width: 100%;
+      gap: 6px;
+    }
+
+    .left {
+      background: #666 !important;
+    }
+
+
+    /* =========================
+       PLAYER LIST
+    ========================= */
+
+    .join-list {
+      display: flex;
+      flex-direction: column;
+
+      gap: 0;
+
+      margin: 14px;
+      padding: 14px 18px;
+
+      background: #2f2f2f;
+      border-radius: 6px;
+    }
+
+    .pl-list {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+
+      padding: 8px;
+
+      border-bottom: 1.5px solid #555;
+    }
+
+    .pl-list:last-child {
+      border-bottom: none;
+    }
+
+    .pl-name {
+      font-size: 18px;
+    }
+
+    .you {
+      margin-left: 5px;
+
+      color: #888;
+      font-size: 13px;
+    }
+
+    .empty {
+      padding: 15px;
+
+      text-align: center;
+
+      color: #888;
+      font-size: 14px;
+    }
+
+
+    /* =========================
+       MESSAGE
+    ========================= */
+
+    .message {
+      margin: 0 14px 14px;
+
+      text-align: center;
+
+      color: #999;
+      font-size: 14px;
+    }
+
+    .error {
+      color: #ff6b6b;
+    }
+
+
+    /* =========================
+       GAME
+    ========================= */
+
+    .game-screen {
+      display: flex;
+      min-height: 300px;
+
+      justify-content: center;
+      align-items: center;
+
+      text-align: center;
+    }
+
+    .game-screen h2 {
+      font-size: 28px;
+    }
+  </style>
 </head>
+
 <body>
-<div class="container">
-<h1>BUCKSHOT ROULETTE2</h1>
 
-<div id="setupCard" class="card">
-<div class="input-group">
-<input id="nameInput" type="text" maxlength="20" placeholder="Nama">
-<input id="profileInput" type="url" placeholder="URL Foto Profil (opsional)">
-<button id="savePlayerButton" class="main-action">SIMPAN PROFIL</button>
-</div>
-<p id="playerMessage" class="message"></p>
-</div>
+  <!-- =========================
+       HEADER
+  ========================= -->
 
-<div id="profileCard" class="card hidden">
-<div class="profile-box">
-<img id="myProfileImage" alt="Profile">
-<div><div class="profile-label">PROFILE</div><div id="myName" class="profile-name"></div></div>
-</div>
-</div>
+  <div class="header">
 
-<div id="roomCard" class="card hidden">
-<div id="roomStatus" class="status">Belum ada room.</div>
-<div id="roomActions"></div>
-<p id="roomMessage" class="message"></p>
-</div>
+    <div class="h-right">
 
-<div id="playersCard" class="card players-card hidden">
-<div class="players-title">Pemain</div>
-<div id="roomPlayers" class="player-list"></div>
-</div>
+      <div id="myProfile" class="profile">
+        C
+      </div>
 
-<div id="gameScreen" class="card game hidden">
-<div><h2>GAME DIMULAI</h2><p class="message">Permainan sedang berlangsung.</p></div>
-</div>
-</div>
+      <div id="myName" class="nama">
+        -
+      </div>
 
-<script type="module">
-import{initializeApp}from"https://www.gstatic.com/firebasejs/12.1.0/firebase-app.js";
-import{getDatabase,ref,push,set,get,onValue,remove,runTransaction}from"https://www.gstatic.com/firebasejs/12.1.0/firebase-database.js";
+    </div>
 
-const firebaseConfig={apiKey:"AIzaSyBQmI-9ES6AqE5AFy49hIyP0rhul9gIlkc",authDomain:"buckshotroulette-4c7a1.firebaseapp.com",databaseURL:"https://buckshotroulette-4c7a1-default-rtdb.asia-southeast1.firebasedatabase.app",projectId:"buckshotroulette-4c7a1",storageBucket:"buckshotroulette-4c7a1.firebasestorage.app",messagingSenderId:"335951554199",appId:"1:335951554199:web:8d7475fc9dda0f76b32bd2",measurementId:"G-H5RLT7K97W"};
+    <div class="list">
+      <i data-lucide="list"></i>
+      <div id="onlineCount" class="online">0</div>
+    </div>
 
-const app=initializeApp(firebaseConfig),db=getDatabase(app);
-let currentPlayerId=null,currentPlayer=null;
+  </div>
 
-const setupCard=document.getElementById("setupCard"),profileCard=document.getElementById("profileCard"),roomCard=document.getElementById("roomCard"),playersCard=document.getElementById("playersCard"),gameScreen=document.getElementById("gameScreen"),nameInput=document.getElementById("nameInput"),profileInput=document.getElementById("profileInput"),savePlayerButton=document.getElementById("savePlayerButton"),playerMessage=document.getElementById("playerMessage"),myProfileImage=document.getElementById("myProfileImage"),myName=document.getElementById("myName"),roomStatus=document.getElementById("roomStatus"),roomActions=document.getElementById("roomActions"),roomMessage=document.getElementById("roomMessage"),roomPlayers=document.getElementById("roomPlayers");
 
-const normalizeName=name=>name.trim().toLowerCase().replace(/\s+/g," ");
-const clearMessage=()=>{playerMessage.textContent="";roomMessage.textContent=""};
+  <!-- =========================
+       ROOM ACTIONS
+  ========================= -->
 
-async function nameExists(name){
-const target=normalizeName(name),playersSnap=await get(ref(db,"players"));
-if(!playersSnap.exists())return false;
-const players=playersSnap.val();
-return Object.values(players).some(p=>normalizeName(p.name||"")===target);
-}
+  <div id="roomActions" class="btns-top">
 
-async function reserveName(name){
-const key=normalizeName(name).replace(/[.#$/[\]]/g,"_");
-const nameRef=ref(db,"names/"+key);
-const result=await runTransaction(nameRef,current=>current===null?{name:name,createdAt:Date.now()}:undefined);
-return result.committed;
-}
+    <!--
+      Tombol akan dibuat otomatis
+      berdasarkan kondisi room.
+    -->
 
-function showProfile(){
-setupCard.classList.add("hidden");
-profileCard.classList.remove("hidden");
-roomCard.classList.remove("hidden");
-myName.textContent=currentPlayer.name;
-myProfileImage.src=currentPlayer.profile||"";
-myProfileImage.onerror=()=>{myProfileImage.style.display="none"};
-if(!currentPlayer.profile)myProfileImage.style.display="none";
-}
+  </div>
 
-async function createPlayer(){
-const name=nameInput.value.trim(),profile=profileInput.value.trim();
-if(!name){playerMessage.textContent="Nama wajib diisi.";playerMessage.classList.add("error");return}
-if(name.length<2){playerMessage.textContent="Nama minimal 2 karakter.";playerMessage.classList.add("error");return}
-savePlayerButton.disabled=true;
-playerMessage.classList.remove("error");
-playerMessage.textContent="Memeriksa nama...";
-try{
-if(await nameExists(name)){playerMessage.textContent="Nama tersebut sudah digunakan.";playerMessage.classList.add("error");savePlayerButton.disabled=false;return}
-if(!(await reserveName(name))){playerMessage.textContent="Nama tersebut sudah digunakan.";playerMessage.classList.add("error");savePlayerButton.disabled=false;return}
-const playerRef=push(ref(db,"players"));
-currentPlayerId=playerRef.key;
-currentPlayer={name,profile,createdAt:Date.now()};
-await set(playerRef,currentPlayer);
-localStorage.setItem("buckshotPlayerId",currentPlayerId);
-playerMessage.textContent="";
-showProfile();
-listenToRoom();
-}catch(error){
-console.error(error);
-playerMessage.textContent="Gagal membuat profil.";
-playerMessage.classList.add("error");
-savePlayerButton.disabled=false;
-}
-}
 
-savePlayerButton.addEventListener("click",createPlayer);
+  <!-- =========================
+       ROOM MESSAGE
+  ========================= -->
 
-async function loadPlayer(){
-const savedId=localStorage.getItem("buckshotPlayerId");
-if(!savedId)return;
-try{
-const snapshot=await get(ref(db,"players/"+savedId));
-if(snapshot.exists()){
-currentPlayerId=savedId;
-currentPlayer=snapshot.val();
-showProfile();
-listenToRoom();
-}
-}catch(error){console.error(error)}
-}
+  <p id="roomMessage" class="message"></p>
 
-async function createRoom(){
-try{
-const snapshot=await get(ref(db,"room"));
-if(snapshot.exists()&&snapshot.val().exists){roomMessage.textContent="Room sudah tersedia.";return}
-await set(ref(db,"room"),{exists:true,status:"lobby",createdAt:Date.now(),players:{[currentPlayerId]:true}});
-}catch(error){console.error(error);roomMessage.textContent="Gagal membuat room."}
-}
 
-async function joinRoom(){
-try{
-const snapshot=await get(ref(db,"room"));
-if(!snapshot.exists()||!snapshot.val().exists){roomMessage.textContent="Room sudah tidak tersedia.";return}
-const room=snapshot.val();
-if(room.status==="playing"){roomMessage.textContent="Game sedang berjalan.";return}
-await set(ref(db,"room/players/"+currentPlayerId),true);
-}catch(error){console.error(error);roomMessage.textContent="Gagal JOIN room."}
-}
+  <!-- =========================
+       PLAYER LIST
+  ========================= -->
 
-async function leaveRoom(){
-try{
-const snapshot=await get(ref(db,"room"));
-if(!snapshot.exists())return;
-const room=snapshot.val();
-if(room.status==="playing"){roomMessage.textContent="Game sedang berjalan.";return}
-const players=room.players||{};
-delete players[currentPlayerId];
-if(Object.keys(players).length===0){
-await remove(ref(db,"room"));
-}else{
-await set(ref(db,"room/players"),players);
-}
-}catch(error){console.error(error);roomMessage.textContent="Gagal keluar dari room."}
-}
+  <div id="playerList" class="join-list">
 
-async function startGame(){
-try{
-const snapshot=await get(ref(db,"room"));
-if(!snapshot.exists())return;
-const room=snapshot.val(),players=room.players||{};
-if(room.status==="playing")return;
-if(Object.keys(players).length<2){roomMessage.textContent="Minimal 2 pemain untuk memulai.";return}
-await set(ref(db,"room/status"),"playing");
-}catch(error){console.error(error);roomMessage.textContent="Gagal memulai game."}
-}
+    <div class="empty">
+      Belum ada room.
+    </div>
 
-async function renderPlayers(players){
-roomPlayers.innerHTML="";
-const ids=Object.keys(players||{});
-if(!ids.length){roomPlayers.innerHTML='<div class="empty">Belum ada pemain.</div>';return}
-for(const id of ids){
-const snap=await get(ref(db,"players/"+id));
-if(!snap.exists())continue;
-const data=snap.val(),item=document.createElement("div");
-item.className="player";
-const img=document.createElement("img");
-if(data.profile){img.src=data.profile;img.onerror=()=>img.style.display="none"}else img.style.display="none";
-const name=document.createElement("div");
-name.className="player-name";
-name.textContent=data.name||"Player";
-if(id===currentPlayerId){const you=document.createElement("span");you.className="you";you.textContent="(Anda)";name.appendChild(you)}
-item.append(img,name);
-roomPlayers.appendChild(item);
-}
-}
+  </div>
 
-function button(text,handler,className=""){
-const b=document.createElement("button");b.textContent=text;b.className=className;b.addEventListener("click",handler);return b;
-}
 
-function renderActions(room){
-roomActions.innerHTML="";
-const players=room.players||{},joined=!!players[currentPlayerId],status=room.status||"lobby";
-if(status==="playing")return;
-if(!room.exists)return;
-if(joined){
-const actions=document.createElement("div");actions.className="actions";
-actions.append(button("MULAI",startGame),button("KELUAR",leaveRoom));
-roomActions.appendChild(actions);
-}else{
-roomActions.appendChild(button("JOIN",joinRoom,"main-action"));
-}
-}
+  <!-- =========================
+       GAME SCREEN
+  ========================= -->
 
-function listenToRoom(){
-onValue(ref(db,"room"),async snapshot=>{
-const room=snapshot.val();
-roomMessage.textContent="";
-if(!room||!room.exists){
-roomStatus.textContent="Belum ada room.";
-roomActions.innerHTML="";
-roomActions.appendChild(button("BUAT ROOM",createRoom,"main-action"));
-playersCard.classList.add("hidden");
-gameScreen.classList.add("hidden");
-return;
-}
-roomCard.classList.remove("hidden");
-const status=room.status||"lobby";
-if(status==="playing"){
-roomStatus.textContent="GAME SEDANG BERJALAN";
-roomActions.innerHTML="";
-playersCard.classList.add("hidden");
-gameScreen.classList.remove("hidden");
-return;
-}
-gameScreen.classList.add("hidden");
-playersCard.classList.remove("hidden");
-roomStatus.textContent="Room tersedia";
-renderActions(room);
-await renderPlayers(room.players||{});
-});
-}
+  <div id="gameScreen" class="game-screen hidden">
 
-loadPlayer();
-</script>
+    <div>
+      <h2>GAME DIMULAI</h2>
+
+      <p>
+        Permainan sedang berlangsung.
+      </p>
+    </div>
+
+  </div>
+
+
+  <!-- =========================
+       FIREBASE
+  ========================= -->
+
+  <script type="module">
+
+    import {
+      initializeApp
+    } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-app.js";
+
+    import {
+      getDatabase,
+      ref,
+      push,
+      set,
+      get,
+      onValue,
+      remove,
+      runTransaction
+    } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-database.js";
+
+
+    /* =========================
+       FIREBASE CONFIG
+    ========================= */
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyBQmI-9ES6AqE5AFy49hIyP0rhul9gIlkc",
+      authDomain: "buckshotroulette-4c7a1.firebaseapp.com",
+      databaseURL: "https://buckshotroulette-4c7a1-default-rtdb.asia-southeast1.firebasedatabase.app",
+      projectId: "buckshotroulette-4c7a1",
+      storageBucket: "buckshotroulette-4c7a1.firebasestorage.app",
+      messagingSenderId: "335951554199",
+      appId: "1:335951554199:web:8d7475fc9dda0f76b32bd2",
+      measurementId: "G-H5RLT7K97W"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getDatabase(app);
+
+
+    /* =========================
+       PLAYER VARIABLES
+    ========================= */
+
+    let currentPlayerId = null;
+    let currentPlayer = null;
+
+
+    /* =========================
+       HTML ELEMENTS
+    ========================= */
+
+    const myProfile =
+      document.getElementById("myProfile");
+
+    const myName =
+      document.getElementById("myName");
+
+    const onlineCount =
+      document.getElementById("onlineCount");
+
+    const roomActions =
+      document.getElementById("roomActions");
+
+    const roomMessage =
+      document.getElementById("roomMessage");
+
+    const playerList =
+      document.getElementById("playerList");
+
+    const gameScreen =
+      document.getElementById("gameScreen");
+
+
+    /* =========================
+       NAME UTILITY
+    ========================= */
+
+    function normalizeName(name) {
+      return name
+        .trim()
+        .toLowerCase()
+        .replace(/\s+/g, " ");
+    }
+
+
+    /* =========================
+       CHECK NAME
+    ========================= */
+
+    async function nameExists(name) {
+
+      const targetName =
+        normalizeName(name);
+
+      const snapshot =
+        await get(ref(db, "players"));
+
+      if (!snapshot.exists()) {
+        return false;
+      }
+
+      const players =
+        snapshot.val();
+
+      return Object.values(players).some(
+        player =>
+          normalizeName(player.name || "") ===
+          targetName
+      );
+    }
+
+
+    /* =========================
+       RESERVE NAME
+    ========================= */
+
+    async function reserveName(name) {
+
+      const nameKey =
+        normalizeName(name)
+          .replace(/[.#$/[\]]/g, "_");
+
+      const nameRef =
+        ref(db, "names/" + nameKey);
+
+      const result =
+        await runTransaction(
+          nameRef,
+          current => {
+
+            if (current === null) {
+
+              return {
+                name: name,
+                createdAt: Date.now()
+              };
+
+            }
+
+            return;
+          }
+        );
+
+      return result.committed;
+    }
+
+
+    /* =========================
+       SHOW PLAYER
+    ========================= */
+
+    function showPlayer() {
+
+      myName.textContent =
+        currentPlayer.name;
+
+      if (currentPlayer.profile) {
+
+        myProfile.innerHTML = `
+          <img
+            src="${currentPlayer.profile}"
+            alt="Profile"
+          >
+        `;
+
+      } else {
+
+        myProfile.textContent =
+          currentPlayer.name
+            .charAt(0)
+            .toUpperCase();
+
+      }
+    }
+
+
+    /* =========================
+       LOAD PLAYER
+    ========================= */
+
+    async function loadPlayer() {
+
+      const savedId =
+        localStorage.getItem(
+          "buckshotPlayerId"
+        );
+
+      /*
+        Jika belum mempunyai profile,
+        sementara tampilkan form sederhana.
+      */
+
+      if (!savedId) {
+
+        showCreatePlayerForm();
+
+        return;
+      }
+
+      try {
+
+        const snapshot =
+          await get(
+            ref(db, "players/" + savedId)
+          );
+
+        if (!snapshot.exists()) {
+
+          localStorage.removeItem(
+            "buckshotPlayerId"
+          );
+
+          showCreatePlayerForm();
+
+          return;
+        }
+
+        currentPlayerId =
+          savedId;
+
+        currentPlayer =
+          snapshot.val();
+
+        showPlayer();
+        listenToRoom();
+
+      } catch (error) {
+
+        console.error(error);
+
+        roomMessage.textContent =
+          "Gagal memuat profile.";
+
+      }
+    }
+
+
+    /* =========================
+       CREATE PLAYER FORM
+    ========================= */
+
+    function showCreatePlayerForm() {
+
+      roomActions.innerHTML = `
+        <input
+          id="nameInput"
+          type="text"
+          maxlength="20"
+          placeholder="Nama"
+          style="
+            width:100%;
+            height:45px;
+            padding:0 12px;
+            border:none;
+            border-radius:6px;
+            background:#2f2f2f;
+            color:white;
+            outline:none;
+          "
+        >
+
+        <input
+          id="profileInput"
+          type="url"
+          placeholder="URL Foto Profil (opsional)"
+          style="
+            width:100%;
+            height:45px;
+            padding:0 12px;
+            border:none;
+            border-radius:6px;
+            background:#2f2f2f;
+            color:white;
+            outline:none;
+          "
+        >
+
+        <button id="savePlayerButton">
+          Simpan Profile
+        </button>
+      `;
+
+      document
+        .getElementById("savePlayerButton")
+        .addEventListener(
+          "click",
+          createPlayer
+        );
+    }
+
+
+    /* =========================
+       CREATE PLAYER
+    ========================= */
+
+    async function createPlayer() {
+
+      const name =
+        document
+          .getElementById("nameInput")
+          .value
+          .trim();
+
+      const profile =
+        document
+          .getElementById("profileInput")
+          .value
+          .trim();
+
+      roomMessage.classList.remove("error");
+
+      if (!name) {
+
+        roomMessage.textContent =
+          "Nama wajib diisi.";
+
+        roomMessage.classList.add("error");
+
+        return;
+      }
+
+      if (name.length < 2) {
+
+        roomMessage.textContent =
+          "Nama minimal 2 karakter.";
+
+        roomMessage.classList.add("error");
+
+        return;
+      }
+
+      try {
+
+        roomMessage.textContent =
+          "Memeriksa nama...";
+
+        if (await nameExists(name)) {
+
+          roomMessage.textContent =
+            "Nama tersebut sudah digunakan.";
+
+          roomMessage.classList.add("error");
+
+          return;
+        }
+
+        const reserved =
+          await reserveName(name);
+
+        if (!reserved) {
+
+          roomMessage.textContent =
+            "Nama tersebut sudah digunakan.";
+
+          roomMessage.classList.add("error");
+
+          return;
+        }
+
+        const playerRef =
+          push(ref(db, "players"));
+
+        currentPlayerId =
+          playerRef.key;
+
+        currentPlayer = {
+          name: name,
+          profile: profile,
+          createdAt: Date.now()
+        };
+
+        await set(
+          playerRef,
+          currentPlayer
+        );
+
+        localStorage.setItem(
+          "buckshotPlayerId",
+          currentPlayerId
+        );
+
+        roomMessage.textContent = "";
+
+        showPlayer();
+        listenToRoom();
+
+      } catch (error) {
+
+        console.error(error);
+
+        roomMessage.textContent =
+          "Gagal membuat profile.";
+
+        roomMessage.classList.add("error");
+      }
+    }
+
+
+    /* =========================
+       CREATE ROOM
+    ========================= */
+
+    async function createRoom() {
+
+      try {
+
+        const snapshot =
+          await get(ref(db, "room"));
+
+        if (
+          snapshot.exists() &&
+          snapshot.val().exists
+        ) {
+
+          roomMessage.textContent =
+            "Room sudah tersedia.";
+
+          return;
+        }
+
+        await set(
+          ref(db, "room"),
+          {
+            exists: true,
+            status: "lobby",
+            createdAt: Date.now(),
+
+            players: {
+              [currentPlayerId]: true
+            }
+          }
+        );
+
+      } catch (error) {
+
+        console.error(error);
+
+        roomMessage.textContent =
+          "Gagal membuat room.";
+      }
+    }
+
+
+    /* =========================
+       JOIN ROOM
+    ========================= */
+
+    async function joinRoom() {
+
+      try {
+
+        const snapshot =
+          await get(ref(db, "room"));
+
+        if (
+          !snapshot.exists() ||
+          !snapshot.val().exists
+        ) {
+
+          roomMessage.textContent =
+            "Room sudah tidak tersedia.";
+
+          return;
+        }
+
+        const room =
+          snapshot.val();
+
+        if (room.status === "playing") {
+
+          roomMessage.textContent =
+            "Game sedang berjalan.";
+
+          return;
+        }
+
+        await set(
+          ref(
+            db,
+            "room/players/" +
+            currentPlayerId
+          ),
+          true
+        );
+
+      } catch (error) {
+
+        console.error(error);
+
+        roomMessage.textContent =
+          "Gagal JOIN room.";
+      }
+    }
+
+
+    /* =========================
+       LEAVE ROOM
+    ========================= */
+
+    async function leaveRoom() {
+
+      try {
+
+        const snapshot =
+          await get(ref(db, "room"));
+
+        if (!snapshot.exists()) {
+          return;
+        }
+
+        const room =
+          snapshot.val();
+
+        if (room.status === "playing") {
+
+          roomMessage.textContent =
+            "Game sedang berjalan.";
+
+          return;
+        }
+
+        const players =
+          room.players || {};
+
+        delete players[currentPlayerId];
+
+        if (
+          Object.keys(players).length === 0
+        ) {
+
+          await remove(
+            ref(db, "room")
+          );
+
+        } else {
+
+          await set(
+            ref(db, "room/players"),
+            players
+          );
+        }
+
+      } catch (error) {
+
+        console.error(error);
+
+        roomMessage.textContent =
+          "Gagal keluar dari room.";
+      }
+    }
+
+
+    /* =========================
+       START GAME
+    ========================= */
+
+    async function startGame() {
+
+      try {
+
+        const snapshot =
+          await get(ref(db, "room"));
+
+        if (!snapshot.exists()) {
+          return;
+        }
+
+        const room =
+          snapshot.val();
+
+        const players =
+          room.players || {};
+
+        if (room.status === "playing") {
+          return;
+        }
+
+        if (
+          Object.keys(players).length < 2
+        ) {
+
+          roomMessage.textContent =
+            "Minimal 2 pemain untuk memulai.";
+
+          return;
+        }
+
+        await set(
+          ref(db, "room/status"),
+          "playing"
+        );
+
+      } catch (error) {
+
+        console.error(error);
+
+        roomMessage.textContent =
+          "Gagal memulai game.";
+      }
+    }
+
+
+    /* =========================
+       CREATE BUTTON
+    ========================= */
+
+    function createButton(
+      text,
+      icon,
+      handler,
+      className = ""
+    ) {
+
+      const button =
+        document.createElement("button");
+
+      button.className =
+        className;
+
+      if (icon) {
+
+        button.innerHTML = `
+          <i data-lucide="${icon}"></i>
+          ${text}
+        `;
+
+      } else {
+
+        button.textContent =
+          text;
+      }
+
+      button.addEventListener(
+        "click",
+        handler
+      );
+
+      return button;
+    }
+
+
+    /* =========================
+       RENDER ROOM BUTTONS
+    ========================= */
+
+    function renderRoomActions(room) {
+
+      roomActions.innerHTML = "";
+
+      const players =
+        room.players || {};
+
+      const joined =
+        !!players[currentPlayerId];
+
+      const status =
+        room.status || "lobby";
+
+
+      /*
+        Game sedang berjalan.
+      */
+
+      if (status === "playing") {
+        return;
+      }
+
+
+      /*
+        Pemain sudah berada di room.
+        Tampilkan MULAI + KELUAR.
+      */
+
+      if (joined) {
+
+        const actionRow =
+          document.createElement("div");
+
+        actionRow.className =
+          "start-left";
+
+        const startButton =
+          createButton(
+            "Mulai",
+            null,
+            startGame
+          );
+
+        const leaveButton =
+          createButton(
+            "Keluar",
+            null,
+            leaveRoom,
+            "left"
+          );
+
+        actionRow.append(
+          startButton,
+          leaveButton
+        );
+
+        roomActions.appendChild(
+          actionRow
+        );
+
+        return;
+      }
+
+
+      /*
+        Room tersedia tetapi
+        pemain belum JOIN.
+      */
+
+      const joinButton =
+        createButton(
+          "Join",
+          "log-in",
+          joinRoom
+        );
+
+      roomActions.appendChild(
+        joinButton
+      );
+    }
+
+
+    /* =========================
+       RENDER NO ROOM
+    ========================= */
+
+    function renderNoRoom() {
+
+      roomActions.innerHTML = "";
+
+      const createButtonElement =
+        createButton(
+          "Buat room",
+          "plus",
+          createRoom
+        );
+
+      roomActions.appendChild(
+        createButtonElement
+      );
+
+      playerList.innerHTML = `
+        <div class="empty">
+          Belum ada room.
+        </div>
+      `;
+
+      onlineCount.textContent = "0";
+
+      gameScreen.classList.add(
+        "hidden"
+      );
+    }
+
+
+    /* =========================
+       RENDER PLAYERS
+    ========================= */
+
+    async function renderPlayers(players) {
+
+      playerList.innerHTML = "";
+
+      const playerIds =
+        Object.keys(players || {});
+
+      onlineCount.textContent =
+        playerIds.length;
+
+
+      if (playerIds.length === 0) {
+
+        playerList.innerHTML = `
+          <div class="empty">
+            Belum ada pemain.
+          </div>
+        `;
+
+        return;
+      }
+
+
+      for (const playerId of playerIds) {
+
+        const snapshot =
+          await get(
+            ref(
+              db,
+              "players/" + playerId
+            )
+          );
+
+        if (!snapshot.exists()) {
+          continue;
+        }
+
+        const player =
+          snapshot.val();
+
+
+        /* Player row */
+
+        const playerElement =
+          document.createElement("div");
+
+        playerElement.className =
+          "pl-list";
+
+
+        /* Profile */
+
+        const profile =
+          document.createElement("div");
+
+        profile.className =
+          "profile";
+
+
+        if (player.profile) {
+
+          profile.innerHTML = `
+            <img
+              src="${player.profile}"
+              alt="Profile"
+            >
+          `;
+
+        } else {
+
+          profile.textContent =
+            (player.name || "P")
+              .charAt(0)
+              .toUpperCase();
+        }
+
+
+        /* Name */
+
+        const name =
+          document.createElement("div");
+
+        name.className =
+          "pl-name";
+
+        name.textContent =
+          player.name || "Player";
+
+
+        /* Current player */
+
+        if (
+          playerId === currentPlayerId
+        ) {
+
+          const you =
+            document.createElement("span");
+
+          you.className =
+            "you";
+
+          you.textContent =
+            "(Anda)";
+
+          name.appendChild(you);
+        }
+
+
+        playerElement.append(
+          profile,
+          name
+        );
+
+        playerList.appendChild(
+          playerElement
+        );
+      }
+    }
+
+
+    /* =========================
+       LISTEN ROOM
+    ========================= */
+
+    function listenToRoom() {
+
+      onValue(
+        ref(db, "room"),
+        async snapshot => {
+
+          const room =
+            snapshot.val();
+
+          roomMessage.textContent = "";
+
+
+          /*
+            Tidak ada room.
+          */
+
+          if (
+            !room ||
+            !room.exists
+          ) {
+
+            renderNoRoom();
+
+            return;
+          }
+
+
+          /*
+            Game sedang berjalan.
+          */
+
+          if (
+            room.status === "playing"
+          ) {
+
+            roomActions.innerHTML = "";
+
+            playerList.innerHTML = "";
+
+            onlineCount.textContent =
+              Object.keys(
+                room.players || {}
+              ).length;
+
+            gameScreen.classList.remove(
+              "hidden"
+            );
+
+            return;
+          }
+
+
+          /*
+            Lobby.
+          */
+
+          gameScreen.classList.add(
+            "hidden"
+          );
+
+          renderRoomActions(room);
+
+          await renderPlayers(
+            room.players || {}
+          );
+
+          lucide.createIcons();
+        }
+      );
+    }
+
+
+    /* =========================
+       INITIALIZE
+    ========================= */
+
+    lucide.createIcons();
+
+    loadPlayer();
+
+  </script>
+
 </body>
 </html>
