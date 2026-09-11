@@ -738,6 +738,7 @@ body {
 
       </div>
 
+
       <div class="list">
 
         <i data-lucide="list"></i>
@@ -758,6 +759,7 @@ body {
         <span class="game-current-name">
           Christian
         </span>
+
 
         <div class="healt">
 
@@ -811,6 +813,8 @@ body {
   </div>
 
 
+  <!-- SHOTGUN -->
+
   <div class="shot hidden">
 
     <img
@@ -824,12 +828,20 @@ body {
 
     <div class="shot-btn">
 
-      <button class="other">
+      <button
+        class="other"
+        disabled>
+
         Player
+
       </button>
 
-      <button class="self">
+      <button
+        class="self"
+        disabled>
+
         You
+
       </button>
 
     </div>
@@ -934,33 +946,26 @@ const db =
 ========================= */
 
 let currentPlayerId = null;
-
 let currentPlayer = null;
-
 let roomData = null;
-
 let gameData = null;
-
-let gameWatcherStarted = false;
-
-let preparationRunning = false;
-
-
-/* =========================
-   GAME STATE
-========================= */
 
 let gamePlayers = [];
 
 let shotMode = false;
-
 let selectedTarget = null;
 
-let selectedTargetType = null;
+let gameWatcherStarted = false;
+
+let roomWatcherStarted = false;
+
+let prepareTimer = null;
+
+let shootingLocked = false;
 
 
 /* =========================
-   SHELL
+   CONSTANT
 ========================= */
 
 const shellCount = 8;
@@ -979,7 +984,6 @@ const lobby =
 const game =
   document.querySelector(".game");
 
-
 const loginName =
   document.querySelector(".login-name");
 
@@ -991,7 +995,6 @@ const loginBtn =
 
 const loginMessage =
   document.querySelector(".login-message");
-
 
 const createBtn =
   document.querySelector(".create");
@@ -1014,7 +1017,6 @@ const roomMessage =
 const joinList =
   document.querySelector(".join-list");
 
-
 const shot =
   document.querySelector(".shot");
 
@@ -1032,7 +1034,6 @@ const overlay =
 
 const playerContainer =
   document.querySelector(".st-players");
-
 
 const shellContainer =
   document.querySelector(".shell");
@@ -1067,19 +1068,15 @@ async function nameExists(name) {
   const targetName =
     normalizeName(name);
 
-
   const snapshot =
     await get(ref(db, "players"));
-
 
   if (!snapshot.exists()) {
     return false;
   }
 
-
   const players =
     snapshot.val();
-
 
   return Object.values(players).some(
     player => {
@@ -1103,14 +1100,11 @@ async function reserveName(name) {
   const normalized =
     normalizeName(name);
 
-
   const nameKey =
     encodeURIComponent(normalized);
 
-
   const nameRef =
     ref(db, "names/" + nameKey);
-
 
   const result =
     await runTransaction(
@@ -1129,12 +1123,10 @@ async function reserveName(name) {
 
         }
 
-
         return;
 
       }
     );
-
 
   return result.committed;
 
@@ -1152,11 +1144,9 @@ async function loadSavedPlayer() {
       "buckshotPlayerId"
     );
 
-
   if (!savedId) {
     return false;
   }
-
 
   const snapshot =
     await get(
@@ -1165,7 +1155,6 @@ async function loadSavedPlayer() {
         "players/" + savedId
       )
     );
-
 
   if (!snapshot.exists()) {
 
@@ -1177,13 +1166,11 @@ async function loadSavedPlayer() {
 
   }
 
-
   currentPlayerId =
     savedId;
 
   currentPlayer =
     snapshot.val();
-
 
   return true;
 
@@ -1200,13 +1187,11 @@ loginBtn.addEventListener(
 
     loginMessage.textContent = "";
 
-
     const name =
       loginName.value.trim();
 
     const profile =
       loginProfile.value.trim();
-
 
     if (!name) {
 
@@ -1217,7 +1202,6 @@ loginBtn.addEventListener(
 
     }
 
-
     if (name.length < 2) {
 
       loginMessage.textContent =
@@ -1227,18 +1211,15 @@ loginBtn.addEventListener(
 
     }
 
-
     loginBtn.disabled = true;
 
     loginBtn.textContent =
       "Memproses...";
 
-
     try {
 
       const exists =
         await nameExists(name);
-
 
       if (exists) {
 
@@ -1249,10 +1230,8 @@ loginBtn.addEventListener(
 
       }
 
-
       const reserved =
         await reserveName(name);
-
 
       if (!reserved) {
 
@@ -1263,14 +1242,11 @@ loginBtn.addEventListener(
 
       }
 
-
       const playerRef =
         push(ref(db, "players"));
 
-
       currentPlayerId =
         playerRef.key;
-
 
       currentPlayer = {
 
@@ -1282,21 +1258,17 @@ loginBtn.addEventListener(
 
       };
 
-
       await set(
         playerRef,
         currentPlayer
       );
-
 
       localStorage.setItem(
         "buckshotPlayerId",
         currentPlayerId
       );
 
-
       showLobby();
-
 
     } catch (error) {
 
@@ -1357,6 +1329,9 @@ function showLobby() {
     "hidden"
   );
 
+  closeShotPopup();
+
+  resetShot();
 
   updateHeader();
 
@@ -1375,18 +1350,14 @@ function updateHeader() {
     return;
   }
 
-
   const name =
     currentPlayer.name || "?";
-
 
   const profile =
     currentPlayer.profile || "";
 
-
   const firstLetter =
     name.charAt(0).toUpperCase();
-
 
   document
     .querySelectorAll(
@@ -1397,7 +1368,6 @@ function updateHeader() {
       element.textContent = name;
 
     });
-
 
   document
     .querySelectorAll(
@@ -1433,6 +1403,12 @@ function updateHeader() {
 
 function watchRoom() {
 
+  if (roomWatcherStarted) {
+    return;
+  }
+
+  roomWatcherStarted = true;
+
   onValue(
     ref(db, "room"),
     async snapshot => {
@@ -1441,7 +1417,6 @@ function watchRoom() {
         snapshot.exists()
           ? snapshot.val()
           : null;
-
 
       await renderRoom();
 
@@ -1480,7 +1455,6 @@ async function renderRoom() {
       ".online"
     ).textContent = "0";
 
-
     return;
 
   }
@@ -1494,7 +1468,6 @@ async function renderRoom() {
         currentPlayerId
       ];
 
-
     if (joined) {
 
       await enterGame();
@@ -1502,7 +1475,6 @@ async function renderRoom() {
       return;
 
     }
-
 
     createBtn.classList.add(
       "hidden"
@@ -1527,46 +1499,38 @@ async function renderRoom() {
   const roomPlayers =
     roomData.players || {};
 
-
   const joined =
     !!roomPlayers[
       currentPlayerId
     ];
-
 
   createBtn.classList.toggle(
     "hidden",
     !!roomData
   );
 
-
   joinBtn.classList.toggle(
     "hidden",
     joined
   );
-
 
   startLeft.classList.toggle(
     "hidden",
     !joined
   );
 
-
   roomMessage.textContent =
     joined
       ? "Kamu berada di room."
       : "Room tersedia. Tekan Join untuk masuk.";
 
-
   const playerIds =
     Object.keys(roomPlayers);
-
 
   document.querySelector(
     ".online"
   ).textContent =
     playerIds.length;
-
 
   await renderLobbyPlayers(
     playerIds
@@ -1585,7 +1549,6 @@ async function renderLobbyPlayers(
 
   joinList.innerHTML = "";
 
-
   if (playerIds.length === 0) {
 
     joinList.innerHTML = `
@@ -1600,8 +1563,9 @@ async function renderLobbyPlayers(
 
   }
 
-
-  for (const playerId of playerIds) {
+  for (
+    const playerId of playerIds
+  ) {
 
     const snapshot =
       await get(
@@ -1611,33 +1575,26 @@ async function renderLobbyPlayers(
         )
       );
 
-
     if (!snapshot.exists()) {
       continue;
     }
 
-
     const player =
       snapshot.val();
-
 
     const item =
       document.createElement("div");
 
-
     item.className =
       "pl-list";
 
-
     const profile =
       player.profile || "";
-
 
     const firstLetter =
       (player.name || "?")
         .charAt(0)
         .toUpperCase();
-
 
     const profileHTML =
       profile
@@ -1662,7 +1619,6 @@ async function renderLobbyPlayers(
 
         `;
 
-
     item.innerHTML = `
 
       ${profileHTML}
@@ -1672,7 +1628,6 @@ async function renderLobbyPlayers(
       </div>
 
     `;
-
 
     joinList.appendChild(item);
 
@@ -1693,9 +1648,7 @@ createBtn.addEventListener(
       return;
     }
 
-
     createBtn.disabled = true;
-
 
     try {
 
@@ -1703,7 +1656,6 @@ createBtn.addEventListener(
         await get(
           ref(db, "room")
         );
-
 
       if (snapshot.exists()) {
 
@@ -1713,7 +1665,6 @@ createBtn.addEventListener(
         return;
 
       }
-
 
       await set(
         ref(db, "room"),
@@ -1733,7 +1684,6 @@ createBtn.addEventListener(
 
         }
       );
-
 
       roomMessage.textContent =
         "Room berhasil dibuat.";
@@ -1767,9 +1717,7 @@ joinBtn.addEventListener(
       return;
     }
 
-
     joinBtn.disabled = true;
-
 
     try {
 
@@ -1777,7 +1725,6 @@ joinBtn.addEventListener(
         await get(
           ref(db, "room")
         );
-
 
       if (!snapshot.exists()) {
 
@@ -1788,10 +1735,8 @@ joinBtn.addEventListener(
 
       }
 
-
       const room =
         snapshot.val();
-
 
       if (room.status === "playing") {
 
@@ -1802,7 +1747,6 @@ joinBtn.addEventListener(
 
       }
 
-
       await set(
         ref(
           db,
@@ -1811,7 +1755,6 @@ joinBtn.addEventListener(
         ),
         true
       );
-
 
     } catch (error) {
 
@@ -1842,7 +1785,6 @@ leftBtn.addEventListener(
       return;
     }
 
-
     try {
 
       const snapshot =
@@ -1850,15 +1792,12 @@ leftBtn.addEventListener(
           ref(db, "room")
         );
 
-
       if (!snapshot.exists()) {
         return;
       }
 
-
       const room =
         snapshot.val();
-
 
       if (room.status === "playing") {
 
@@ -1869,19 +1808,15 @@ leftBtn.addEventListener(
 
       }
 
-
       const players =
         room.players || {};
-
 
       delete players[
         currentPlayerId
       ];
 
-
       const remaining =
         Object.keys(players);
-
 
       if (remaining.length === 0) {
 
@@ -1897,7 +1832,6 @@ leftBtn.addEventListener(
         );
 
       }
-
 
     } catch (error) {
 
@@ -1921,7 +1855,6 @@ function shuffleArray(array) {
   const result =
     [...array];
 
-
   for (
     let i = result.length - 1;
     i > 0;
@@ -1933,7 +1866,6 @@ function shuffleArray(array) {
         Math.random() * (i + 1)
       );
 
-
     [
       result[i],
       result[j]
@@ -1943,7 +1875,6 @@ function shuffleArray(array) {
     ];
 
   }
-
 
   return result;
 
@@ -1961,14 +1892,12 @@ function createGameState(
   const shuffledPlayers =
     shuffleArray(playerIds);
 
-
-  const players = {};
-
+  const gamePlayersData = {};
 
   shuffledPlayers.forEach(
     (playerId, index) => {
 
-      players[playerId] = {
+      gamePlayersData[playerId] = {
 
         hp: 3,
 
@@ -1985,12 +1914,11 @@ function createGameState(
       Math.random() * 7
     ) + 1;
 
-
   const blank =
     shellCount - alive;
 
 
-  const shells = [];
+  const shellData = [];
 
 
   for (
@@ -1999,7 +1927,7 @@ function createGameState(
     i++
   ) {
 
-    shells.push(
+    shellData.push(
       "live"
     );
 
@@ -2012,7 +1940,7 @@ function createGameState(
     i++
   ) {
 
-    shells.push(
+    shellData.push(
       "blank"
     );
 
@@ -2020,7 +1948,11 @@ function createGameState(
 
 
   const shuffledShells =
-    shuffleArray(shells);
+    shuffleArray(shellData);
+
+
+  const now =
+    Date.now();
 
 
   return {
@@ -2028,8 +1960,11 @@ function createGameState(
     phase:
       "preparing",
 
+    prepareEndsAt:
+      now + 3000,
+
     players:
-      players,
+      gamePlayersData,
 
     turn: {
 
@@ -2042,17 +1977,13 @@ function createGameState(
 
     shells: {
 
-      total:
-        shellCount,
+      total: 8,
 
-      alive:
-        alive,
+      alive: alive,
 
-      blank:
-        blank,
+      blank: blank,
 
-      current:
-        0,
+      current: 0,
 
       sequence:
         shuffledShells
@@ -2060,7 +1991,7 @@ function createGameState(
     },
 
     startedAt:
-      Date.now()
+      now
 
   };
 
@@ -2079,89 +2010,24 @@ startBtn.addEventListener(
       return;
     }
 
-
     startBtn.disabled = true;
-
 
     try {
 
-      const snapshot =
-        await get(
-          ref(db, "room")
-        );
-
-
-      if (!snapshot.exists()) {
-        return;
-      }
-
-
-      const room =
-        snapshot.val();
-
-
-      if (
-        room.status ===
-        "playing"
-      ) {
-
-        return;
-
-      }
-
-
-      const players =
-        room.players || {};
-
-
-      const playerIds =
-        Object.keys(players);
-
-
-      if (
-        playerIds.length < 2
-      ) {
-
-        roomMessage.textContent =
-          "Minimal 2 pemain untuk memulai.";
-
-        return;
-
-      }
-
-
-      if (
-        !players[
-          currentPlayerId
-        ]
-      ) {
-
-        roomMessage.textContent =
-          "Kamu bukan pemain room.";
-
-        return;
-
-      }
-
-
-      const gameState =
-        createGameState(
-          playerIds
-        );
-
+      const roomRef =
+        ref(db, "room");
 
       const result =
         await runTransaction(
-          ref(db, "room"),
-          currentRoom => {
+          roomRef,
+          room => {
 
-            if (!currentRoom) {
+            if (!room) {
               return;
             }
 
-
             if (
-              currentRoom.status ===
+              room.status ===
               "playing"
             ) {
 
@@ -2169,42 +2035,44 @@ startBtn.addEventListener(
 
             }
 
+            const players =
+              room.players || {};
 
-            const currentPlayers =
-              currentRoom.players ||
-              {};
-
-
-            const currentIds =
-              Object.keys(
-                currentPlayers
-              );
-
+            const playerIds =
+              Object.keys(players);
 
             if (
-              currentIds.length < 2
+              playerIds.length < 2
             ) {
 
               return;
 
             }
 
+            if (
+              !players[
+                currentPlayerId
+              ]
+            ) {
 
-            const finalGame =
+              return;
+
+            }
+
+            const gameState =
               createGameState(
-                currentIds
+                playerIds
               );
-
 
             return {
 
-              ...currentRoom,
+              ...room,
 
               status:
                 "playing",
 
               game:
-                finalGame
+                gameState
 
             };
 
@@ -2212,15 +2080,36 @@ startBtn.addEventListener(
         );
 
 
-      if (
-        result.committed
-      ) {
+      if (!result.committed) {
 
-        roomMessage.textContent =
-          "Game dimulai.";
+        const snapshot =
+          await get(
+            ref(db, "room")
+          );
+
+        if (
+          snapshot.exists() &&
+          snapshot.val().status ===
+          "lobby"
+        ) {
+
+          const players =
+            snapshot.val().players ||
+            {};
+
+          if (
+            Object.keys(players).length <
+            2
+          ) {
+
+            roomMessage.textContent =
+              "Minimal 2 pemain untuk memulai.";
+
+          }
+
+        }
 
       }
-
 
     } catch (error) {
 
@@ -2245,35 +2134,26 @@ startBtn.addEventListener(
 
 function watchGame() {
 
-  if (
-    gameWatcherStarted
-  ) {
-
+  if (gameWatcherStarted) {
     return;
-
   }
 
-
-  gameWatcherStarted =
-    true;
-
+  gameWatcherStarted = true;
 
   onValue(
     ref(db, "room/game"),
     async snapshot => {
 
-      if (
-        !snapshot.exists()
-      ) {
+      if (!snapshot.exists()) {
+
+        gameData = null;
 
         return;
 
       }
 
-
       gameData =
         snapshot.val();
-
 
       await renderGameState();
 
@@ -2297,109 +2177,23 @@ async function enterGame() {
     "hidden"
   );
 
-
   updateHeader();
-
 
   watchGame();
 
+  const snapshot =
+    await get(
+      ref(db, "room/game")
+    );
 
-  await renderGameState();
+  if (snapshot.exists()) {
 
+    gameData =
+      snapshot.val();
 
-  if (
-    gameData &&
-    gameData.phase ===
-    "preparing"
-  ) {
-
-    startPreparation();
-
-  }
-
-}
-
-
-/* =========================
-   PREPARATION
-========================= */
-
-function startPreparation() {
-
-  if (
-    preparationRunning
-  ) {
-
-    return;
+    await renderGameState();
 
   }
-
-
-  preparationRunning =
-    true;
-
-
-  shot.classList.add(
-    "hidden"
-  );
-
-
-  disableShotButtons();
-
-
-  setTimeout(
-    async () => {
-
-      try {
-
-        await runTransaction(
-          ref(
-            db,
-            "room/game"
-          ),
-          game => {
-
-            if (!game) {
-              return;
-            }
-
-
-            if (
-              game.phase !==
-              "preparing"
-            ) {
-
-              return;
-
-            }
-
-
-            return {
-
-              ...game,
-
-              phase:
-                "playing"
-
-            };
-
-          }
-        );
-
-      } catch (error) {
-
-        console.error(error);
-
-      } finally {
-
-        preparationRunning =
-          false;
-
-      }
-
-    },
-    3000
-  );
 
 }
 
@@ -2412,7 +2206,6 @@ async function loadGamePlayers() {
 
   gamePlayers = [];
 
-
   if (
     !gameData ||
     !gameData.players
@@ -2422,10 +2215,8 @@ async function loadGamePlayers() {
 
   }
 
-
   const playerData =
     gameData.players;
-
 
   const sortedPlayers =
     Object.entries(
@@ -2433,10 +2224,10 @@ async function loadGamePlayers() {
     ).sort(
       ([, a], [, b]) =>
         Number(
-          a.turnOrder || 0
+          a.turnOrder ?? 0
         ) -
         Number(
-          b.turnOrder || 0
+          b.turnOrder ?? 0
         )
     );
 
@@ -2458,7 +2249,6 @@ async function loadGamePlayers() {
         )
       );
 
-
     if (
       !snapshot.exists()
     ) {
@@ -2467,10 +2257,8 @@ async function loadGamePlayers() {
 
     }
 
-
     const player =
       snapshot.val();
-
 
     gamePlayers.push({
 
@@ -2513,39 +2301,24 @@ async function renderGameState() {
     return;
   }
 
-
   await loadGamePlayers();
 
-
   renderShellInfo();
-
 
   document.querySelector(
     ".game-online"
   ).textContent =
     gamePlayers.length;
 
-
   updateCurrentTurn();
-
 
   updateGameHealth();
 
-
   updateNextPlayer();
-
 
   updateShotVisibility();
 
-
-  if (
-    gameData.phase ===
-    "preparing"
-  ) {
-
-    startPreparation();
-
-  }
+  updatePreparation();
 
 }
 
@@ -2556,37 +2329,24 @@ async function renderGameState() {
 
 function renderShellInfo() {
 
-  if (
-    !gameData.shells
-  ) {
-
-    return;
-
-  }
-
-
   const alive =
     Number(
-      gameData.shells.alive || 0
+      gameData.shells?.alive || 0
     );
-
 
   const blank =
     Number(
-      gameData.shells.blank || 0
+      gameData.shells?.blank || 0
     );
-
 
   aliveCount.textContent =
     "Alive : " + alive;
-
 
   blankCount.textContent =
     "Blank : " + blank;
 
 
-  shellContainer.innerHTML =
-    "";
+  shellContainer.innerHTML = "";
 
 
   for (
@@ -2596,16 +2356,12 @@ function renderShellInfo() {
   ) {
 
     const icon =
-      document.createElement(
-        "i"
-      );
-
+      document.createElement("i");
 
     icon.setAttribute(
       "data-lucide",
       "test-tube"
     );
-
 
     if (
       i >= alive
@@ -2617,15 +2373,219 @@ function renderShellInfo() {
 
     }
 
-
     shellContainer.appendChild(
       icon
     );
 
   }
 
-
   lucide.createIcons();
+
+}
+
+
+/* =========================
+   PREPARATION
+========================= */
+
+function updatePreparation() {
+
+  if (
+    !gameData ||
+    gameData.phase !==
+    "preparing"
+  ) {
+
+    clearPreparationTimer();
+
+    document.querySelector(
+      ".random-shell"
+    ).classList.add(
+      "hidden"
+    );
+
+    return;
+
+  }
+
+
+  document.querySelector(
+    ".random-shell"
+  ).classList.remove(
+    "hidden"
+  );
+
+
+  shot.classList.add(
+    "hidden"
+  );
+
+  disableShotButtons();
+
+  resetShot(false);
+
+
+  const endsAt =
+    Number(
+      gameData.prepareEndsAt || 0
+    );
+
+
+  const remaining =
+    endsAt - Date.now();
+
+
+  if (
+    remaining <= 0
+  ) {
+
+    finishPreparation();
+
+    return;
+
+  }
+
+
+  if (prepareTimer) {
+    return;
+  }
+
+
+  prepareTimer =
+    setTimeout(
+      () => {
+
+        prepareTimer = null;
+
+        finishPreparation();
+
+      },
+      remaining + 50
+    );
+
+}
+
+
+/* =========================
+   CLEAR PREPARATION TIMER
+========================= */
+
+function clearPreparationTimer() {
+
+  if (!prepareTimer) {
+    return;
+  }
+
+  clearTimeout(
+    prepareTimer
+  );
+
+  prepareTimer = null;
+
+}
+
+
+/* =========================
+   FINISH PREPARATION
+========================= */
+
+async function finishPreparation() {
+
+  if (
+    !gameData ||
+    gameData.phase !==
+    "preparing"
+  ) {
+
+    return;
+
+  }
+
+
+  const gameRef =
+    ref(
+      db,
+      "room/game"
+    );
+
+
+  try {
+
+    const result =
+      await runTransaction(
+        gameRef,
+        game => {
+
+          if (!game) {
+            return;
+          }
+
+          if (
+            game.phase !==
+            "preparing"
+          ) {
+
+            return;
+
+          }
+
+          const endsAt =
+            Number(
+              game.prepareEndsAt || 0
+            );
+
+          if (
+            Date.now() <
+            endsAt
+          ) {
+
+            return;
+
+          }
+
+          return {
+
+            ...game,
+
+            phase:
+              "playing"
+
+          };
+
+        }
+      );
+
+
+    if (
+      !result.committed
+    ) {
+
+      const snapshot =
+        await get(
+          gameRef
+        );
+
+      if (
+        snapshot.exists()
+      ) {
+
+        gameData =
+          snapshot.val();
+
+        await renderGameState();
+
+      }
+
+    }
+
+  } catch (error) {
+
+    console.error(
+      "Finish preparation error:",
+      error
+    );
+
+  }
 
 }
 
@@ -2637,6 +2597,7 @@ function renderShellInfo() {
 function updateCurrentTurn() {
 
   if (
+    !gameData ||
     !gameData.turn
   ) {
 
@@ -2644,10 +2605,8 @@ function updateCurrentTurn() {
 
   }
 
-
   const currentId =
     gameData.turn.current;
-
 
   const currentPlayer =
     gamePlayers.find(
@@ -2656,13 +2615,21 @@ function updateCurrentTurn() {
         currentId
     );
 
+  if (!currentPlayer) {
+
+    document.querySelector(
+      ".game-current-name"
+    ).textContent =
+      "-";
+
+    return;
+
+  }
 
   document.querySelector(
     ".game-current-name"
   ).textContent =
-    currentPlayer
-      ? currentPlayer.name
-      : "-";
+    currentPlayer.name;
 
 }
 
@@ -2673,28 +2640,19 @@ function updateCurrentTurn() {
 
 function updateNextPlayer() {
 
-  if (
-    gamePlayers.length <= 1
-  ) {
-
+  const nextElement =
     document.querySelector(
       ".next-name"
-    ).textContent =
-      "-";
-
-    return;
-
-  }
+    );
 
 
   if (
     !gameData ||
-    !gameData.turn
+    !gameData.turn ||
+    gamePlayers.length <= 1
   ) {
 
-    document.querySelector(
-      ".next-name"
-    ).textContent =
+    nextElement.textContent =
       "-";
 
     return;
@@ -2704,62 +2662,27 @@ function updateNextPlayer() {
 
   const currentIndex =
     Number(
-      gameData.turn.index || 0
+      gameData.turn.index ?? 0
     );
 
 
-  let nextIndex =
+  const nextIndex =
     (
       currentIndex + 1
     ) %
     gamePlayers.length;
 
 
-  let attempts = 0;
+  const nextPlayer =
+    gamePlayers[
+      nextIndex
+    ];
 
 
-  while (
-    attempts <
-    gamePlayers.length
-  ) {
-
-    const nextPlayer =
-      gamePlayers[
-        nextIndex
-      ];
-
-
-    if (
-      nextPlayer &&
-      nextPlayer.hp > 0
-    ) {
-
-      document.querySelector(
-        ".next-name"
-      ).textContent =
-        nextPlayer.name;
-
-      return;
-
-    }
-
-
-    nextIndex =
-      (
-        nextIndex + 1
-      ) %
-      gamePlayers.length;
-
-
-    attempts++;
-
-  }
-
-
-  document.querySelector(
-    ".next-name"
-  ).textContent =
-    "-";
+  nextElement.textContent =
+    nextPlayer
+      ? nextPlayer.name
+      : "-";
 
 }
 
@@ -2780,11 +2703,15 @@ function updateGameHealth() {
   }
 
 
+  const currentId =
+    gameData.turn.current;
+
+
   const currentPlayer =
     gamePlayers.find(
       player =>
         player.id ===
-        gameData.turn.current
+        currentId
     );
 
 
@@ -2799,8 +2726,7 @@ function updateGameHealth() {
     );
 
 
-  healthContainer.innerHTML =
-    "";
+  healthContainer.innerHTML = "";
 
 
   const hp =
@@ -2820,10 +2746,7 @@ function updateGameHealth() {
   ) {
 
     const icon =
-      document.createElement(
-        "i"
-      );
-
+      document.createElement("i");
 
     icon.setAttribute(
       "data-lucide",
@@ -2831,7 +2754,6 @@ function updateGameHealth() {
         ? "zap"
         : "zap-off"
     );
-
 
     if (
       i >= hp
@@ -2842,7 +2764,6 @@ function updateGameHealth() {
       );
 
     }
-
 
     healthContainer.appendChild(
       icon
@@ -2873,7 +2794,7 @@ function updateShotVisibility() {
       "hidden"
     );
 
-    resetShot();
+    disableShotButtons();
 
     return;
 
@@ -2895,6 +2816,25 @@ function updateShotVisibility() {
 
     resetShot();
 
+    return;
+
+  }
+
+
+  if (
+    Number(
+      gameData.shells?.current || 0
+    ) >= shellCount
+  ) {
+
+    shot.classList.add(
+      "hidden"
+    );
+
+    disableShotButtons();
+
+    return;
+
   }
 
 }
@@ -2908,6 +2848,10 @@ shot.addEventListener(
   "click",
   () => {
 
+    if (shootingLocked) {
+      return;
+    }
+
     if (
       !gameData ||
       gameData.phase !==
@@ -2917,7 +2861,6 @@ shot.addEventListener(
       return;
 
     }
-
 
     if (
       !gameData.turn ||
@@ -2929,12 +2872,13 @@ shot.addEventListener(
 
     }
 
+    const shellIndex =
+      Number(
+        gameData.shells?.current || 0
+      );
 
     if (
-      Number(
-        gameData.shells?.current ||
-        0
-      ) >= shellCount
+      shellIndex >= shellCount
     ) {
 
       alert(
@@ -2945,15 +2889,11 @@ shot.addEventListener(
 
     }
 
-
-    shotMode =
-      true;
-
+    shotMode = true;
 
     shot.classList.add(
       "active"
     );
-
 
     enableShotButtons();
 
@@ -2973,9 +2913,7 @@ playerBtn.addEventListener(
       return;
     }
 
-
     renderPlayerPopup();
-
 
     popup.classList.remove(
       "hidden"
@@ -3001,23 +2939,21 @@ selfBtn.addEventListener(
       return;
     }
 
-
-    selectedTarget =
+    const target =
       gamePlayers.find(
         player =>
           player.id ===
           currentPlayerId
       );
 
-
-    if (!selectedTarget) {
+    if (!target) {
       return;
     }
 
+    selectedTarget =
+      target;
 
-    selectedTargetType =
-      "self";
-
+    closeShotPopup();
 
     shoot();
 
@@ -3026,7 +2962,7 @@ selfBtn.addEventListener(
 
 
 /* =========================
-   CLOSE POPUP
+   CLOSE SHOT POPUP
 ========================= */
 
 function closeShotPopup() {
@@ -3055,11 +2991,9 @@ popup.addEventListener(
         ".st-cancel"
       );
 
-
     if (!cancel) {
       return;
     }
-
 
     closeShotPopup();
 
@@ -3091,8 +3025,7 @@ overlay.addEventListener(
 
 function renderPlayerPopup() {
 
-  playerContainer.innerHTML =
-    "";
+  playerContainer.innerHTML = "";
 
 
   gamePlayers.forEach(
@@ -3101,15 +3034,6 @@ function renderPlayerPopup() {
       if (
         player.id ===
         currentPlayerId
-      ) {
-
-        return;
-
-      }
-
-
-      if (
-        player.hp <= 0
       ) {
 
         return;
@@ -3136,9 +3060,7 @@ function renderPlayerPopup() {
       let profileHTML;
 
 
-      if (
-        player.profile
-      ) {
+      if (player.profile) {
 
         profileHTML = `
 
@@ -3215,8 +3137,7 @@ function renderPlayerPopup() {
           color:#777;
         ">
 
-        Tidak ada pemain yang
-        dapat ditembak.
+        Tidak ada pemain lain.
 
       </div>
 
@@ -3240,11 +3161,9 @@ playerContainer.addEventListener(
         ".st-player-btn"
       );
 
-
     if (!button) {
       return;
     }
-
 
     const targetId =
       button.dataset.id;
@@ -3267,12 +3186,7 @@ playerContainer.addEventListener(
       target;
 
 
-    selectedTargetType =
-      "player";
-
-
     closeShotPopup();
-
 
     shoot();
 
@@ -3286,16 +3200,21 @@ playerContainer.addEventListener(
 
 async function shoot() {
 
-  if (!selectedTarget) {
+  if (
+    shootingLocked ||
+    !selectedTarget
+  ) {
+
     return;
+
   }
 
 
   if (
     !gameData ||
-    !gameData.turn ||
     gameData.phase !==
-    "playing"
+    "playing" ||
+    !gameData.turn
   ) {
 
     resetShot();
@@ -3317,6 +3236,9 @@ async function shoot() {
   }
 
 
+  shootingLocked = true;
+
+
   const targetId =
     selectedTarget.id;
 
@@ -3325,15 +3247,26 @@ async function shoot() {
     selectedTarget.name;
 
 
-  let shotResult =
+  let resultShell =
     null;
+
+
+  let resultTarget =
+    targetName;
 
 
   try {
 
+    const roomGameRef =
+      ref(
+        db,
+        "room/game"
+      );
+
+
     const result =
       await runTransaction(
-        ref(db, "room/game"),
+        roomGameRef,
         game => {
 
           if (!game) {
@@ -3395,79 +3328,45 @@ async function shoot() {
           }
 
 
-          const targetPlayer =
-            game.players?.[
-              targetId
-            ];
-
-
-          if (!targetPlayer) {
-            return;
-          }
-
-
-          let targetHp =
-            Number(
-              targetPlayer.hp ?? 3
-            );
+          const players =
+            game.players || {};
 
 
           if (
-            shell === "live"
+            !players[targetId]
           ) {
 
-            targetHp =
-              Math.max(
-                0,
-                targetHp - 1
-              );
+            return;
 
           }
 
 
-          const updatedPlayers =
-            {
-
-              ...game.players,
-
-              [targetId]: {
-
-                ...targetPlayer,
-
-                hp:
-                  targetHp
-
-              }
-
-            };
-
-
-          const orderedIds =
-            Object.keys(
-              updatedPlayers
-            ).sort(
-              (a, b) =>
-                Number(
-                  updatedPlayers[a]
-                    .turnOrder || 0
-                ) -
-                Number(
-                  updatedPlayers[b]
-                    .turnOrder || 0
-                )
-            );
+          const orderedPlayers =
+            Object.entries(
+              players
+            )
+              .sort(
+                ([, a], [, b]) =>
+                  Number(
+                    a.turnOrder ?? 0
+                  ) -
+                  Number(
+                    b.turnOrder ?? 0
+                  )
+              );
 
 
           const currentIndex =
-            orderedIds.findIndex(
-              id =>
+            orderedPlayers.findIndex(
+              ([id]) =>
                 id ===
                 currentPlayerId
             );
 
 
           if (
-            currentIndex === -1
+            currentIndex ===
+            -1
           ) {
 
             return;
@@ -3475,85 +3374,31 @@ async function shoot() {
           }
 
 
-          let nextIndex =
+          const nextIndex =
             (
               currentIndex + 1
             ) %
-            orderedIds.length;
+            orderedPlayers.length;
 
 
-          let attempts = 0;
-
-
-          while (
-            attempts <
-            orderedIds.length
-          ) {
-
-            const nextId =
-              orderedIds[
-                nextIndex
-              ];
-
-
-            if (
-              Number(
-                updatedPlayers[
-                  nextId
-                ].hp || 0
-              ) > 0
-            ) {
-
-              break;
-
-            }
-
-
-            nextIndex =
-              (
-                nextIndex + 1
-              ) %
-              orderedIds.length;
-
-
-            attempts++;
-
-          }
-
-
-          const nextId =
-            orderedIds[
+          const nextPlayer =
+            orderedPlayers[
               nextIndex
             ];
 
 
-          shotResult = {
+          if (!nextPlayer) {
+            return;
+          }
 
-            shell:
-              shell,
 
-            target:
-              targetName
-
-          };
+          resultShell =
+            shell;
 
 
           return {
 
             ...game,
-
-            players:
-              updatedPlayers,
-
-            turn: {
-
-              current:
-                nextId,
-
-              index:
-                nextIndex
-
-            },
 
             shells: {
 
@@ -3561,6 +3406,16 @@ async function shoot() {
 
               current:
                 shellIndex + 1
+
+            },
+
+            turn: {
+
+              current:
+                nextPlayer[0],
+
+              index:
+                nextIndex
 
             }
 
@@ -3585,9 +3440,11 @@ async function shoot() {
     }
 
 
+    closeShotPopup();
+
+
     if (
-      shotResult &&
-      shotResult.shell ===
+      resultShell ===
       "live"
     ) {
 
@@ -3595,7 +3452,7 @@ async function shoot() {
 
         "💥 LIVE!\n\n" +
         "Target: " +
-        shotResult.target
+        resultTarget
 
       );
 
@@ -3605,7 +3462,7 @@ async function shoot() {
 
         "BLANK!\n\n" +
         "Target: " +
-        shotResult.target
+        resultTarget
 
       );
 
@@ -3614,16 +3471,22 @@ async function shoot() {
 
   } catch (error) {
 
-    console.error(error);
+    console.error(
+      "Shoot error:",
+      error
+    );
 
     alert(
       "Gagal melakukan shot."
     );
 
+  } finally {
+
+    resetShot();
+
+    shootingLocked = false;
+
   }
-
-
-  resetShot();
 
 }
 
@@ -3662,22 +3525,17 @@ function disableShotButtons() {
    RESET SHOT
 ========================= */
 
-function resetShot() {
+function resetShot(
+  hideShotMode = true
+) {
 
-  shotMode =
-    false;
+  shotMode = false;
 
-  selectedTarget =
-    null;
-
-  selectedTargetType =
-    null;
-
+  selectedTarget = null;
 
   shot.classList.remove(
     "active"
   );
-
 
   disableShotButtons();
 
@@ -3685,7 +3543,7 @@ function resetShot() {
 
 
 /* =========================
-   CLICK OUTSIDE SHOT
+   CLICK OUTSIDE
 ========================= */
 
 document.addEventListener(
