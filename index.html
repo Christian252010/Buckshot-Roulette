@@ -738,7 +738,6 @@ body {
 
       </div>
 
-
       <div class="list">
 
         <i data-lucide="list"></i>
@@ -759,7 +758,6 @@ body {
         <span class="game-current-name">
           Christian
         </span>
-
 
         <div class="healt">
 
@@ -813,7 +811,7 @@ body {
   </div>
 
 
-  <div class="shot">
+  <div class="shot hidden">
 
     <img
       src="shot.png"
@@ -898,7 +896,7 @@ import {
 const firebaseConfig = {
 
   apiKey:
-    "AIzaSyBQmI-9ESAqE5AFy49hIyP0rhul9gIlkc",
+    "AIzaSyBQyI-9ESAqE5AFy49hIyP0rhul9gIlkc",
 
   authDomain:
     "buckshotroulette-4c7a1.firebaseapp.com",
@@ -943,6 +941,10 @@ let roomData = null;
 
 let gameData = null;
 
+let gameWatcherStarted = false;
+
+let preparationRunning = false;
+
 
 /* =========================
    GAME STATE
@@ -962,10 +964,6 @@ let selectedTargetType = null;
 ========================= */
 
 const shellCount = 8;
-
-let shells = [];
-
-let currentShell = 0;
 
 
 /* =========================
@@ -1964,13 +1962,13 @@ function createGameState(
     shuffleArray(playerIds);
 
 
-  const gamePlayersData = {};
+  const players = {};
 
 
   shuffledPlayers.forEach(
     (playerId, index) => {
 
-      gamePlayersData[playerId] = {
+      players[playerId] = {
 
         hp: 3,
 
@@ -1992,7 +1990,7 @@ function createGameState(
     shellCount - alive;
 
 
-  const shellData = [];
+  const shells = [];
 
 
   for (
@@ -2001,7 +1999,7 @@ function createGameState(
     i++
   ) {
 
-    shellData.push(
+    shells.push(
       "live"
     );
 
@@ -2014,7 +2012,7 @@ function createGameState(
     i++
   ) {
 
-    shellData.push(
+    shells.push(
       "blank"
     );
 
@@ -2022,13 +2020,16 @@ function createGameState(
 
 
   const shuffledShells =
-    shuffleArray(shellData);
+    shuffleArray(shells);
 
 
   return {
 
+    phase:
+      "preparing",
+
     players:
-      gamePlayersData,
+      players,
 
     turn: {
 
@@ -2041,13 +2042,17 @@ function createGameState(
 
     shells: {
 
-      total: 8,
+      total:
+        shellCount,
 
-      alive: alive,
+      alive:
+        alive,
 
-      blank: blank,
+      blank:
+        blank,
 
-      current: 0,
+      current:
+        0,
 
       sequence:
         shuffledShells
@@ -2080,22 +2085,83 @@ startBtn.addEventListener(
 
     try {
 
-      const roomRef =
-        ref(db, "room");
+      const snapshot =
+        await get(
+          ref(db, "room")
+        );
+
+
+      if (!snapshot.exists()) {
+        return;
+      }
+
+
+      const room =
+        snapshot.val();
+
+
+      if (
+        room.status ===
+        "playing"
+      ) {
+
+        return;
+
+      }
+
+
+      const players =
+        room.players || {};
+
+
+      const playerIds =
+        Object.keys(players);
+
+
+      if (
+        playerIds.length < 2
+      ) {
+
+        roomMessage.textContent =
+          "Minimal 2 pemain untuk memulai.";
+
+        return;
+
+      }
+
+
+      if (
+        !players[
+          currentPlayerId
+        ]
+      ) {
+
+        roomMessage.textContent =
+          "Kamu bukan pemain room.";
+
+        return;
+
+      }
+
+
+      const gameState =
+        createGameState(
+          playerIds
+        );
 
 
       const result =
         await runTransaction(
-          roomRef,
-          room => {
+          ref(db, "room"),
+          currentRoom => {
 
-            if (!room) {
+            if (!currentRoom) {
               return;
             }
 
 
             if (
-              room.status ===
+              currentRoom.status ===
               "playing"
             ) {
 
@@ -2104,16 +2170,19 @@ startBtn.addEventListener(
             }
 
 
-            const players =
-              room.players || {};
+            const currentPlayers =
+              currentRoom.players ||
+              {};
 
 
-            const playerIds =
-              Object.keys(players);
+            const currentIds =
+              Object.keys(
+                currentPlayers
+              );
 
 
             if (
-              playerIds.length < 2
+              currentIds.length < 2
             ) {
 
               return;
@@ -2121,32 +2190,21 @@ startBtn.addEventListener(
             }
 
 
-            if (
-              !players[
-                currentPlayerId
-              ]
-            ) {
-
-              return;
-
-            }
-
-
-            const gameState =
+            const finalGame =
               createGameState(
-                playerIds
+                currentIds
               );
 
 
             return {
 
-              ...room,
+              ...currentRoom,
 
               status:
                 "playing",
 
               game:
-                gameState
+                finalGame
 
             };
 
@@ -2154,38 +2212,12 @@ startBtn.addEventListener(
         );
 
 
-      if (!result.committed) {
+      if (
+        result.committed
+      ) {
 
-        const snapshot =
-          await get(
-            ref(db, "room")
-          );
-
-
-        if (
-          snapshot.exists() &&
-          snapshot.val().status ===
-          "lobby"
-        ) {
-
-          const players =
-            snapshot.val().players ||
-            {};
-
-
-          if (
-            Object.keys(players).length <
-            2
-          ) {
-
-            roomMessage.textContent =
-              "Minimal 2 pemain untuk memulai.";
-
-          }
-
-        }
-
-        return;
+        roomMessage.textContent =
+          "Game dimulai.";
 
       }
 
@@ -2211,16 +2243,19 @@ startBtn.addEventListener(
    WATCH GAME
 ========================= */
 
-let gameWatcherStarted = false;
-
 function watchGame() {
 
-  if (gameWatcherStarted) {
+  if (
+    gameWatcherStarted
+  ) {
+
     return;
+
   }
 
 
-  gameWatcherStarted = true;
+  gameWatcherStarted =
+    true;
 
 
   onValue(
@@ -2271,6 +2306,101 @@ async function enterGame() {
 
   await renderGameState();
 
+
+  if (
+    gameData &&
+    gameData.phase ===
+    "preparing"
+  ) {
+
+    startPreparation();
+
+  }
+
+}
+
+
+/* =========================
+   PREPARATION
+========================= */
+
+function startPreparation() {
+
+  if (
+    preparationRunning
+  ) {
+
+    return;
+
+  }
+
+
+  preparationRunning =
+    true;
+
+
+  shot.classList.add(
+    "hidden"
+  );
+
+
+  disableShotButtons();
+
+
+  setTimeout(
+    async () => {
+
+      try {
+
+        await runTransaction(
+          ref(
+            db,
+            "room/game"
+          ),
+          game => {
+
+            if (!game) {
+              return;
+            }
+
+
+            if (
+              game.phase !==
+              "preparing"
+            ) {
+
+              return;
+
+            }
+
+
+            return {
+
+              ...game,
+
+              phase:
+                "playing"
+
+            };
+
+          }
+        );
+
+      } catch (error) {
+
+        console.error(error);
+
+      } finally {
+
+        preparationRunning =
+          false;
+
+      }
+
+    },
+    3000
+  );
+
 }
 
 
@@ -2302,8 +2432,12 @@ async function loadGamePlayers() {
       playerData
     ).sort(
       ([, a], [, b]) =>
-        (a.turnOrder || 0) -
-        (b.turnOrder || 0)
+        Number(
+          a.turnOrder || 0
+        ) -
+        Number(
+          b.turnOrder || 0
+        )
     );
 
 
@@ -2375,12 +2509,8 @@ async function loadGamePlayers() {
 
 async function renderGameState() {
 
-  if (
-    !gameData
-  ) {
-
+  if (!gameData) {
     return;
-
   }
 
 
@@ -2407,6 +2537,16 @@ async function renderGameState() {
 
   updateShotVisibility();
 
+
+  if (
+    gameData.phase ===
+    "preparing"
+  ) {
+
+    startPreparation();
+
+  }
+
 }
 
 
@@ -2416,15 +2556,24 @@ async function renderGameState() {
 
 function renderShellInfo() {
 
+  if (
+    !gameData.shells
+  ) {
+
+    return;
+
+  }
+
+
   const alive =
     Number(
-      gameData.shells?.alive || 0
+      gameData.shells.alive || 0
     );
 
 
   const blank =
     Number(
-      gameData.shells?.blank || 0
+      gameData.shells.blank || 0
     );
 
 
@@ -2436,7 +2585,8 @@ function renderShellInfo() {
     "Blank : " + blank;
 
 
-  shellContainer.innerHTML = "";
+  shellContainer.innerHTML =
+    "";
 
 
   for (
@@ -2446,7 +2596,9 @@ function renderShellInfo() {
   ) {
 
     const icon =
-      document.createElement("i");
+      document.createElement(
+        "i"
+      );
 
 
     icon.setAttribute(
@@ -2505,22 +2657,12 @@ function updateCurrentTurn() {
     );
 
 
-  if (!currentPlayer) {
-
-    document.querySelector(
-      ".game-current-name"
-    ).textContent =
-      "-";
-
-    return;
-
-  }
-
-
   document.querySelector(
     ".game-current-name"
   ).textContent =
-    currentPlayer.name;
+    currentPlayer
+      ? currentPlayer.name
+      : "-";
 
 }
 
@@ -2566,25 +2708,58 @@ function updateNextPlayer() {
     );
 
 
-  const nextIndex =
+  let nextIndex =
     (
       currentIndex + 1
     ) %
     gamePlayers.length;
 
 
-  const nextPlayer =
-    gamePlayers[
-      nextIndex
-    ];
+  let attempts = 0;
+
+
+  while (
+    attempts <
+    gamePlayers.length
+  ) {
+
+    const nextPlayer =
+      gamePlayers[
+        nextIndex
+      ];
+
+
+    if (
+      nextPlayer &&
+      nextPlayer.hp > 0
+    ) {
+
+      document.querySelector(
+        ".next-name"
+      ).textContent =
+        nextPlayer.name;
+
+      return;
+
+    }
+
+
+    nextIndex =
+      (
+        nextIndex + 1
+      ) %
+      gamePlayers.length;
+
+
+    attempts++;
+
+  }
 
 
   document.querySelector(
     ".next-name"
   ).textContent =
-    nextPlayer
-      ? nextPlayer.name
-      : "-";
+    "-";
 
 }
 
@@ -2605,15 +2780,11 @@ function updateGameHealth() {
   }
 
 
-  const currentId =
-    gameData.turn.current;
-
-
   const currentPlayer =
     gamePlayers.find(
       player =>
         player.id ===
-        currentId
+        gameData.turn.current
     );
 
 
@@ -2628,7 +2799,8 @@ function updateGameHealth() {
     );
 
 
-  healthContainer.innerHTML = "";
+  healthContainer.innerHTML =
+    "";
 
 
   const hp =
@@ -2648,7 +2820,9 @@ function updateGameHealth() {
   ) {
 
     const icon =
-      document.createElement("i");
+      document.createElement(
+        "i"
+      );
 
 
     icon.setAttribute(
@@ -2690,12 +2864,16 @@ function updateShotVisibility() {
 
   if (
     !gameData ||
+    gameData.phase !==
+    "playing" ||
     !gameData.turn
   ) {
 
     shot.classList.add(
       "hidden"
     );
+
+    resetShot();
 
     return;
 
@@ -2732,7 +2910,8 @@ shot.addEventListener(
 
     if (
       !gameData ||
-      !gameData.turn
+      gameData.phase !==
+      "playing"
     ) {
 
       return;
@@ -2741,6 +2920,7 @@ shot.addEventListener(
 
 
     if (
+      !gameData.turn ||
       gameData.turn.current !==
       currentPlayerId
     ) {
@@ -2751,17 +2931,9 @@ shot.addEventListener(
 
 
     if (
-      !gameData.shells
-    ) {
-
-      return;
-
-    }
-
-
-    if (
       Number(
-        gameData.shells.current || 0
+        gameData.shells?.current ||
+        0
       ) >= shellCount
     ) {
 
@@ -2774,22 +2946,14 @@ shot.addEventListener(
     }
 
 
-    if (
-      !popup.classList.contains(
-        "hidden"
-      )
-    ) {
+    shotMode =
+      true;
 
-      return;
-
-    }
-
-
-    shotMode = true;
 
     shot.classList.add(
       "active"
     );
+
 
     enableShotButtons();
 
@@ -2927,7 +3091,8 @@ overlay.addEventListener(
 
 function renderPlayerPopup() {
 
-  playerContainer.innerHTML = "";
+  playerContainer.innerHTML =
+    "";
 
 
   gamePlayers.forEach(
@@ -2971,7 +3136,9 @@ function renderPlayerPopup() {
       let profileHTML;
 
 
-      if (player.profile) {
+      if (
+        player.profile
+      ) {
 
         profileHTML = `
 
@@ -3086,7 +3253,8 @@ playerContainer.addEventListener(
     const target =
       gamePlayers.find(
         player =>
-          player.id === targetId
+          player.id ===
+          targetId
       );
 
 
@@ -3097,6 +3265,7 @@ playerContainer.addEventListener(
 
     selectedTarget =
       target;
+
 
     selectedTargetType =
       "player";
@@ -3124,7 +3293,9 @@ async function shoot() {
 
   if (
     !gameData ||
-    !gameData.turn
+    !gameData.turn ||
+    gameData.phase !==
+    "playing"
   ) {
 
     resetShot();
@@ -3146,18 +3317,23 @@ async function shoot() {
   }
 
 
+  const targetId =
+    selectedTarget.id;
+
+
+  const targetName =
+    selectedTarget.name;
+
+
+  let shotResult =
+    null;
+
+
   try {
-
-    const roomGameRef =
-      ref(
-        db,
-        "room/game"
-      );
-
 
     const result =
       await runTransaction(
-        roomGameRef,
+        ref(db, "room/game"),
         game => {
 
           if (!game) {
@@ -3165,12 +3341,18 @@ async function shoot() {
           }
 
 
-          if (!game.turn) {
+          if (
+            game.phase !==
+            "playing"
+          ) {
+
             return;
+
           }
 
 
           if (
+            !game.turn ||
             game.turn.current !==
             currentPlayerId
           ) {
@@ -3213,10 +3395,6 @@ async function shoot() {
           }
 
 
-          const targetId =
-            selectedTarget.id;
-
-
           const targetPlayer =
             game.players?.[
               targetId
@@ -3228,7 +3406,7 @@ async function shoot() {
           }
 
 
-          let newHp =
+          let targetHp =
             Number(
               targetPlayer.hp ?? 3
             );
@@ -3238,10 +3416,10 @@ async function shoot() {
             shell === "live"
           ) {
 
-            newHp =
+            targetHp =
               Math.max(
                 0,
-                newHp - 1
+                targetHp - 1
               );
 
           }
@@ -3249,27 +3427,25 @@ async function shoot() {
 
           const updatedPlayers =
             {
+
               ...game.players,
 
               [targetId]: {
 
                 ...targetPlayer,
 
-                hp: newHp
+                hp:
+                  targetHp
 
               }
 
             };
 
 
-          const playerIds =
+          const orderedIds =
             Object.keys(
               updatedPlayers
-            );
-
-
-          const sortedPlayers =
-            playerIds.sort(
+            ).sort(
               (a, b) =>
                 Number(
                   updatedPlayers[a]
@@ -3283,18 +3459,27 @@ async function shoot() {
 
 
           const currentIndex =
-            sortedPlayers.findIndex(
+            orderedIds.findIndex(
               id =>
                 id ===
                 currentPlayerId
             );
 
 
+          if (
+            currentIndex === -1
+          ) {
+
+            return;
+
+          }
+
+
           let nextIndex =
             (
               currentIndex + 1
             ) %
-            sortedPlayers.length;
+            orderedIds.length;
 
 
           let attempts = 0;
@@ -3302,11 +3487,11 @@ async function shoot() {
 
           while (
             attempts <
-            sortedPlayers.length
+            orderedIds.length
           ) {
 
             const nextId =
-              sortedPlayers[
+              orderedIds[
                 nextIndex
               ];
 
@@ -3328,17 +3513,29 @@ async function shoot() {
               (
                 nextIndex + 1
               ) %
-              sortedPlayers.length;
+              orderedIds.length;
+
 
             attempts++;
 
           }
 
 
-          const nextPlayerId =
-            sortedPlayers[
+          const nextId =
+            orderedIds[
               nextIndex
             ];
+
+
+          shotResult = {
+
+            shell:
+              shell,
+
+            target:
+              targetName
+
+          };
 
 
           return {
@@ -3351,7 +3548,7 @@ async function shoot() {
             turn: {
 
               current:
-                nextPlayerId,
+                nextId,
 
               index:
                 nextIndex
@@ -3373,7 +3570,9 @@ async function shoot() {
       );
 
 
-    if (!result.committed) {
+    if (
+      !result.committed
+    ) {
 
       alert(
         "Aksi tidak dapat dilakukan."
@@ -3386,32 +3585,17 @@ async function shoot() {
     }
 
 
-    const shellIndex =
-      Number(
-        gameData.shells?.current ||
-        0
-      );
-
-
-    const shell =
-      gameData.shells?.sequence?.[
-        shellIndex
-      ];
-
-
-    const targetName =
-      selectedTarget.name;
-
-
     if (
-      shell === "live"
+      shotResult &&
+      shotResult.shell ===
+      "live"
     ) {
 
       alert(
 
         "💥 LIVE!\n\n" +
         "Target: " +
-        targetName
+        shotResult.target
 
       );
 
@@ -3421,7 +3605,7 @@ async function shoot() {
 
         "BLANK!\n\n" +
         "Target: " +
-        targetName
+        shotResult.target
 
       );
 
@@ -3450,9 +3634,11 @@ async function shoot() {
 
 function enableShotButtons() {
 
-  playerBtn.disabled = false;
+  playerBtn.disabled =
+    false;
 
-  selfBtn.disabled = false;
+  selfBtn.disabled =
+    false;
 
 }
 
@@ -3463,9 +3649,11 @@ function enableShotButtons() {
 
 function disableShotButtons() {
 
-  playerBtn.disabled = true;
+  playerBtn.disabled =
+    true;
 
-  selfBtn.disabled = true;
+  selfBtn.disabled =
+    true;
 
 }
 
@@ -3476,11 +3664,14 @@ function disableShotButtons() {
 
 function resetShot() {
 
-  shotMode = false;
+  shotMode =
+    false;
 
-  selectedTarget = null;
+  selectedTarget =
+    null;
 
-  selectedTargetType = null;
+  selectedTargetType =
+    null;
 
 
   shot.classList.remove(
