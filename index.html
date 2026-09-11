@@ -347,7 +347,6 @@ body {
   width: calc(100% - 24px);
   justify-content: center;
   top: 50%;
-  left: 12px;
   transform: translateY(-50%);
   padding: 12px;
   background: #2a2a2a;
@@ -362,7 +361,6 @@ body {
 .shell-info {
   display: flex;
   justify-content: space-around;
-  gap: 20px;
   border-top: 1.5px solid #666;
   padding-top: 10px;
   font-weight: bold;
@@ -380,7 +378,7 @@ body {
   rotate: 180deg;
 }
 
-.random-shell svg.blank {
+.blank {
   color: #888 !important;
 }
 
@@ -610,7 +608,6 @@ body {
       Buckshot Roulette
     </div>
 
-
     <label class="login-label">
       Nama
     </label>
@@ -620,7 +617,6 @@ body {
       class="login-input login-name"
       placeholder="Masukkan nama"
       maxlength="30">
-
 
     <label class="login-label">
 
@@ -637,11 +633,9 @@ body {
       class="login-input login-profile"
       placeholder="https://...">
 
-
     <button class="login-btn">
       Masuk
     </button>
-
 
     <div class="login-message"></div>
 
@@ -669,7 +663,6 @@ body {
       </div>
 
     </div>
-
 
     <div class="list">
 
@@ -718,9 +711,7 @@ body {
   <div class="room-message"></div>
 
 
-  <div class="join-list">
-
-  </div>
+  <div class="join-list"></div>
 
 </div>
 
@@ -801,33 +792,19 @@ body {
   </div>
 
 
-  <!-- =========================
-       RANDOM SHELL DISPLAY
-  ========================= -->
+  <!-- RANDOM SHELL -->
 
   <div class="random-shell">
 
-    <div class="shell">
-
-      <i data-lucide="test-tube"></i>
-      <i data-lucide="test-tube"></i>
-      <i data-lucide="test-tube"></i>
-      <i data-lucide="test-tube"></i>
-      <i data-lucide="test-tube"></i>
-      <i data-lucide="test-tube"></i>
-      <i data-lucide="test-tube"></i>
-      <i data-lucide="test-tube"></i>
-
-    </div>
-
+    <div class="shell"></div>
 
     <div class="shell-info">
 
-      <span>
+      <span class="alive-count">
         Alive : 0
       </span>
 
-      <span>
+      <span class="blank-count">
         Blank : 0
       </span>
 
@@ -964,6 +941,8 @@ let currentPlayer = null;
 
 let roomData = null;
 
+let gameData = null;
+
 
 /* =========================
    GAME STATE
@@ -1057,22 +1036,14 @@ const playerContainer =
   document.querySelector(".st-players");
 
 
-/* =========================
-   SHELL ELEMENT
-========================= */
-
 const shellContainer =
   document.querySelector(".shell");
 
-const aliveInfo =
-  document.querySelector(
-    ".shell-info span:nth-child(1)"
-  );
+const aliveCount =
+  document.querySelector(".alive-count");
 
-const blankInfo =
-  document.querySelector(
-    ".shell-info span:nth-child(2)"
-  );
+const blankCount =
+  document.querySelector(".blank-count");
 
 
 /* =========================
@@ -1421,7 +1392,7 @@ function updateHeader() {
 
   document
     .querySelectorAll(
-      ".header-name, .game-name, .game-current-name"
+      ".header-name, .game-name"
     )
     .forEach(element => {
 
@@ -1944,6 +1915,154 @@ leftBtn.addEventListener(
 
 
 /* =========================
+   SHUFFLE ARRAY
+========================= */
+
+function shuffleArray(array) {
+
+  const result =
+    [...array];
+
+
+  for (
+    let i = result.length - 1;
+    i > 0;
+    i--
+  ) {
+
+    const j =
+      Math.floor(
+        Math.random() * (i + 1)
+      );
+
+
+    [
+      result[i],
+      result[j]
+    ] = [
+      result[j],
+      result[i]
+    ];
+
+  }
+
+
+  return result;
+
+}
+
+
+/* =========================
+   CREATE GAME STATE
+========================= */
+
+function createGameState(
+  playerIds
+) {
+
+  const shuffledPlayers =
+    shuffleArray(playerIds);
+
+
+  const gamePlayersData = {};
+
+
+  shuffledPlayers.forEach(
+    (playerId, index) => {
+
+      gamePlayersData[playerId] = {
+
+        hp: 3,
+
+        turnOrder: index
+
+      };
+
+    }
+  );
+
+
+  const alive =
+    Math.floor(
+      Math.random() * 7
+    ) + 1;
+
+
+  const blank =
+    shellCount - alive;
+
+
+  const shellData = [];
+
+
+  for (
+    let i = 0;
+    i < alive;
+    i++
+  ) {
+
+    shellData.push(
+      "live"
+    );
+
+  }
+
+
+  for (
+    let i = 0;
+    i < blank;
+    i++
+  ) {
+
+    shellData.push(
+      "blank"
+    );
+
+  }
+
+
+  const shuffledShells =
+    shuffleArray(shellData);
+
+
+  return {
+
+    players:
+      gamePlayersData,
+
+    turn: {
+
+      current:
+        shuffledPlayers[0],
+
+      index: 0
+
+    },
+
+    shells: {
+
+      total: 8,
+
+      alive: alive,
+
+      blank: blank,
+
+      current: 0,
+
+      sequence:
+        shuffledShells
+
+    },
+
+    startedAt:
+      Date.now()
+
+  };
+
+}
+
+
+/* =========================
    START GAME
 ========================= */
 
@@ -1951,64 +2070,124 @@ startBtn.addEventListener(
   "click",
   async () => {
 
+    if (!currentPlayerId) {
+      return;
+    }
+
+
+    startBtn.disabled = true;
+
+
     try {
 
-      const snapshot =
-        await get(
-          ref(db, "room")
+      const roomRef =
+        ref(db, "room");
+
+
+      const result =
+        await runTransaction(
+          roomRef,
+          room => {
+
+            if (!room) {
+              return;
+            }
+
+
+            if (
+              room.status ===
+              "playing"
+            ) {
+
+              return;
+
+            }
+
+
+            const players =
+              room.players || {};
+
+
+            const playerIds =
+              Object.keys(players);
+
+
+            if (
+              playerIds.length < 2
+            ) {
+
+              return;
+
+            }
+
+
+            if (
+              !players[
+                currentPlayerId
+              ]
+            ) {
+
+              return;
+
+            }
+
+
+            const gameState =
+              createGameState(
+                playerIds
+              );
+
+
+            return {
+
+              ...room,
+
+              status:
+                "playing",
+
+              game:
+                gameState
+
+            };
+
+          }
         );
 
 
-      if (!snapshot.exists()) {
-        return;
-      }
+      if (!result.committed) {
+
+        const snapshot =
+          await get(
+            ref(db, "room")
+          );
 
 
-      const room =
-        snapshot.val();
+        if (
+          snapshot.exists() &&
+          snapshot.val().status ===
+          "lobby"
+        ) {
+
+          const players =
+            snapshot.val().players ||
+            {};
 
 
-      if (room.status === "playing") {
-        return;
-      }
+          if (
+            Object.keys(players).length <
+            2
+          ) {
 
+            roomMessage.textContent =
+              "Minimal 2 pemain untuk memulai.";
 
-      const players =
-        room.players || {};
+          }
 
-
-      const playerIds =
-        Object.keys(players);
-
-
-      if (
-        playerIds.length < 2
-      ) {
-
-        roomMessage.textContent =
-          "Minimal 2 pemain untuk memulai.";
-
-        return;
-
-      }
-
-
-      if (
-        !players[currentPlayerId]
-      ) {
-
-        roomMessage.textContent =
-          "Kamu bukan pemain room.";
+        }
 
         return;
 
       }
-
-
-      await set(
-        ref(db, "room/status"),
-        "playing"
-      );
 
 
     } catch (error) {
@@ -2018,10 +2197,55 @@ startBtn.addEventListener(
       roomMessage.textContent =
         "Gagal memulai game.";
 
+    } finally {
+
+      startBtn.disabled = false;
+
     }
 
   }
 );
+
+
+/* =========================
+   WATCH GAME
+========================= */
+
+let gameWatcherStarted = false;
+
+function watchGame() {
+
+  if (gameWatcherStarted) {
+    return;
+  }
+
+
+  gameWatcherStarted = true;
+
+
+  onValue(
+    ref(db, "room/game"),
+    async snapshot => {
+
+      if (
+        !snapshot.exists()
+      ) {
+
+        return;
+
+      }
+
+
+      gameData =
+        snapshot.val();
+
+
+      await renderGameState();
+
+    }
+  );
+
+}
 
 
 /* =========================
@@ -2039,25 +2263,13 @@ async function enterGame() {
   );
 
 
-  await loadGamePlayers();
-
-
-  generateShells();
-
-
   updateHeader();
 
 
-  document.querySelector(
-    ".game-online"
-  ).textContent =
-    gamePlayers.length;
+  watchGame();
 
 
-  updateNextPlayer();
-
-
-  resetShot();
+  await renderGameState();
 
 }
 
@@ -2071,34 +2283,54 @@ async function loadGamePlayers() {
   gamePlayers = [];
 
 
-  if (!roomData) {
+  if (
+    !gameData ||
+    !gameData.players
+  ) {
+
     return;
+
   }
 
 
-  const roomPlayers =
-    roomData.players || {};
+  const playerData =
+    gameData.players;
 
 
-  const playerIds =
-    Object.keys(roomPlayers);
+  const sortedPlayers =
+    Object.entries(
+      playerData
+    ).sort(
+      ([, a], [, b]) =>
+        (a.turnOrder || 0) -
+        (b.turnOrder || 0)
+    );
 
 
   for (
-    const playerId of playerIds
+    const [
+      playerId,
+      gamePlayer
+    ]
+    of sortedPlayers
   ) {
 
     const snapshot =
       await get(
         ref(
           db,
-          "players/" + playerId
+          "players/" +
+          playerId
         )
       );
 
 
-    if (!snapshot.exists()) {
+    if (
+      !snapshot.exists()
+    ) {
+
       continue;
+
     }
 
 
@@ -2108,7 +2340,8 @@ async function loadGamePlayers() {
 
     gamePlayers.push({
 
-      id: playerId,
+      id:
+        playerId,
 
       name:
         player.name ||
@@ -2118,7 +2351,16 @@ async function loadGamePlayers() {
         player.profile ||
         "",
 
-      hp: 3
+      hp:
+        Number(
+          gamePlayer.hp ?? 3
+        ),
+
+      turnOrder:
+        Number(
+          gamePlayer.turnOrder ??
+          0
+        )
 
     });
 
@@ -2128,22 +2370,189 @@ async function loadGamePlayers() {
 
 
 /* =========================
-   UPDATE NEXT PLAYER
+   RENDER GAME STATE
+========================= */
+
+async function renderGameState() {
+
+  if (
+    !gameData
+  ) {
+
+    return;
+
+  }
+
+
+  await loadGamePlayers();
+
+
+  renderShellInfo();
+
+
+  document.querySelector(
+    ".game-online"
+  ).textContent =
+    gamePlayers.length;
+
+
+  updateCurrentTurn();
+
+
+  updateGameHealth();
+
+
+  updateNextPlayer();
+
+
+  updateShotVisibility();
+
+}
+
+
+/* =========================
+   RENDER SHELL INFO
+========================= */
+
+function renderShellInfo() {
+
+  const alive =
+    Number(
+      gameData.shells?.alive || 0
+    );
+
+
+  const blank =
+    Number(
+      gameData.shells?.blank || 0
+    );
+
+
+  aliveCount.textContent =
+    "Alive : " + alive;
+
+
+  blankCount.textContent =
+    "Blank : " + blank;
+
+
+  shellContainer.innerHTML = "";
+
+
+  for (
+    let i = 0;
+    i < shellCount;
+    i++
+  ) {
+
+    const icon =
+      document.createElement("i");
+
+
+    icon.setAttribute(
+      "data-lucide",
+      "test-tube"
+    );
+
+
+    if (
+      i >= alive
+    ) {
+
+      icon.classList.add(
+        "blank"
+      );
+
+    }
+
+
+    shellContainer.appendChild(
+      icon
+    );
+
+  }
+
+
+  lucide.createIcons();
+
+}
+
+
+/* =========================
+   CURRENT TURN
+========================= */
+
+function updateCurrentTurn() {
+
+  if (
+    !gameData.turn
+  ) {
+
+    return;
+
+  }
+
+
+  const currentId =
+    gameData.turn.current;
+
+
+  const currentPlayer =
+    gamePlayers.find(
+      player =>
+        player.id ===
+        currentId
+    );
+
+
+  if (!currentPlayer) {
+
+    document.querySelector(
+      ".game-current-name"
+    ).textContent =
+      "-";
+
+    return;
+
+  }
+
+
+  document.querySelector(
+    ".game-current-name"
+  ).textContent =
+    currentPlayer.name;
+
+}
+
+
+/* =========================
+   NEXT PLAYER
 ========================= */
 
 function updateNextPlayer() {
-
-  const nextName =
-    document.querySelector(
-      ".next-name"
-    );
-
 
   if (
     gamePlayers.length <= 1
   ) {
 
-    nextName.textContent =
+    document.querySelector(
+      ".next-name"
+    ).textContent =
+      "-";
+
+    return;
+
+  }
+
+
+  if (
+    !gameData ||
+    !gameData.turn
+  ) {
+
+    document.querySelector(
+      ".next-name"
+    ).textContent =
       "-";
 
     return;
@@ -2152,21 +2561,9 @@ function updateNextPlayer() {
 
 
   const currentIndex =
-    gamePlayers.findIndex(
-      player =>
-        player.id ===
-        currentPlayerId
+    Number(
+      gameData.turn.index || 0
     );
-
-
-  if (currentIndex === -1) {
-
-    nextName.textContent =
-      "-";
-
-    return;
-
-  }
 
 
   const nextIndex =
@@ -2176,176 +2573,151 @@ function updateNextPlayer() {
     gamePlayers.length;
 
 
-  nextName.textContent =
+  const nextPlayer =
     gamePlayers[
       nextIndex
-    ].name;
-
-}
-
-
-/* =========================
-   GENERATE SHELLS
-========================= */
-
-function generateShells() {
-
-  shells = [];
-
-  currentShell = 0;
-
-
-  /*
-    Jumlah Alive dibuat random
-    dari 2 sampai 6.
-
-    Total shell selalu 8.
-  */
-
-  const aliveCount =
-    Math.floor(
-      Math.random() * 5
-    ) + 2;
-
-
-  const blankCount =
-    shellCount - aliveCount;
-
-
-  for (
-    let i = 0;
-    i < aliveCount;
-    i++
-  ) {
-
-    shells.push("live");
-
-  }
-
-
-  for (
-    let i = 0;
-    i < blankCount;
-    i++
-  ) {
-
-    shells.push("blank");
-
-  }
-
-
-  /*
-    Acak posisi shell.
-  */
-
-  for (
-    let i = shells.length - 1;
-    i > 0;
-    i--
-  ) {
-
-    const randomIndex =
-      Math.floor(
-        Math.random() * (i + 1)
-      );
-
-
-    [
-      shells[i],
-      shells[randomIndex]
-    ] = [
-      shells[randomIndex],
-      shells[i]
     ];
 
-  }
 
-
-  updateShellDisplay();
-
-
-  console.log(
-    "Jumlah Alive:",
-    aliveCount
-  );
-
-  console.log(
-    "Jumlah Blank:",
-    blankCount
-  );
-
-  console.log(
-    "Urutan shell:",
-    shells
-  );
+  document.querySelector(
+    ".next-name"
+  ).textContent =
+    nextPlayer
+      ? nextPlayer.name
+      : "-";
 
 }
 
 
 /* =========================
-   UPDATE SHELL DISPLAY
+   GAME HEALTH
 ========================= */
 
-function updateShellDisplay() {
+function updateGameHealth() {
 
-  const aliveCount =
-    shells.filter(
-      shell =>
-        shell === "live"
-    ).length;
+  if (
+    !gameData ||
+    !gameData.turn
+  ) {
 
+    return;
 
-  const blankCount =
-    shells.filter(
-      shell =>
-        shell === "blank"
-    ).length;
+  }
 
 
-  aliveInfo.textContent =
-    "Alive : " + aliveCount;
+  const currentId =
+    gameData.turn.current;
 
 
-  blankInfo.textContent =
-    "Blank : " + blankCount;
+  const currentPlayer =
+    gamePlayers.find(
+      player =>
+        player.id ===
+        currentId
+    );
 
 
-  shellContainer.innerHTML = "";
+  if (!currentPlayer) {
+    return;
+  }
 
 
-  shells.forEach(
-    shellType => {
-
-      const icon =
-        document.createElement("i");
-
-
-      icon.setAttribute(
-        "data-lucide",
-        "test-tube"
-      );
+  const healthContainer =
+    document.querySelector(
+      ".healt"
+    );
 
 
-      if (
-        shellType === "blank"
-      ) {
-
-        icon.classList.add(
-          "blank"
-        );
-
-      }
+  healthContainer.innerHTML = "";
 
 
-      shellContainer.appendChild(
-        icon
+  const hp =
+    Math.max(
+      0,
+      Math.min(
+        3,
+        currentPlayer.hp
+      )
+    );
+
+
+  for (
+    let i = 0;
+    i < 3;
+    i++
+  ) {
+
+    const icon =
+      document.createElement("i");
+
+
+    icon.setAttribute(
+      "data-lucide",
+      i < hp
+        ? "zap"
+        : "zap-off"
+    );
+
+
+    if (
+      i >= hp
+    ) {
+
+      icon.classList.add(
+        "hp-off"
       );
 
     }
-  );
+
+
+    healthContainer.appendChild(
+      icon
+    );
+
+  }
 
 
   lucide.createIcons();
+
+}
+
+
+/* =========================
+   SHOT VISIBILITY
+========================= */
+
+function updateShotVisibility() {
+
+  if (
+    !gameData ||
+    !gameData.turn
+  ) {
+
+    shot.classList.add(
+      "hidden"
+    );
+
+    return;
+
+  }
+
+
+  const myTurn =
+    gameData.turn.current ===
+    currentPlayerId;
+
+
+  shot.classList.toggle(
+    "hidden",
+    !myTurn
+  );
+
+
+  if (!myTurn) {
+
+    resetShot();
+
+  }
 
 }
 
@@ -2359,9 +2731,8 @@ shot.addEventListener(
   () => {
 
     if (
-      !popup.classList.contains(
-        "hidden"
-      )
+      !gameData ||
+      !gameData.turn
     ) {
 
       return;
@@ -2370,13 +2741,44 @@ shot.addEventListener(
 
 
     if (
-      currentShell >=
-      shells.length
+      gameData.turn.current !==
+      currentPlayerId
+    ) {
+
+      return;
+
+    }
+
+
+    if (
+      !gameData.shells
+    ) {
+
+      return;
+
+    }
+
+
+    if (
+      Number(
+        gameData.shells.current || 0
+      ) >= shellCount
     ) {
 
       alert(
         "Semua shell sudah habis."
       );
+
+      return;
+
+    }
+
+
+    if (
+      !popup.classList.contains(
+        "hidden"
+      )
+    ) {
 
       return;
 
@@ -2713,7 +3115,7 @@ playerContainer.addEventListener(
    SHOOT
 ========================= */
 
-function shoot() {
+async function shoot() {
 
   if (!selectedTarget) {
     return;
@@ -2721,13 +3123,9 @@ function shoot() {
 
 
   if (
-    currentShell >=
-    shells.length
+    !gameData ||
+    !gameData.turn
   ) {
-
-    alert(
-      "Semua shell sudah habis."
-    );
 
     resetShot();
 
@@ -2736,75 +3134,306 @@ function shoot() {
   }
 
 
-  const shell =
-    shells[currentShell];
-
-
-  const shellNumber =
-    currentShell + 1;
-
-
-  console.log(
-    "Shell:",
-    shellNumber
-  );
-
-  console.log(
-    "Target:",
-    selectedTarget.name
-  );
-
-  console.log(
-    "Jenis:",
-    shell.toUpperCase()
-  );
-
-
-  currentShell++;
-
-
   if (
-    shell === "live"
+    gameData.turn.current !==
+    currentPlayerId
   ) {
 
-    alert(
+    resetShot();
 
-      "💥 LIVE!\n\n" +
-
-      "Target: " +
-      selectedTarget.name
-
-    );
-
-  } else {
-
-    alert(
-
-      "BLANK!\n\n" +
-
-      "Target: " +
-      selectedTarget.name
-
-    );
+    return;
 
   }
 
 
-  /*
-    Update tampilan shell
-    setelah satu shell digunakan.
-  */
+  try {
 
-  updateShellDisplay();
+    const roomGameRef =
+      ref(
+        db,
+        "room/game"
+      );
 
 
-  if (
-    currentShell >=
-    shells.length
-  ) {
+    const result =
+      await runTransaction(
+        roomGameRef,
+        game => {
 
-    console.log(
-      "Semua shell sudah digunakan."
+          if (!game) {
+            return;
+          }
+
+
+          if (!game.turn) {
+            return;
+          }
+
+
+          if (
+            game.turn.current !==
+            currentPlayerId
+          ) {
+
+            return;
+
+          }
+
+
+          const shellIndex =
+            Number(
+              game.shells?.current ||
+              0
+            );
+
+
+          if (
+            shellIndex >=
+            shellCount
+          ) {
+
+            return;
+
+          }
+
+
+          const sequence =
+            game.shells?.sequence ||
+            [];
+
+
+          const shell =
+            sequence[
+              shellIndex
+            ];
+
+
+          if (!shell) {
+            return;
+          }
+
+
+          const targetId =
+            selectedTarget.id;
+
+
+          const targetPlayer =
+            game.players?.[
+              targetId
+            ];
+
+
+          if (!targetPlayer) {
+            return;
+          }
+
+
+          let newHp =
+            Number(
+              targetPlayer.hp ?? 3
+            );
+
+
+          if (
+            shell === "live"
+          ) {
+
+            newHp =
+              Math.max(
+                0,
+                newHp - 1
+              );
+
+          }
+
+
+          const updatedPlayers =
+            {
+              ...game.players,
+
+              [targetId]: {
+
+                ...targetPlayer,
+
+                hp: newHp
+
+              }
+
+            };
+
+
+          const playerIds =
+            Object.keys(
+              updatedPlayers
+            );
+
+
+          const sortedPlayers =
+            playerIds.sort(
+              (a, b) =>
+                Number(
+                  updatedPlayers[a]
+                    .turnOrder || 0
+                ) -
+                Number(
+                  updatedPlayers[b]
+                    .turnOrder || 0
+                )
+            );
+
+
+          const currentIndex =
+            sortedPlayers.findIndex(
+              id =>
+                id ===
+                currentPlayerId
+            );
+
+
+          let nextIndex =
+            (
+              currentIndex + 1
+            ) %
+            sortedPlayers.length;
+
+
+          let attempts = 0;
+
+
+          while (
+            attempts <
+            sortedPlayers.length
+          ) {
+
+            const nextId =
+              sortedPlayers[
+                nextIndex
+              ];
+
+
+            if (
+              Number(
+                updatedPlayers[
+                  nextId
+                ].hp || 0
+              ) > 0
+            ) {
+
+              break;
+
+            }
+
+
+            nextIndex =
+              (
+                nextIndex + 1
+              ) %
+              sortedPlayers.length;
+
+            attempts++;
+
+          }
+
+
+          const nextPlayerId =
+            sortedPlayers[
+              nextIndex
+            ];
+
+
+          return {
+
+            ...game,
+
+            players:
+              updatedPlayers,
+
+            turn: {
+
+              current:
+                nextPlayerId,
+
+              index:
+                nextIndex
+
+            },
+
+            shells: {
+
+              ...game.shells,
+
+              current:
+                shellIndex + 1
+
+            }
+
+          };
+
+        }
+      );
+
+
+    if (!result.committed) {
+
+      alert(
+        "Aksi tidak dapat dilakukan."
+      );
+
+      resetShot();
+
+      return;
+
+    }
+
+
+    const shellIndex =
+      Number(
+        gameData.shells?.current ||
+        0
+      );
+
+
+    const shell =
+      gameData.shells?.sequence?.[
+        shellIndex
+      ];
+
+
+    const targetName =
+      selectedTarget.name;
+
+
+    if (
+      shell === "live"
+    ) {
+
+      alert(
+
+        "💥 LIVE!\n\n" +
+        "Target: " +
+        targetName
+
+      );
+
+    } else {
+
+      alert(
+
+        "BLANK!\n\n" +
+        "Target: " +
+        targetName
+
+      );
+
+    }
+
+
+  } catch (error) {
+
+    console.error(error);
+
+    alert(
+      "Gagal melakukan shot."
     );
 
   }
