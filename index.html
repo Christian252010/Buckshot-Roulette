@@ -269,6 +269,7 @@ body {
 
 .game {
   display: flex;
+  position: relative;
   width: 100%;
   height: 100dvh;
   min-height: 100dvh;
@@ -331,6 +332,56 @@ body {
 
 .next span {
   font-size: 16px;
+}
+
+
+/* =========================
+   RANDOM SHELL
+========================= */
+
+.random-shell {
+  display: flex;
+  position: absolute;
+  flex-direction: column;
+  gap: 12px;
+  width: calc(100% - 24px);
+  justify-content: center;
+  top: 50%;
+  left: 12px;
+  transform: translateY(-50%);
+  padding: 12px;
+  background: #2a2a2a;
+  z-index: 10;
+}
+
+.shell {
+  display: flex;
+  justify-content: space-between;
+}
+
+.shell-info {
+  display: flex;
+  justify-content: space-around;
+  gap: 20px;
+  border-top: 1.5px solid #666;
+  padding-top: 10px;
+  font-weight: bold;
+  color: #888;
+}
+
+.shell-info span:nth-child(1) {
+  color: crimson;
+}
+
+.random-shell svg {
+  width: 36px !important;
+  height: 36px !important;
+  color: crimson;
+  rotate: 180deg;
+}
+
+.random-shell svg.blank {
+  color: #888 !important;
 }
 
 
@@ -750,6 +801,41 @@ body {
   </div>
 
 
+  <!-- =========================
+       RANDOM SHELL DISPLAY
+  ========================= -->
+
+  <div class="random-shell">
+
+    <div class="shell">
+
+      <i data-lucide="test-tube"></i>
+      <i data-lucide="test-tube"></i>
+      <i data-lucide="test-tube"></i>
+      <i data-lucide="test-tube"></i>
+      <i data-lucide="test-tube"></i>
+      <i data-lucide="test-tube"></i>
+      <i data-lucide="test-tube"></i>
+      <i data-lucide="test-tube"></i>
+
+    </div>
+
+
+    <div class="shell-info">
+
+      <span>
+        Alive : 0
+      </span>
+
+      <span>
+        Blank : 0
+      </span>
+
+    </div>
+
+  </div>
+
+
   <div class="shot">
 
     <img
@@ -969,6 +1055,24 @@ const overlay =
 
 const playerContainer =
   document.querySelector(".st-players");
+
+
+/* =========================
+   SHELL ELEMENT
+========================= */
+
+const shellContainer =
+  document.querySelector(".shell");
+
+const aliveInfo =
+  document.querySelector(
+    ".shell-info span:nth-child(1)"
+  );
+
+const blankInfo =
+  document.querySelector(
+    ".shell-info span:nth-child(2)"
+  );
 
 
 /* =========================
@@ -2091,33 +2195,157 @@ function generateShells() {
   currentShell = 0;
 
 
-  const shellData = [
+  /*
+    Jumlah Alive dibuat random
+    dari 2 sampai 6.
 
-    "live",
-    "live",
-    "live",
-    "live",
+    Total shell selalu 8.
+  */
 
-    "blank",
-    "blank",
-    "blank",
-    "blank"
-
-  ];
+  const aliveCount =
+    Math.floor(
+      Math.random() * 5
+    ) + 2;
 
 
-  shellData.sort(
-    () => Math.random() - 0.5
+  const blankCount =
+    shellCount - aliveCount;
+
+
+  for (
+    let i = 0;
+    i < aliveCount;
+    i++
+  ) {
+
+    shells.push("live");
+
+  }
+
+
+  for (
+    let i = 0;
+    i < blankCount;
+    i++
+  ) {
+
+    shells.push("blank");
+
+  }
+
+
+  /*
+    Acak posisi shell.
+  */
+
+  for (
+    let i = shells.length - 1;
+    i > 0;
+    i--
+  ) {
+
+    const randomIndex =
+      Math.floor(
+        Math.random() * (i + 1)
+      );
+
+
+    [
+      shells[i],
+      shells[randomIndex]
+    ] = [
+      shells[randomIndex],
+      shells[i]
+    ];
+
+  }
+
+
+  updateShellDisplay();
+
+
+  console.log(
+    "Jumlah Alive:",
+    aliveCount
   );
 
-
-  shells = shellData;
-
+  console.log(
+    "Jumlah Blank:",
+    blankCount
+  );
 
   console.log(
     "Urutan shell:",
     shells
   );
+
+}
+
+
+/* =========================
+   UPDATE SHELL DISPLAY
+========================= */
+
+function updateShellDisplay() {
+
+  const aliveCount =
+    shells.filter(
+      shell =>
+        shell === "live"
+    ).length;
+
+
+  const blankCount =
+    shells.filter(
+      shell =>
+        shell === "blank"
+    ).length;
+
+
+  aliveInfo.textContent =
+    "Alive : " + aliveCount;
+
+
+  blankInfo.textContent =
+    "Blank : " + blankCount;
+
+
+  shellContainer.innerHTML = "";
+
+
+  shells.forEach(
+    shellType => {
+
+      const icon =
+        document.createElement("i");
+
+
+      icon.setAttribute(
+        "data-lucide",
+        "test-tube"
+      );
+
+
+      if (
+        shellType === "blank"
+      ) {
+
+        icon.classList.add(
+          "blank"
+        );
+
+      }
+
+
+      shellContainer.appendChild(
+        icon
+      );
+
+    }
+  );
+
+
+  lucide.createIcons();
 
 }
 
@@ -2560,6 +2788,14 @@ function shoot() {
     );
 
   }
+
+
+  /*
+    Update tampilan shell
+    setelah satu shell digunakan.
+  */
+
+  updateShellDisplay();
 
 
   if (
