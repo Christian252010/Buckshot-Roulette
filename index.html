@@ -479,7 +479,6 @@ body {
 ========================= */
 
 const players = [
-
   {
     id: 1,
     name: "Christian",
@@ -497,7 +496,6 @@ const players = [
     name: "Juni",
     hp: 2
   }
-
 ];
 
 
@@ -512,32 +510,9 @@ const currentPlayer = 1;
    GAME STATE
 ========================= */
 
-/*
-  Menyimpan apakah pemain
-  sedang memilih aksi shot.
-
-  false = belum memilih
-  true  = sedang memilih
-*/
-
 let shotMode = false;
 
-
-/*
-  Menyimpan target yang dipilih.
-
-  null = belum ada target
-*/
-
 let selectedTarget = null;
-
-
-/*
-  Menyimpan jenis target.
-
-  "player" = pemain lain
-  "self"   = diri sendiri
-*/
 
 let selectedTargetType = null;
 
@@ -565,15 +540,6 @@ const playerContainer =
   document.querySelector(".st-players");
 
 
-/*
-  Jangan simpan elemen X
-  sebelum Lucide menggantinya.
-
-  Kita ambil berdasarkan class
-  setiap kali diperlukan.
-*/
-
-
 /* =========================
    DEFAULT
 ========================= */
@@ -585,7 +551,10 @@ disableShotButtons();
    CLICK SHOTGUN
 ========================= */
 
-shot.addEventListener("click", () => {
+shot.addEventListener("click", event => {
+
+  event.stopPropagation();
+
 
   /*
     Kalau popup sedang terbuka,
@@ -596,6 +565,10 @@ shot.addEventListener("click", () => {
     return;
   }
 
+
+  /*
+    Aktifkan shot mode.
+  */
 
   shotMode = true;
 
@@ -610,7 +583,10 @@ shot.addEventListener("click", () => {
    PLAYER BUTTON
 ========================= */
 
-playerBtn.addEventListener("click", () => {
+playerBtn.addEventListener("click", event => {
+
+  event.stopPropagation();
+
 
   if (!shotMode) {
     return;
@@ -630,7 +606,10 @@ playerBtn.addEventListener("click", () => {
    SELF BUTTON
 ========================= */
 
-selfBtn.addEventListener("click", () => {
+selfBtn.addEventListener("click", event => {
+
+  event.stopPropagation();
+
 
   if (!shotMode) {
     return;
@@ -654,13 +633,10 @@ selfBtn.addEventListener("click", () => {
 
 
   /*
-    Untuk sementara tampilkan
-    hasil pilihan.
+    Untuk sementara.
   */
 
-  alert(
-    "Target: diri sendiri"
-  );
+  alert("Target: diri sendiri");
 
 
   resetShot();
@@ -685,15 +661,13 @@ function closeShotPopup() {
    CLOSE BUTTON X
 ========================= */
 
-/*
-  Event delegation.
-
-  Dengan cara ini, walaupun
-  Lucide mengubah <i> menjadi
-  <svg>, klik tetap bekerja.
-*/
-
 popup.addEventListener("click", event => {
+
+  /*
+    Karena Lucide mengubah
+    <i> menjadi <svg>,
+    gunakan closest().
+  */
 
   const cancel =
     event.target.closest(".st-cancel");
@@ -715,9 +689,95 @@ popup.addEventListener("click", event => {
    OVERLAY CLICK
 ========================= */
 
-overlay.addEventListener("click", () => {
+overlay.addEventListener("click", event => {
+
+  /*
+    Hanya klik langsung pada
+    overlay yang dianggap
+    sebagai klik luar popup.
+  */
+
+  if (event.target !== overlay) {
+    return;
+  }
+
 
   closeShotPopup();
+
+  resetShot();
+
+});
+
+
+/* =========================
+   CLICK DI LUAR ELEMENT SHOT
+========================= */
+
+document.addEventListener("click", event => {
+
+  /*
+    Kalau shotMode tidak aktif,
+    tidak perlu melakukan apa-apa.
+  */
+
+  if (!shotMode) {
+    return;
+  }
+
+
+  const clickedShot =
+    event.target.closest(".shot");
+
+  const clickedPlayerBtn =
+    event.target.closest(".other");
+
+  const clickedSelfBtn =
+    event.target.closest(".self");
+
+  const clickedPopup =
+    event.target.closest(".shot-list");
+
+
+  /*
+    Klik shotgun.
+  */
+
+  if (clickedShot) {
+    return;
+  }
+
+
+  /*
+    Klik tombol Player.
+  */
+
+  if (clickedPlayerBtn) {
+    return;
+  }
+
+
+  /*
+    Klik tombol You.
+  */
+
+  if (clickedSelfBtn) {
+    return;
+  }
+
+
+  /*
+    Klik di dalam popup.
+  */
+
+  if (clickedPopup) {
+    return;
+  }
+
+
+  /*
+    Selain semua element di atas,
+    shotMode dimatikan.
+  */
 
   resetShot();
 
@@ -739,15 +799,14 @@ function renderPlayerPopup() {
       Jangan tampilkan diri sendiri.
     */
 
-    if (
-      player.id === currentPlayer
-    ) {
+    if (player.id === currentPlayer) {
       return;
     }
 
 
     /*
-      Jangan tampilkan pemain mati.
+      Jangan tampilkan player
+      yang HP-nya sudah 0.
     */
 
     if (player.hp <= 0) {
@@ -758,11 +817,17 @@ function renderPlayerPopup() {
     const item =
       document.createElement("div");
 
+
     item.className = "st-list";
 
 
+    /*
+      Ambil huruf pertama nama.
+    */
+
     const profile =
       player.name
+        .trim()
         .charAt(0)
         .toUpperCase();
 
@@ -820,6 +885,11 @@ playerContainer.addEventListener(
     }
 
 
+    if (!shotMode) {
+      return;
+    }
+
+
     const targetId =
       Number(button.dataset.id);
 
@@ -852,8 +922,7 @@ playerContainer.addEventListener(
 
 
     /*
-      Untuk sementara tampilkan
-      target yang dipilih.
+      Untuk sementara.
     */
 
     alert(
@@ -902,15 +971,43 @@ function disableShotButtons() {
 
 function resetShot() {
 
+  /*
+    Matikan shot mode.
+  */
+
   shotMode = false;
+
+
+  /*
+    Hapus target sementara.
+  */
 
   selectedTarget = null;
 
   selectedTargetType = null;
 
+
+  /*
+    Hilangkan efek active
+    pada shotgun.
+  */
+
   shot.classList.remove("active");
 
+
+  /*
+    Nonaktifkan kembali
+    tombol Player dan You.
+  */
+
   disableShotButtons();
+
+
+  /*
+    Tutup popup jika masih terbuka.
+  */
+
+  closeShotPopup();
 
 }
 
