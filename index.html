@@ -479,6 +479,7 @@ body {
 ========================= */
 
 const players = [
+
   {
     id: 1,
     name: "Christian",
@@ -496,6 +497,7 @@ const players = [
     name: "Juni",
     hp: 2
   }
+
 ];
 
 
@@ -504,6 +506,106 @@ const players = [
 ========================= */
 
 const currentPlayer = 1;
+
+
+/* =========================
+   SHELL
+========================= */
+
+/*
+  Jumlah shell dalam satu ronde.
+*/
+
+const shellCount = 8;
+
+
+/*
+  Array untuk menyimpan
+  urutan shell.
+
+  Contoh:
+
+  [
+    "live",
+    "blank",
+    "live",
+    "blank",
+    ...
+  ]
+*/
+
+let shells = [];
+
+
+/*
+  Menunjukkan shell yang
+  sedang digunakan.
+
+  Dimulai dari shell pertama.
+*/
+
+let currentShell = 0;
+
+
+/* =========================
+   GENERATE SHELL
+========================= */
+
+function generateShells() {
+
+  shells = [];
+
+  currentShell = 0;
+
+
+  /*
+    Untuk sementara jumlah
+    Live dan Blank dibuat
+    seimbang.
+
+    8 shell:
+    4 Live
+    4 Blank
+  */
+
+  const shellData = [
+
+    "live",
+    "live",
+    "live",
+    "live",
+
+    "blank",
+    "blank",
+    "blank",
+    "blank"
+
+  ];
+
+
+  /*
+    Acak posisi shell.
+  */
+
+  shellData.sort(() => Math.random() - 0.5);
+
+
+  shells = shellData;
+
+
+  console.log(
+    "Urutan shell:",
+    shells
+  );
+
+}
+
+
+/* =========================
+   START SHELL
+========================= */
+
+generateShells();
 
 
 /* =========================
@@ -551,10 +653,7 @@ disableShotButtons();
    CLICK SHOTGUN
 ========================= */
 
-shot.addEventListener("click", event => {
-
-  event.stopPropagation();
-
+shot.addEventListener("click", () => {
 
   /*
     Kalau popup sedang terbuka,
@@ -567,8 +666,20 @@ shot.addEventListener("click", event => {
 
 
   /*
-    Aktifkan shot mode.
+    Kalau shell sudah habis,
+    jangan aktifkan shotgun.
   */
+
+  if (currentShell >= shells.length) {
+
+    alert(
+      "Semua shell sudah habis."
+    );
+
+    return;
+
+  }
+
 
   shotMode = true;
 
@@ -583,10 +694,7 @@ shot.addEventListener("click", event => {
    PLAYER BUTTON
 ========================= */
 
-playerBtn.addEventListener("click", event => {
-
-  event.stopPropagation();
-
+playerBtn.addEventListener("click", () => {
 
   if (!shotMode) {
     return;
@@ -594,6 +702,7 @@ playerBtn.addEventListener("click", event => {
 
 
   renderPlayerPopup();
+
 
   popup.classList.remove("hidden");
 
@@ -606,10 +715,7 @@ playerBtn.addEventListener("click", event => {
    SELF BUTTON
 ========================= */
 
-selfBtn.addEventListener("click", event => {
-
-  event.stopPropagation();
-
+selfBtn.addEventListener("click", () => {
 
   if (!shotMode) {
     return;
@@ -626,20 +732,12 @@ selfBtn.addEventListener("click", event => {
   selectedTargetType = "self";
 
 
-  console.log(
-    "Target:",
-    selectedTarget
-  );
-
-
   /*
-    Untuk sementara.
+    Jalankan shell.
   */
 
-  alert("Target: diri sendiri");
+  shoot();
 
-
-  resetShot();
 
 });
 
@@ -663,12 +761,6 @@ function closeShotPopup() {
 
 popup.addEventListener("click", event => {
 
-  /*
-    Karena Lucide mengubah
-    <i> menjadi <svg>,
-    gunakan closest().
-  */
-
   const cancel =
     event.target.closest(".st-cancel");
 
@@ -689,95 +781,9 @@ popup.addEventListener("click", event => {
    OVERLAY CLICK
 ========================= */
 
-overlay.addEventListener("click", event => {
-
-  /*
-    Hanya klik langsung pada
-    overlay yang dianggap
-    sebagai klik luar popup.
-  */
-
-  if (event.target !== overlay) {
-    return;
-  }
-
+overlay.addEventListener("click", () => {
 
   closeShotPopup();
-
-  resetShot();
-
-});
-
-
-/* =========================
-   CLICK DI LUAR ELEMENT SHOT
-========================= */
-
-document.addEventListener("click", event => {
-
-  /*
-    Kalau shotMode tidak aktif,
-    tidak perlu melakukan apa-apa.
-  */
-
-  if (!shotMode) {
-    return;
-  }
-
-
-  const clickedShot =
-    event.target.closest(".shot");
-
-  const clickedPlayerBtn =
-    event.target.closest(".other");
-
-  const clickedSelfBtn =
-    event.target.closest(".self");
-
-  const clickedPopup =
-    event.target.closest(".shot-list");
-
-
-  /*
-    Klik shotgun.
-  */
-
-  if (clickedShot) {
-    return;
-  }
-
-
-  /*
-    Klik tombol Player.
-  */
-
-  if (clickedPlayerBtn) {
-    return;
-  }
-
-
-  /*
-    Klik tombol You.
-  */
-
-  if (clickedSelfBtn) {
-    return;
-  }
-
-
-  /*
-    Klik di dalam popup.
-  */
-
-  if (clickedPopup) {
-    return;
-  }
-
-
-  /*
-    Selain semua element di atas,
-    shotMode dimatikan.
-  */
 
   resetShot();
 
@@ -799,14 +805,15 @@ function renderPlayerPopup() {
       Jangan tampilkan diri sendiri.
     */
 
-    if (player.id === currentPlayer) {
+    if (
+      player.id === currentPlayer
+    ) {
       return;
     }
 
 
     /*
-      Jangan tampilkan player
-      yang HP-nya sudah 0.
+      Jangan tampilkan pemain mati.
     */
 
     if (player.hp <= 0) {
@@ -817,17 +824,11 @@ function renderPlayerPopup() {
     const item =
       document.createElement("div");
 
-
     item.className = "st-list";
 
 
-    /*
-      Ambil huruf pertama nama.
-    */
-
     const profile =
       player.name
-        .trim()
         .charAt(0)
         .toUpperCase();
 
@@ -885,11 +886,6 @@ playerContainer.addEventListener(
     }
 
 
-    if (!shotMode) {
-      return;
-    }
-
-
     const targetId =
       Number(button.dataset.id);
 
@@ -915,28 +911,140 @@ playerContainer.addEventListener(
     selectedTargetType = "player";
 
 
-    console.log(
-      "Target:",
-      selectedTarget
-    );
-
-
     /*
-      Untuk sementara.
+      Tutup popup.
     */
-
-    alert(
-      "Menembak: " +
-      target.name
-    );
-
 
     closeShotPopup();
 
-    resetShot();
+
+    /*
+      Jalankan shell.
+    */
+
+    shoot();
 
   }
 );
+
+
+/* =========================
+   SHOOT
+========================= */
+
+function shoot() {
+
+  /*
+    Pastikan ada target.
+  */
+
+  if (!selectedTarget) {
+    return;
+  }
+
+
+  /*
+    Pastikan shell masih tersedia.
+  */
+
+  if (currentShell >= shells.length) {
+
+    alert(
+      "Semua shell sudah habis."
+    );
+
+    resetShot();
+
+    return;
+
+  }
+
+
+  /*
+    Ambil shell saat ini.
+  */
+
+  const shell =
+    shells[currentShell];
+
+
+  /*
+    Simpan nomor shell
+    sebelum currentShell
+    dinaikkan.
+  */
+
+  const shellNumber =
+    currentShell + 1;
+
+
+  console.log(
+    "Shell:",
+    shellNumber
+  );
+
+  console.log(
+    "Target:",
+    selectedTarget.name
+  );
+
+  console.log(
+    "Jenis:",
+    shell.toUpperCase()
+  );
+
+
+  /*
+    Shell sudah ditembak,
+    pindah ke shell berikutnya.
+  */
+
+  currentShell++;
+
+
+  /*
+    Tampilkan hasil sementara.
+  */
+
+  if (shell === "live") {
+
+    alert(
+      "💥 LIVE!\n" +
+      "Menembak: " +
+      selectedTarget.name
+    );
+
+  } else {
+
+    alert(
+      "BLANK!\n" +
+      "Menembak: " +
+      selectedTarget.name
+    );
+
+  }
+
+
+  /*
+    Cek apakah shell sudah habis.
+  */
+
+  if (currentShell >= shells.length) {
+
+    console.log(
+      "Semua shell sudah digunakan."
+    );
+
+  }
+
+
+  /*
+    Reset mode shotgun.
+  */
+
+  resetShot();
+
+}
 
 
 /* =========================
@@ -971,45 +1079,91 @@ function disableShotButtons() {
 
 function resetShot() {
 
-  /*
-    Matikan shot mode.
-  */
-
   shotMode = false;
-
-
-  /*
-    Hapus target sementara.
-  */
 
   selectedTarget = null;
 
   selectedTargetType = null;
 
-
-  /*
-    Hilangkan efek active
-    pada shotgun.
-  */
-
   shot.classList.remove("active");
-
-
-  /*
-    Nonaktifkan kembali
-    tombol Player dan You.
-  */
 
   disableShotButtons();
 
+}
+
+
+/* =========================
+   CLICK DI LUAR SHOT
+========================= */
+
+document.addEventListener("click", event => {
+
+  if (!shotMode) {
+    return;
+  }
+
+
+  const clickedShot =
+    event.target.closest(".shot");
+
+  const clickedPlayerBtn =
+    event.target.closest(".other");
+
+  const clickedSelfBtn =
+    event.target.closest(".self");
+
+  const clickedPopup =
+    event.target.closest(".shot-list");
+
 
   /*
-    Tutup popup jika masih terbuka.
+    Jangan reset kalau klik
+    shotgun.
   */
 
-  closeShotPopup();
+  if (clickedShot) {
+    return;
+  }
 
-}
+
+  /*
+    Jangan reset kalau klik
+    tombol Player.
+  */
+
+  if (clickedPlayerBtn) {
+    return;
+  }
+
+
+  /*
+    Jangan reset kalau klik
+    tombol You.
+  */
+
+  if (clickedSelfBtn) {
+    return;
+  }
+
+
+  /*
+    Jangan reset kalau sedang
+    klik isi popup.
+  */
+
+  if (clickedPopup) {
+    return;
+  }
+
+
+  /*
+    Selain area di atas,
+    mode Shot dibatalkan.
+  */
+
+  resetShot();
+
+});
 
 
 /* =========================
