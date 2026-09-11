@@ -132,7 +132,41 @@ body {
 
 
 /* =========================
-   BOTTOM BUTTON
+   SHOTGUN
+========================= */
+
+.shot {
+  position: absolute;
+  display: flex;
+  left: 50%;
+  top: 50%;
+  transform: translateX(-50%) translateY(-50%);
+  padding: 14px;
+  border-radius: 50%;
+  cursor: pointer;
+  transition: .15s;
+}
+
+.shot:hover {
+  background: #333;
+}
+
+.shot:active {
+  transform: translateX(-50%) translateY(-50%) scale(.94);
+}
+
+.shot.active {
+  background: #333;
+}
+
+.shot img {
+  width: 84px;
+  height: 84px;
+}
+
+
+/* =========================
+   BOTTOM
 ========================= */
 
 .bottom {
@@ -175,41 +209,7 @@ body {
 
 
 /* =========================
-   SHOTGUN
-========================= */
-
-.shot {
-  position: absolute;
-  display: flex;
-  left: 50%;
-  top: 50%;
-  transform: translateX(-50%) translateY(-50%);
-  padding: 14px;
-  border-radius: 50%;
-  cursor: pointer;
-  transition: .15s;
-}
-
-.shot:hover {
-  background: #333;
-}
-
-.shot:active {
-  transform: translateX(-50%) translateY(-50%) scale(.94);
-}
-
-.shot.active {
-  background: #333;
-}
-
-.shot img {
-  width: 84px;
-  height: 84px;
-}
-
-
-/* =========================
-   POPUP OVERLAY
+   OVERLAY
 ========================= */
 
 .overlay {
@@ -412,7 +412,9 @@ body {
 
 <div class="shot">
 
-  <img src="shot.png" alt="Shotgun">
+  <img
+    src="shot.png"
+    alt="Shotgun">
 
 </div>
 
@@ -465,11 +467,6 @@ body {
   </div>
 
 
-  <!--
-    Daftar player akan
-    dibuat oleh JavaScript
-  -->
-
   <div class="st-players"></div>
 
 </div>
@@ -478,7 +475,7 @@ body {
 <script>
 
 /* =========================
-   DATA PLAYER SEMENTARA
+   PLAYER DATA SEMENTARA
 ========================= */
 
 const players = [
@@ -504,15 +501,45 @@ const players = [
 ];
 
 
-/*
-  ID pemain yang sedang
-  menggunakan perangkat ini.
-
-  Untuk sementara:
-  Christian = 1
-*/
+/* =========================
+   CURRENT PLAYER
+========================= */
 
 const currentPlayer = 1;
+
+
+/* =========================
+   GAME STATE
+========================= */
+
+/*
+  Menyimpan apakah pemain
+  sedang memilih aksi shot.
+
+  false = belum memilih
+  true  = sedang memilih
+*/
+
+let shotMode = false;
+
+
+/*
+  Menyimpan target yang dipilih.
+
+  null = belum ada target
+*/
+
+let selectedTarget = null;
+
+
+/*
+  Menyimpan jenis target.
+
+  "player" = pemain lain
+  "self"   = diri sendiri
+*/
+
+let selectedTargetType = null;
 
 
 /* =========================
@@ -534,24 +561,24 @@ const popup =
 const overlay =
   document.querySelector(".overlay");
 
-const closePopup =
-  document.querySelector(".st-cancel");
-
 const playerContainer =
   document.querySelector(".st-players");
 
 
-/* =========================
-   DEFAULT STATE
-========================= */
-
 /*
-  Sebelum shotgun diklik,
-  kedua tombol belum aktif.
+  Jangan simpan elemen X
+  sebelum Lucide menggantinya.
+
+  Kita ambil berdasarkan class
+  setiap kali diperlukan.
 */
 
-playerBtn.disabled = true;
-selfBtn.disabled = true;
+
+/* =========================
+   DEFAULT
+========================= */
+
+disableShotButtons();
 
 
 /* =========================
@@ -560,19 +587,35 @@ selfBtn.disabled = true;
 
 shot.addEventListener("click", () => {
 
-  playerBtn.disabled = false;
-  selfBtn.disabled = false;
+  /*
+    Kalau popup sedang terbuka,
+    shotgun tidak melakukan apa-apa.
+  */
+
+  if (!popup.classList.contains("hidden")) {
+    return;
+  }
+
+
+  shotMode = true;
 
   shot.classList.add("active");
+
+  enableShotButtons();
 
 });
 
 
 /* =========================
-   CLICK PLAYER
+   PLAYER BUTTON
 ========================= */
 
 playerBtn.addEventListener("click", () => {
+
+  if (!shotMode) {
+    return;
+  }
+
 
   renderPlayerPopup();
 
@@ -580,26 +623,45 @@ playerBtn.addEventListener("click", () => {
 
   overlay.classList.remove("hidden");
 
-  lucide.createIcons();
-
 });
 
 
 /* =========================
-   CLICK YOU
+   SELF BUTTON
 ========================= */
 
 selfBtn.addEventListener("click", () => {
 
-  /*
-    Untuk sementara hanya
-    menampilkan target.
+  if (!shotMode) {
+    return;
+  }
 
-    Nanti akan masuk ke
-    sistem tembak Firebase.
+
+  selectedTarget =
+    players.find(
+      player =>
+        player.id === currentPlayer
+    );
+
+
+  selectedTargetType = "self";
+
+
+  console.log(
+    "Target:",
+    selectedTarget
+  );
+
+
+  /*
+    Untuk sementara tampilkan
+    hasil pilihan.
   */
 
-  alert("Target: diri sendiri");
+  alert(
+    "Target: diri sendiri"
+  );
+
 
   resetShot();
 
@@ -610,18 +672,6 @@ selfBtn.addEventListener("click", () => {
    CLOSE POPUP
 ========================= */
 
-closePopup.addEventListener(
-  "click",
-  closeShotPopup
-);
-
-
-overlay.addEventListener(
-  "click",
-  closeShotPopup
-);
-
-
 function closeShotPopup() {
 
   popup.classList.add("hidden");
@@ -629,6 +679,49 @@ function closeShotPopup() {
   overlay.classList.add("hidden");
 
 }
+
+
+/* =========================
+   CLOSE BUTTON X
+========================= */
+
+/*
+  Event delegation.
+
+  Dengan cara ini, walaupun
+  Lucide mengubah <i> menjadi
+  <svg>, klik tetap bekerja.
+*/
+
+popup.addEventListener("click", event => {
+
+  const cancel =
+    event.target.closest(".st-cancel");
+
+
+  if (!cancel) {
+    return;
+  }
+
+
+  closeShotPopup();
+
+  resetShot();
+
+});
+
+
+/* =========================
+   OVERLAY CLICK
+========================= */
+
+overlay.addEventListener("click", () => {
+
+  closeShotPopup();
+
+  resetShot();
+
+});
 
 
 /* =========================
@@ -646,14 +739,15 @@ function renderPlayerPopup() {
       Jangan tampilkan diri sendiri.
     */
 
-    if (player.id === currentPlayer) {
+    if (
+      player.id === currentPlayer
+    ) {
       return;
     }
 
 
     /*
-      Jangan tampilkan player
-      yang sudah mati.
+      Jangan tampilkan pemain mati.
     */
 
     if (player.hp <= 0) {
@@ -666,10 +760,6 @@ function renderPlayerPopup() {
 
     item.className = "st-list";
 
-
-    /*
-      Ambil huruf pertama nama.
-    */
 
     const profile =
       player.name
@@ -708,59 +798,100 @@ function renderPlayerPopup() {
 
   });
 
+}
 
-  /*
-    Ambil semua tombol Shot
-    yang baru dibuat.
-  */
 
-  const shotButtons =
-    document.querySelectorAll(
-      ".st-player-btn"
+/* =========================
+   SELECT PLAYER
+========================= */
+
+playerContainer.addEventListener(
+  "click",
+  event => {
+
+    const button =
+      event.target.closest(
+        ".st-player-btn"
+      );
+
+
+    if (!button) {
+      return;
+    }
+
+
+    const targetId =
+      Number(button.dataset.id);
+
+
+    const target =
+      players.find(
+        player =>
+          player.id === targetId
+      );
+
+
+    if (!target) {
+      return;
+    }
+
+
+    /*
+      Simpan target.
+    */
+
+    selectedTarget = target;
+
+    selectedTargetType = "player";
+
+
+    console.log(
+      "Target:",
+      selectedTarget
     );
 
 
-  shotButtons.forEach(button => {
+    /*
+      Untuk sementara tampilkan
+      target yang dipilih.
+    */
 
-    button.addEventListener(
-      "click",
-      () => {
-
-        const targetId =
-          Number(button.dataset.id);
-
-
-        const target =
-          players.find(
-            player =>
-              player.id === targetId
-          );
-
-
-        if (!target) {
-          return;
-        }
-
-
-        /*
-          Untuk sementara hanya
-          menampilkan target.
-        */
-
-        alert(
-          "Menembak: " +
-          target.name
-        );
-
-
-        closeShotPopup();
-
-        resetShot();
-
-      }
+    alert(
+      "Menembak: " +
+      target.name
     );
 
-  });
+
+    closeShotPopup();
+
+    resetShot();
+
+  }
+);
+
+
+/* =========================
+   ENABLE BUTTON
+========================= */
+
+function enableShotButtons() {
+
+  playerBtn.disabled = false;
+
+  selfBtn.disabled = false;
+
+}
+
+
+/* =========================
+   DISABLE BUTTON
+========================= */
+
+function disableShotButtons() {
+
+  playerBtn.disabled = true;
+
+  selfBtn.disabled = true;
 
 }
 
@@ -771,11 +902,15 @@ function renderPlayerPopup() {
 
 function resetShot() {
 
-  playerBtn.disabled = true;
+  shotMode = false;
 
-  selfBtn.disabled = true;
+  selectedTarget = null;
+
+  selectedTargetType = null;
 
   shot.classList.remove("active");
+
+  disableShotButtons();
 
 }
 
