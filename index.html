@@ -348,35 +348,37 @@ body {
 
 .game-message {
   display: flex;
-  width: calc(100% - 28px);
-  margin: 8px 14px 0;
-  padding: 8px 12px;
-  min-height: 0;
+  width: 100%;
+  margin: 8px 0 0;
+  padding: 0;
   flex-direction: column;
   justify-content: flex-start;
-  align-items: stretch;
-  gap: 0;
-  background: #1f1f1f;
-  border: 1px solid #444;
-  border-radius: 6px;
-  color: #aaa;
-  font-size: 16px;
-  line-height: 1.45;
+  align-items: flex-start;
+  gap: 6px;
+  text-align: left;
   z-index: 2;
   pointer-events: none;
 }
 
 .game-message .message-line {
   display: flex;
-  min-height: 24px;
+  width: 100%;
+  min-height: 38px;
+  padding: 7px 10px;
   align-items: center;
-  gap: 5px;
+  justify-content: flex-start;
+  gap: 6px;
+  background: #1f1f1f;
+  border: 1px solid #444;
+  border-radius: 6px;
+  text-align: left;
   opacity: 1;
-  transition: opacity 0.25s ease;
+  transition: opacity 0.25s ease, transform 0.25s ease;
 }
 
 .game-message .message-line.removing {
   opacity: 0;
+  transform: translateY(-3px);
 }
 
 .game-message .message-line.live {
@@ -3749,168 +3751,40 @@ function clearPreparationTimer() {
 
 async function finishPreparation() {
 
-  if (
-    !gameData ||
-    gameData.phase !==
-    "preparing"
-  ) {
-
+  if (!gameData || gameData.phase !== "preparing") {
     return;
-
   }
 
-
-  const gameRef =
-    ref(
-      db,
-      "room/game"
-    );
-
+  const gameRef = ref(db, "room/game");
 
   try {
-
-    /* =========================
-       SHOW SHOOT MESSAGE FIRST
-       Then execute the actual shot
-       after a short suspense delay.
-    ========================= */
-
-    const pendingResult =
-      await runTransaction(
-        gameRef,
-        currentGame => {
-
-          if (!currentGame) {
-            return;
-          }
-
-          if (
-            currentGame.phase !==
-            "playing"
-          ) {
-            return;
-          }
-
-          if (
-            currentGame.turn?.current !==
-            currentPlayerId
-          ) {
-            return;
-          }
-
-          const players =
-            currentGame.players || {};
-
-          if (!players[targetId]) {
-            return;
-          }
-
-          if (
-            Number(players[targetId]?.hp ?? 0) <= 0
-          ) {
-            return;
-          }
-
-          currentGame.lastEvent = {
-            id:
-              Date.now().toString(36) +
-              Math.random().toString(36).slice(2, 8),
-            type: "shot_pending",
-            playerId: currentPlayerId,
-            targetId,
-            at: Date.now()
-          };
-
-          return currentGame;
-        }
-      );
-
-    if (!pendingResult.committed) {
-      alert(
-        "Tembakan gagal. Silakan coba lagi."
-      );
-      return;
-    }
-
-    /* Delay sebelum peluru benar-benar ditembakkan. */
-    await wait(1500);
-
-    const result =
-      await runTransaction(
-        gameRef,
-        game => {
-
-          if (!game) {
-            return;
-          }
-
-          if (
-            game.phase !==
-            "preparing"
-          ) {
-
-            return;
-
-          }
-
-          const endsAt =
-            Number(
-              game.prepareEndsAt || 0
-            );
-
-          if (
-            Date.now() <
-            endsAt
-          ) {
-
-            return;
-
-          }
-
-          return {
-
-            ...game,
-
-            phase:
-              "playing"
-
-          };
-
-        }
-      );
-
-
-    if (
-      !result.committed
-    ) {
-
-      const snapshot =
-        await get(
-          gameRef
-        );
-
-      if (
-        snapshot.exists()
-      ) {
-
-        gameData =
-          snapshot.val();
-
-        await renderGameState();
-
+    const result = await runTransaction(gameRef, game => {
+      if (!game || game.phase !== "preparing") {
+        return;
       }
 
+      const endsAt = Number(game.prepareEndsAt || 0);
+      if (Date.now() < endsAt) {
+        return;
+      }
+
+      return {
+        ...game,
+        phase: "playing",
+        shotPending: null
+      };
+    });
+
+    if (!result.committed) {
+      const snapshot = await get(gameRef);
+      if (snapshot.exists()) {
+        gameData = snapshot.val();
+        await renderGameState();
+      }
     }
-
   } catch (error) {
-
-    console.error(
-      "Finish preparation error:",
-      error
-    );
-
+    console.error("Finish preparation error:", error);
   }
-
 }
 
 
@@ -4187,6 +4061,12 @@ function updateShotVisibility() {
     gameData.turn.current ===
     currentPlayerId;
 
+  if (gameData.shotPending) {
+    shot.classList.add("hidden");
+    disableShotButtons();
+    return;
+  }
+
 
   shot.classList.toggle(
     "hidden",
@@ -4293,7 +4173,7 @@ shot.addEventListener(
   "click",
   () => {
 
-    if (shootingLocked) {
+    if (shootingLocked || gameData?.shotPending) {
       return;
     }
 
@@ -4690,565 +4570,271 @@ function wait(ms) {
 
 async function shoot(targetId) {
 
-  if (
-    shootingLocked ||
-    !gameData
-  ) {
-
+  if (shootingLocked || !gameData || gameData.shotPending) {
     return;
-
   }
-
 
   if (!targetId) {
-
-    alert(
-      "Target tidak ditemukan."
-    );
-
+    alert("Target tidak ditemukan.");
     return;
-
   }
 
-
-  if (
-    gameData.phase !==
-    "playing"
-  ) {
-
+  if (gameData.phase !== "playing") {
     return;
-
   }
 
-
-  if (
-    !gameData.turn ||
-    gameData.turn.current !==
-    currentPlayerId
-  ) {
-
-    alert(
-      "Bukan giliran kamu."
-    );
-
+  if (!gameData.turn || gameData.turn.current !== currentPlayerId) {
+    alert("Bukan giliran kamu.");
     return;
-
   }
-
 
   shootingLocked = true;
 
-
-  let shotResult = null;
-  let isSelf = false;
-  let shotTargetName = "Unknown";
-
-
-  const gameRef =
-    ref(
-      db,
-      "room/game"
-    );
-
+  const gameRef = ref(db, "room/game");
+  let pendingId = null;
 
   try {
-
-    const result =
-      await runTransaction(
-        gameRef,
-        currentGame => {
-
-          if (!currentGame) {
-            return;
-          }
-
-
-          if (
-            currentGame.phase !==
-            "playing"
-          ) {
-
-            return;
-
-          }
-
-
-          if (
-            currentGame.turn?.current !==
-            currentPlayerId
-          ) {
-
-            return;
-
-          }
-
-          if (
-            currentGame.lastEvent?.type !==
-            "shot_pending"
-          ) {
-
-            return;
-
-          }
-
-          let shells =
-            currentGame.shells;
-
-          let currentShell =
-            Number(
-              shells?.current ?? 0
-            );
-
-          if (
-            !shells ||
-            !shells.sequence
-          ) {
-
-            shells =
-              createShellSet(
-                Object.keys(currentGame.players || {}).length
-              );
-
-            currentGame.shells =
-              shells;
-
-            currentShell = 0;
-
-          }
-
-          if (
-            currentShell >=
-            Number(shells?.total || 0)
-          ) {
-
-            shells =
-              createShellSet(
-                Object.keys(currentGame.players || {}).length
-              );
-
-            currentGame.shells =
-              shells;
-
-            currentShell = 0;
-
-          }
-
-          const currentShellType =
-            shells.sequence[currentShell];
-
-          if (!currentShellType) {
-            return;
-          }
-
-
-          const players =
-            currentGame.players || {};
-
-
-          if (
-            !players[targetId]
-          ) {
-
-            return;
-
-          }
-
-
-          const playerIds =
-            Object.keys(players)
-              .filter(
-                id =>
-                  players[id]
-              )
-              .sort(
-                (a, b) =>
-                  Number(
-                    players[a].turnOrder ?? 0
-                  ) -
-                  Number(
-                    players[b].turnOrder ?? 0
-                  )
-              );
-
-
-          if (
-            playerIds.length === 0
-          ) {
-
-            return;
-
-          }
-
-
-          const targetPlayer =
-            players[targetId];
-
-
-          if (!targetPlayer) {
-            return;
-          }
-
-
-          const targetHp =
-            Number(
-              targetPlayer.hp ?? 0
-            );
-
-
-          if (
-            targetHp <= 0
-          ) {
-
-            return;
-
-          }
-
-
-          isSelf =
-            targetId ===
-            currentPlayerId;
-
-
-          const selectedPlayer =
-            gamePlayers.find(
-              player =>
-                player.id ===
-                targetId
-            );
-
-
-          shotTargetName =
-            selectedPlayer?.name ||
-            "Unknown";
-
-
-          /* =========================
-             LIVE
-          ========================= */
-
-          if (
-            currentShellType ===
-            "live"
-          ) {
-
-            targetPlayer.hp =
-              Math.max(
-                0,
-                targetHp - 1
-              );
-
-            shotResult =
-              "live";
-
-          }
-
-
-          /* =========================
-             BLANK
-          ========================= */
-
-          else {
-
-            shotResult =
-              "blank";
-
-          }
-
-
-          currentGame.shells.current =
-            currentShell + 1;
-
-          currentGame.lastShot = {
-            id:
-              Date.now().toString(36) +
-              Math.random().toString(36).slice(2, 8),
-            targetId,
-            result: shotResult,
-            shellType: currentShellType,
-            at: Date.now()
-          };
-
-          const livingPlayerIds =
-            playerIds.filter(
-              id =>
-                Number(
-                  players[id]?.hp ?? 0
-                ) > 0
-            );
-
-          if (livingPlayerIds.length <= 1) {
-
-            currentGame.phase =
-              "finished";
-
-            currentGame.winner =
-              livingPlayerIds[0] ||
-              null;
-
-            currentGame.turn.current =
-              livingPlayerIds[0] ||
-              currentPlayerId;
-
-            currentGame.turn.index =
-              livingPlayerIds[0]
-                ? playerIds.indexOf(livingPlayerIds[0])
-                : 0;
-
-            currentGame.lastEvent = {
-              id:
-                Date.now().toString(36) +
-                Math.random().toString(36).slice(2, 8),
-              type: "shot",
-              playerId: currentPlayerId,
-              targetId,
-              result: shotResult,
-              targetHp: Number(players[targetId]?.hp ?? 0),
-              isSelf,
-              finished: true,
-              winnerId: currentGame.winner || null,
-              nextId: livingPlayerIds[0] || null,
-              reload: false,
-              at: Date.now()
-            };
-
-            return currentGame;
-
-          }
-
-          /* =========================
-             RESET SHELL SET
-          =========================
-             Setelah shell ke-8 ditembak,
-             buat 8 shell baru secara acak.
-          */
-
-          let shellReloaded = false;
-
-          if (
-            currentGame.shells.current >=
-            Number(currentGame.shells.total || 0)
-          ) {
-
-            const newShells =
-              createShellSet(
-                playerIds.length
-              );
-
-            currentGame.shells =
-              newShells;
-            shellReloaded = true;
-
-          }
-
-
-          /* =========================
-             NEXT TURN
-          =========================
-
-             Blank + self
-             = tetap giliran.
-
-             Selain itu
-             = pemain berikutnya.
-          */
-
-          if (
-            currentShellType ===
-            "blank" &&
-            isSelf
-          ) {
-
-            const currentIndex =
-              playerIds.indexOf(
-                currentPlayerId
-              );
-
-
-            currentGame.turn.current =
-              currentPlayerId;
-
-
-            currentGame.turn.index =
-              currentIndex >= 0
-                ? currentIndex
-                : 0;
-
-          } else {
-
-            const currentIndex =
-              playerIds.indexOf(
-                currentPlayerId
-              );
-
-
-            if (
-              currentIndex < 0
-            ) {
-
-              return;
-
-            }
-
-
-            let nextIndex =
-              (
-                currentIndex + 1
-              ) %
-              playerIds.length;
-
-
-            /*
-              Lewati pemain yang
-              sudah HP 0.
-            */
-
-            let checked = 0;
-
-
-            while (
-              checked <
-              playerIds.length
-            ) {
-
-              const candidateId =
-                playerIds[
-                  nextIndex
-                ];
-
-
-              const candidate =
-                players[
-                  candidateId
-                ];
-
-
-              if (
-                Number(
-                  candidate.hp ?? 0
-                ) > 0
-              ) {
-
-                break;
-
-              }
-
-
-              nextIndex =
-                (
-                  nextIndex + 1
-                ) %
-                playerIds.length;
-
-
-              checked++;
-
-            }
-
-
-            const nextId =
-              playerIds[
-                nextIndex
-              ];
-
-
-            currentGame.turn.current =
-              nextId;
-
-
-            currentGame.turn.index =
-              nextIndex;
-
-          }
-
-          currentGame.lastEvent = {
-            id:
-              Date.now().toString(36) +
-              Math.random().toString(36).slice(2, 8),
-            type: "shot",
-            playerId: currentPlayerId,
-            targetId,
-            result: shotResult,
-            targetHp: Number(players[targetId]?.hp ?? 0),
-            isSelf,
-            finished: false,
-            winnerId: null,
-            nextId: currentGame.turn.current || null,
-            reload: shellReloaded,
-            at: Date.now()
-          };
-
-
-          return currentGame;
-
+    /* Tahap 1: tampilkan pesan menembak. Belum memproses shell. */
+    const pendingResult = await runTransaction(gameRef, currentGame => {
+      if (!currentGame || currentGame.phase !== "playing") {
+        return;
+      }
+
+      if (currentGame.turn?.current !== currentPlayerId) {
+        return;
+      }
+
+      if (currentGame.shotPending) {
+        return;
+      }
+
+      const targetPlayer = currentGame.players?.[targetId];
+      if (!targetPlayer || Number(targetPlayer.hp ?? 0) <= 0) {
+        return;
+      }
+
+      const id = Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+      pendingId = id;
+
+      return {
+        ...currentGame,
+        shotPending: {
+          id,
+          playerId: currentPlayerId,
+          targetId,
+          at: Date.now()
+        },
+        lastEvent: {
+          id,
+          type: "shot_pending",
+          playerId: currentPlayerId,
+          targetId,
+          at: Date.now()
         }
-      );
+      };
+    });
 
-
-    if (
-      !result.committed
-    ) {
-
-      alert(
-        "Tembakan gagal. Silakan coba lagi."
-      );
-
+    if (!pendingResult.committed || !pendingId) {
+      const snapshot = await get(gameRef);
+      if (snapshot.exists()) {
+        gameData = snapshot.val();
+        await renderGameState();
+      }
       return;
-
     }
 
+    /* Jeda suspense sebelum shell benar-benar diproses. */
+    await wait(1500);
+
+    let shotResult = null;
+    let isSelf = false;
+
+    const result = await runTransaction(gameRef, currentGame => {
+      if (!currentGame || currentGame.phase !== "playing") {
+        return;
+      }
+
+      const pending = currentGame.shotPending;
+      if (
+        !pending ||
+        pending.id !== pendingId ||
+        pending.playerId !== currentPlayerId ||
+        pending.targetId !== targetId
+      ) {
+        return;
+      }
+
+      if (currentGame.turn?.current !== currentPlayerId) {
+        return;
+      }
+
+      const players = currentGame.players || {};
+      const targetPlayer = players[targetId];
+      if (!targetPlayer || Number(targetPlayer.hp ?? 0) <= 0) {
+        return;
+      }
+
+      let shells = currentGame.shells;
+      let currentShell = Number(shells?.current ?? 0);
+
+      if (!shells || !shells.sequence) {
+        shells = createShellSet(Object.keys(players).length);
+        currentGame.shells = shells;
+        currentShell = 0;
+      }
+
+      if (currentShell >= Number(shells.total || 0)) {
+        shells = createShellSet(Object.keys(players).length);
+        currentGame.shells = shells;
+        currentShell = 0;
+      }
+
+      const currentShellType = shells.sequence[currentShell];
+      if (!currentShellType) {
+        return;
+      }
+
+      const playerIds = Object.keys(players)
+        .filter(id => players[id])
+        .sort((a, b) => Number(players[a].turnOrder ?? 0) - Number(players[b].turnOrder ?? 0));
+
+      if (!playerIds.length) {
+        return;
+      }
+
+      isSelf = targetId === currentPlayerId;
+
+      if (currentShellType === "live") {
+        targetPlayer.hp = Math.max(0, Number(targetPlayer.hp ?? 0) - 1);
+        shotResult = "live";
+      } else {
+        shotResult = "blank";
+      }
+
+      currentGame.shells.current = currentShell + 1;
+      currentGame.shotPending = null;
+
+      currentGame.lastShot = {
+        id: Date.now().toString(36) + Math.random().toString(36).slice(2, 8),
+        targetId,
+        result: shotResult,
+        shellType: currentShellType,
+        at: Date.now()
+      };
+
+      const livingPlayerIds = playerIds.filter(
+        id => Number(players[id]?.hp ?? 0) > 0
+      );
+
+      if (livingPlayerIds.length <= 1) {
+        currentGame.phase = "finished";
+        currentGame.winner = livingPlayerIds[0] || null;
+        currentGame.turn.current = livingPlayerIds[0] || currentPlayerId;
+        currentGame.turn.index = livingPlayerIds[0] ? playerIds.indexOf(livingPlayerIds[0]) : 0;
+
+        currentGame.lastEvent = {
+          id: Date.now().toString(36) + Math.random().toString(36).slice(2, 8),
+          type: "shot",
+          playerId: currentPlayerId,
+          targetId,
+          result: shotResult,
+          targetHp: Number(targetPlayer.hp ?? 0),
+          isSelf,
+          finished: true,
+          winnerId: currentGame.winner || null,
+          nextId: livingPlayerIds[0] || null,
+          reload: false,
+          at: Date.now()
+        };
+
+        return currentGame;
+      }
+
+      let shellReloaded = false;
+      if (currentGame.shells.current >= Number(currentGame.shells.total || 0)) {
+        currentGame.shells = createShellSet(playerIds.length);
+        shellReloaded = true;
+      }
+
+      if (currentShellType === "blank" && isSelf) {
+        const currentIndex = playerIds.indexOf(currentPlayerId);
+        currentGame.turn.current = currentPlayerId;
+        currentGame.turn.index = currentIndex >= 0 ? currentIndex : 0;
+      } else {
+        const currentIndex = playerIds.indexOf(currentPlayerId);
+        if (currentIndex < 0) {
+          return;
+        }
+
+        let nextIndex = (currentIndex + 1) % playerIds.length;
+        let checked = 0;
+
+        while (checked < playerIds.length) {
+          const candidateId = playerIds[nextIndex];
+          if (Number(players[candidateId]?.hp ?? 0) > 0) {
+            break;
+          }
+          nextIndex = (nextIndex + 1) % playerIds.length;
+          checked++;
+        }
+
+        currentGame.turn.current = playerIds[nextIndex];
+        currentGame.turn.index = nextIndex;
+      }
+
+      currentGame.lastEvent = {
+        id: Date.now().toString(36) + Math.random().toString(36).slice(2, 8),
+        type: "shot",
+        playerId: currentPlayerId,
+        targetId,
+        result: shotResult,
+        targetHp: Number(targetPlayer.hp ?? 0),
+        isSelf,
+        finished: false,
+        winnerId: null,
+        nextId: currentGame.turn.current || null,
+        reload: shellReloaded,
+        at: Date.now()
+      };
+
+      return currentGame;
+    });
+
+    if (!result.committed) {
+      const snapshot = await get(gameRef);
+      if (snapshot.exists()) {
+        gameData = snapshot.val();
+        await renderGameState();
+      }
+      return;
+    }
 
     shotMode = false;
-
     selectedTarget = null;
-
-
     closeShotPopup();
-
     resetShot();
 
-
-    if (
-      shotResult === "live" &&
-      isSelf
-    ) {
+    if (shotResult === "live" && isSelf) {
       triggerDamageFlash();
     }
 
-    const snapshot =
-      await get(
-        gameRef
-      );
-
-
-    if (
-      snapshot.exists()
-    ) {
-
-      gameData =
-        snapshot.val();
-
+    const snapshot = await get(gameRef);
+    if (snapshot.exists()) {
+      gameData = snapshot.val();
       await renderGameState();
-
     }
 
-
   } catch (error) {
+    console.error("Shoot error:", error);
 
-    console.error(
-      "Shoot error:",
-      error
-    );
-
-    alert(
-      "Terjadi kesalahan saat menembak."
-    );
-
+    const snapshot = await get(gameRef);
+    if (snapshot.exists()) {
+      gameData = snapshot.val();
+      await renderGameState();
+    }
   } finally {
-
     shootingLocked = false;
-
   }
-
 }
 
 
