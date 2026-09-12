@@ -588,6 +588,128 @@ body {
 
 
 /* =========================
+   WINNER SCREEN
+========================= */
+
+.winner-screen {
+  display: flex;
+  position: fixed;
+  inset: 0;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: 16px;
+  background: rgba(0, 0, 0, 0.86);
+  z-index: 100;
+  overflow: hidden;
+}
+
+.winner-trophy {
+  position: absolute;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-bottom: 70px;
+  transform: scale(0);
+}
+
+.winner-trophy-icon {
+  font-size: 12em;
+}
+
+.winner-card {
+  display: flex;
+  position: relative;
+  overflow: hidden;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+  min-height: 110px;
+  color: white;
+  background: #2f2f2f;
+  transform: translateX(-100%);
+}
+
+.winner-card::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: -50px;
+  width: 50px;
+  height: 100%;
+  background: rgba(180, 180, 180, 0.7);
+  z-index: 1;
+  transform: skewX(-25deg);
+  animation: winnerShimmer 2s linear infinite;
+}
+
+.winner-title {
+  font-family: "Archivo Black", sans-serif;
+  font-size: clamp(3rem, 16vw, 5rem);
+  line-height: 1;
+  margin-bottom: 4px;
+  z-index: 2;
+  transition: color 0.3s ease;
+}
+
+.winner-name {
+  font-family: "Archivo", sans-serif;
+  font-weight: bold;
+  font-size: 20px;
+  color: #ccc;
+  z-index: 2;
+  transform: scaleY(0);
+  transform-origin: top;
+  transition: transform 0.3s linear;
+}
+
+@keyframes winnerShimmer {
+  from {
+    left: -50px;
+  }
+  to {
+    left: calc(100% + 50px);
+  }
+}
+
+@keyframes winnerSpin {
+  0% {
+    transform: rotateY(0deg) scale(0);
+  }
+  100% {
+    transform: rotateY(720deg) scale(1);
+  }
+}
+
+@keyframes winnerShake {
+  0% {
+    transform: rotate(-8deg);
+  }
+  25% {
+    transform: rotate(8deg);
+  }
+  50% {
+    transform: rotate(-8deg);
+  }
+  75% {
+    transform: rotate(8deg);
+  }
+  100% {
+    transform: rotate(-8deg);
+  }
+}
+
+@keyframes winnerSlide {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+
+/* =========================
    HIDDEN
 ========================= */
 
@@ -854,6 +976,24 @@ body {
 
 
 <!-- =========================
+     WINNER OVERLAY
+========================= -->
+
+<div class="winner-screen hidden">
+
+  <div class="winner-trophy">
+    <div class="winner-trophy-icon">🏆</div>
+  </div>
+
+  <div class="winner-card">
+    <span class="winner-title"></span>
+    <span class="winner-name"></span>
+  </div>
+
+</div>
+
+
+<!-- =========================
      OVERLAY
 ========================= -->
 
@@ -965,6 +1105,8 @@ let prepareTimer = null;
 let shootingLocked = false;
 let lastWinnerId = null;
 let lastFinishedStartedAt = null;
+let winnerTimer = null;
+let winnerCleanupStartedAt = null;
 
 
 /* =========================
@@ -1037,6 +1179,24 @@ const overlay =
 
 const playerContainer =
   document.querySelector(".st-players");
+
+const winnerScreen =
+  document.querySelector(".winner-screen");
+
+const winnerCard =
+  document.querySelector(".winner-card");
+
+const winnerTitle =
+  document.querySelector(".winner-title");
+
+const winnerName =
+  document.querySelector(".winner-name");
+
+const winnerTrophy =
+  document.querySelector(".winner-trophy");
+
+const winnerTrophyIcon =
+  document.querySelector(".winner-trophy-icon");
 
 const shellContainer =
   document.querySelector(".shell");
@@ -1444,6 +1604,12 @@ function watchRoom() {
 async function renderRoom() {
 
   if (!roomData) {
+
+    hideWinnerScreen();
+
+    if (!game.classList.contains("hidden")) {
+      showLobby();
+    }
 
     createBtn.classList.remove(
       "hidden"
@@ -2368,6 +2534,7 @@ function handleGameFinished() {
     "finished"
   ) {
 
+    hideWinnerScreen();
     return;
 
   }
@@ -2376,10 +2543,16 @@ function handleGameFinished() {
     gameData.winner ||
     null;
 
+  if (!winnerId) {
+    return;
+  }
+
+  const gameStartedAt =
+    gameData.startedAt || null;
+
   if (
-    !winnerId ||
-    (winnerId === lastWinnerId &&
-      gameData.startedAt === lastFinishedStartedAt)
+    winnerId === lastWinnerId &&
+    gameStartedAt === lastFinishedStartedAt
   ) {
     return;
   }
@@ -2387,7 +2560,7 @@ function handleGameFinished() {
   lastWinnerId =
     winnerId;
   lastFinishedStartedAt =
-    gameData.startedAt || null;
+    gameStartedAt;
 
   const winner =
     gamePlayers.find(
@@ -2395,18 +2568,146 @@ function handleGameFinished() {
         player.id === winnerId
     );
 
-  const winnerName =
+  const winnerNameText =
     winner?.name ||
     "Unknown";
 
-  alert(
-    "🏆 PEMENANG!\n\n" +
-    winnerName +
-    " memenangkan permainan!"
+  showWinnerScreen(
+    winnerNameText
   );
 
 }
 
+
+function showWinnerScreen(
+  name
+) {
+
+  if (winnerTimer) {
+    clearTimeout(winnerTimer);
+    winnerTimer = null;
+  }
+
+  winnerCleanupStartedAt =
+    gameData?.startedAt ||
+    Date.now();
+
+  winnerScreen.classList.remove(
+    "hidden"
+  );
+
+  winnerTitle.textContent = "";
+  winnerName.textContent = name;
+  winnerTitle.style.color = "white";
+  winnerName.style.transform =
+    "scaleY(0)";
+  winnerCard.style.animation =
+    "winnerSlide 0.6s linear forwards";
+  winnerTrophy.style.animation =
+    "winnerSpin 0.6s linear 1 forwards";
+  winnerTrophyIcon.style.animation =
+    "winnerShake 2.5s ease-in-out 4";
+
+  const text = "WINNER";
+
+  text.split("").forEach(
+    (char, index) => {
+      setTimeout(() => {
+        winnerTitle.textContent +=
+          char;
+      }, index * 120);
+    }
+  );
+
+  const titleEnd =
+    text.length * 120;
+
+  setTimeout(() => {
+    winnerTitle.style.color =
+      "gold";
+  }, titleEnd + 100);
+
+  setTimeout(() => {
+    winnerName.style.transform =
+      "scaleY(1)";
+  }, titleEnd + 180);
+
+  winnerTimer = setTimeout(
+    () => {
+      cleanupFinishedRoom(
+        winnerCleanupStartedAt
+      );
+    },
+    7000
+  );
+
+}
+
+
+function hideWinnerScreen() {
+
+  if (winnerTimer) {
+    clearTimeout(winnerTimer);
+    winnerTimer = null;
+  }
+
+  winnerScreen.classList.add(
+    "hidden"
+  );
+
+  winnerTitle.textContent = "";
+  winnerName.textContent = "";
+  winnerTitle.style.color = "white";
+  winnerName.style.transform =
+    "scaleY(0)";
+  winnerCard.style.animation = "none";
+  winnerTrophy.style.animation = "none";
+  winnerTrophyIcon.style.animation =
+    "none";
+}
+
+
+async function cleanupFinishedRoom(
+  startedAt
+) {
+
+  if (!startedAt) {
+    return;
+  }
+
+  try {
+
+    await runTransaction(
+      ref(db, "room"),
+      room => {
+
+        if (!room) {
+          return;
+        }
+
+        if (
+          room.status !== "playing" ||
+          room.game?.phase !== "finished" ||
+          room.game?.startedAt !== startedAt
+        ) {
+          return;
+        }
+
+        return null;
+
+      }
+    );
+
+  } catch (error) {
+
+    console.error(
+      "Gagal menghapus room:",
+      error
+    );
+
+  }
+
+}
 
 /* =========================
    RENDER SHELL INFO
