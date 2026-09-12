@@ -1,339 +1,331 @@
 <!DOCTYPE html>
 <html lang="id">
-
 <head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-  <meta charset="UTF-8">
+<title>Buckshot Roulette</title>
 
-  <meta
-    name="viewport"
-    content="width=device-width, initial-scale=1.0">
-
-  <title>Buckshot Roulette</title>
-
-  <script src="https://unpkg.com/lucide@latest"></script>
-
-</head>
-
-<body>
+<script src="https://unpkg.com/lucide@latest"></script>
 
 <style>
-
-/* =========================
-   GLOBAL
-========================= */
-
 * {
   box-sizing: border-box;
-  font-family: Arial, sans-serif;
+  -webkit-tap-highlight-color: rgba(0,0,0,0.2);
 }
-
-
-/* =========================
-   BODY
-========================= */
 
 html,
 body {
-  width: 100%;
-  height: 100%;
   margin: 0;
-}
-
-body {
-  min-height: 100dvh;
-  background: #1f1f1f;
-}
-
-
-/* =========================
-   HEADER
-========================= */
-
-.header {
-  display: flex;
-  background: #1a1a1a;
-  justify-content: space-between;
-  align-items: center;
-  padding: 12px;
-  border-bottom: 2.6px solid #dc143ccb;
-  z-index: 99;
-}
-
-.h-right {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
-.profile {
-  display: flex;
-  width: 38px;
-  height: 38px;
-  flex-shrink: 0;
-  color: white;
-  background: coral;
-  border-radius: 50%;
-  justify-content: center;
-  align-items: center;
-  font-size: 20px;
-  overflow: hidden;
-}
-
-.profile img {
+  padding: 0;
   width: 100%;
   height: 100%;
-  object-fit: cover;
+  overflow: hidden;
+  font-family: Arial, sans-serif;
+  background: #1f1f1f;
+  color: #fff;
 }
 
-.nama {
-  color: white;
-  font-size: 22px;
+button {
+  font-family: Arial, sans-serif;
 }
 
-.list {
-  display: flex;
-  align-items: center;
-  background: #2f2f2f;
-  padding: 6px 10px;
-  border-radius: 8px;
-  gap: 8px;
-  color: white;
-  font-size: 24px;
+.screen {
+  width: 100%;
+  height: 100dvh;
 }
-
 
 /* =========================
    LOGIN
 ========================= */
 
-.login-screen {
+.login {
   display: flex;
-  min-height: 100dvh;
-  justify-content: center;
+  width: 100%;
+  height: 100dvh;
   align-items: center;
+  justify-content: center;
   padding: 20px;
+  background: #1f1f1f;
 }
 
 .login-box {
-  display: flex;
   width: 100%;
   max-width: 420px;
-  flex-direction: column;
-  background: #2f2f2f;
-  padding: 20px;
-  border-radius: 8px;
+  padding: 24px;
+  background: #2a2a2a;
+  border: 1px solid #444;
 }
 
 .login-title {
   margin-bottom: 20px;
   text-align: center;
-  color: white;
   font-size: 28px;
   font-weight: bold;
 }
 
-.login-label {
-  margin-bottom: 6px;
-  color: #aaa;
-  font-size: 16px;
-}
-
-.login-input {
+.login-box input {
   width: 100%;
-  height: 44px;
-  margin-bottom: 14px;
-  padding: 0 12px;
+  height: 46px;
+  margin-bottom: 12px;
+  padding: 0 14px;
   border: 1px solid #555;
   outline: none;
   background: #1f1f1f;
-  color: white;
-  border-radius: 5px;
-  font-size: 18px;
+  color: #fff;
+  font-size: 16px;
 }
 
-.login-input:focus {
+.login-box input:focus {
   border-color: crimson;
 }
 
-.login-btn {
+.login-box button {
   width: 100%;
-  height: 45px;
-  margin-top: 6px;
-  border: none;
+  height: 46px;
+  border: 0;
   background: crimson;
-  color: white;
-  border-radius: 6px;
-  font-size: 20px;
+  color: #fff;
+  font-size: 16px;
   font-weight: bold;
+  cursor: pointer;
 }
-
-.login-message {
-  min-height: 22px;
-  margin-top: 10px;
-  text-align: center;
-  color: #ff7777;
-  font-size: 15px;
-}
-
 
 /* =========================
    LOBBY
 ========================= */
 
 .lobby {
-  display: flex;
-  min-height: 100dvh;
-  flex-direction: column;
-}
-
-.btns-top {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  padding: 14px;
-  justify-content: center;
-  align-items: center;
-}
-
-.btns-top button {
-  display: flex;
+  display: none;
   width: 100%;
-  height: 45px;
-  justify-content: center;
+  height: 100dvh;
+  overflow: hidden;
+  background: #1f1f1f;
+}
+
+.header {
+  display: flex;
+  height: 58px;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 16px;
+  background: #2a2a2a;
+  border-bottom: 1px solid #444;
+}
+
+.header-title {
+  font-size: 20px;
+  font-weight: bold;
+}
+
+.header-player {
+  display: flex;
   align-items: center;
   gap: 8px;
-  border: none;
-  background: crimson;
-  font-size: 22px;
-  color: white;
+  color: #aaa;
+  font-size: 14px;
+}
+
+.profile-mini {
+  display: flex;
+  width: 30px;
+  height: 30px;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  border-radius: 50%;
+  background: #444;
+}
+
+.profile-mini img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.lobby-content {
+  width: 100%;
+  height: calc(100dvh - 58px);
+  overflow-y: auto;
+  padding: 20px;
+}
+
+.room-card {
+  width: 100%;
+  max-width: 500px;
+  margin: 0 auto;
+  padding: 20px;
+  background: #2a2a2a;
+  border: 1px solid #444;
+}
+
+.room-title {
+  margin-bottom: 18px;
+  font-size: 20px;
   font-weight: bold;
-  border-radius: 6px;
+}
+
+.room-status {
+  margin-bottom: 18px;
+  color: #888;
+}
+
+.room-status span {
+  color: #fff;
+  font-weight: bold;
+}
+
+.room-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.room-buttons button {
+  width: 100%;
+  height: 44px;
+  border: 0;
+  background: #444;
+  color: #fff;
+  font-size: 15px;
+  font-weight: bold;
   cursor: pointer;
 }
 
-.start-left {
-  display: flex;
-  width: 100%;
-  gap: 6px;
+.room-buttons button:hover {
+  background: #555;
 }
 
-.left {
-  background: #666 !important;
+.room-buttons .primary {
+  background: crimson;
 }
 
-.join {
-  background: #228b22 !important;
+.room-buttons .primary:hover {
+  background: #dc143c;
 }
 
-.room-message {
-  min-height: 22px;
-  padding: 0 14px;
-  text-align: center;
-  color: #aaa;
-  font-size: 15px;
+.room-buttons .danger {
+  background: #5b2020;
 }
 
-.join-list {
+.players-list {
   display: flex;
   flex-direction: column;
-  gap: 0;
-  background: #2f2f2f;
-  margin: 14px;
-  padding: 14px 18px;
-  border-radius: 6px;
-}
-
-.pl-list {
-  display: flex;
   gap: 8px;
-  padding: 8px;
+  margin: 20px 0;
+}
+
+.player-item {
+  display: flex;
   align-items: center;
-  border-bottom: 1.5px solid #555;
+  justify-content: space-between;
+  padding: 12px;
+  background: #1f1f1f;
+  border: 1px solid #3b3b3b;
 }
 
-.pl-list:last-child {
-  border-bottom: none;
+.player-item-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
 }
 
-.empty-room {
-  padding: 10px;
-  text-align: center;
-  color: #777;
+.player-avatar {
+  display: flex;
+  width: 36px;
+  height: 36px;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  border-radius: 50%;
+  background: #444;
 }
 
+.player-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.player-name {
+  font-weight: bold;
+}
+
+.you-label {
+  color: #888;
+  font-size: 12px;
+}
 
 /* =========================
    GAME
 ========================= */
 
 .game {
-  display: flex;
+  display: none;
   position: relative;
   width: 100%;
   height: 100dvh;
   min-height: 100dvh;
-  flex-direction: column;
-  justify-content: space-between;
+  overflow: hidden;
+  background: #1f1f1f;
+}
+
+.game-panel {
+  position: relative;
+  width: 100%;
+  height: calc(100dvh - 58px);
   overflow: hidden;
 }
 
-
-/* =========================
-   GAME PANEL
-========================= */
-
-.game-panel {
-  display: flex;
-  flex-direction: column;
-  background: #1a1a1a;
-  padding: 10px 16px;
-  align-items: center;
-  color: white;
-  box-shadow: 0 2px 12px 0 #dc143ccb;
-  z-index: 1;
-}
-
-.gp-top {
+.game-info {
   display: flex;
   width: 100%;
   justify-content: space-between;
+  padding: 14px 16px;
+  color: #888;
+  font-size: 14px;
 }
 
-.gp-top span {
-  font-size: 22px;
+.game-info strong {
+  color: #fff;
 }
 
-.healt {
-  display: flex;
-  gap: 2px;
-  color: gold;
+.current-turn {
+  color: crimson !important;
 }
 
-.hp-off {
-  color: #886;
-}
-
-.next {
+.game-players {
   display: flex;
   width: 100%;
-  justify-content: left;
-  align-items: center;
-  padding-left: 6px;
-  margin-top: -4px;
-  gap: 6px;
-  color: #aaa;
+  justify-content: space-around;
+  padding: 10px 16px;
 }
 
-.next svg {
-  width: 16px;
-  height: 16px;
+.game-player {
+  min-width: 100px;
+  padding: 12px;
+  text-align: center;
+  background: #2a2a2a;
+  border: 1px solid #444;
 }
 
-.next span {
-  font-size: 16px;
+.game-player-name {
+  margin-bottom: 8px;
+  font-weight: bold;
 }
 
+.game-player-hp {
+  color: crimson;
+  font-size: 18px;
+  font-weight: bold;
+}
+
+.next-player {
+  margin-top: 10px;
+  text-align: center;
+  color: #777;
+  font-size: 13px;
+}
 
 /* =========================
    RANDOM SHELL
@@ -347,6 +339,7 @@ body {
   width: calc(100% - 24px);
   justify-content: center;
   top: 50%;
+  left: 12px;
   transform: translateY(-50%);
   padding: 12px;
   background: #2a2a2a;
@@ -382,466 +375,398 @@ body {
   color: #888 !important;
 }
 
-
 /* =========================
-   SHOTGUN
+   SHOT
 ========================= */
 
 .shot {
+  display: none;
   position: absolute;
-  display: flex;
   left: 50%;
-  top: 50%;
-  transform: translateX(-50%) translateY(-50%);
-  padding: 14px;
-  border-radius: 50%;
+  bottom: 105px;
+  transform: translateX(-50%);
+  width: 150px;
+  height: 52px;
+  border: 0;
+  background: crimson;
+  color: #fff;
+  font-size: 18px;
+  font-weight: bold;
   cursor: pointer;
-  transition: .15s;
-}
-
-.shot:hover {
-  background: #333;
+  z-index: 5;
 }
 
 .shot:active {
-  transform:
-    translateX(-50%)
-    translateY(-50%)
-    scale(.94);
+  transform: translateX(-50%) scale(.96);
 }
 
-.shot.active {
-  background: #333;
+.shot.disabled {
+  opacity: .4;
+  pointer-events: none;
 }
-
-.shot img {
-  width: 84px;
-  height: 84px;
-}
-
 
 /* =========================
-   BOTTOM
+   BOTTOM BUTTONS
 ========================= */
 
-.bottom {
+.game-bottom {
   display: flex;
-  width: 100%;
-  flex-shrink: 0;
-}
-
-.shot-btn {
-  display: flex;
-  width: 100%;
-  padding: 8px;
-  gap: 6px;
-}
-
-.shot-btn button {
-  display: flex;
-  width: 100%;
-  height: 45px;
-  justify-content: center;
-  align-items: center;
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  height: 72px;
   gap: 8px;
-  border: none;
-  background: crimson;
-  font-size: 22px;
-  color: white;
+  padding: 10px;
+  background: #2a2a2a;
+  border-top: 1px solid #444;
+  z-index: 6;
+}
+
+.game-bottom button {
+  flex: 1;
+  border: 0;
+  background: #444;
+  color: #fff;
+  font-size: 15px;
   font-weight: bold;
-  border-radius: 6px;
   cursor: pointer;
 }
 
-.self {
-  background: #666 !important;
-}
-
-.shot-btn button:disabled {
-  opacity: .45;
-  background: #555 !important;
+.game-bottom button:disabled {
+  opacity: .35;
   cursor: not-allowed;
 }
 
+.game-bottom button:active:not(:disabled) {
+  background: #555;
+}
 
 /* =========================
    OVERLAY
 ========================= */
 
 .overlay {
+  display: none;
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, .6);
-  z-index: 9;
+  background: rgba(0,0,0,.65);
+  z-index: 19;
 }
 
+.overlay.show {
+  display: block;
+}
 
 /* =========================
-   POPUP
+   SHOT LIST
 ========================= */
 
 .shot-list {
-  display: flex;
-  flex-direction: column;
+  display: none;
   position: fixed;
-  left: 50%;
   top: 50%;
-  transform:
-    translateX(-50%)
-    translateY(-50%);
-  width: 80%;
-  max-height: 80dvh;
+  left: 50%;
+  width: calc(100% - 32px);
+  max-width: 420px;
+  max-height: 70dvh;
   overflow-y: auto;
-  background: #2f2f2f;
-  padding: 14px 18px;
-  border-radius: 6px;
-  z-index: 10;
+  transform: translate(-50%, -50%);
+  padding: 16px;
+  background: #2a2a2a;
+  border: 1px solid #555;
+  z-index: 20;
 }
 
-.st-list-top {
+.shot-list.show {
+  display: block;
+}
+
+.shot-list-header {
   display: flex;
-  justify-content: space-between;
   align-items: center;
-  margin-bottom: 8px;
-  color: white;
+  justify-content: space-between;
+  margin-bottom: 14px;
+}
+
+.shot-list-title {
   font-size: 18px;
   font-weight: bold;
 }
 
-.st-cancel {
+.close-shot-list {
+  display: flex;
+  width: 36px;
+  height: 36px;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  background: #444;
+  color: #fff;
   cursor: pointer;
 }
 
-.st-cancel:hover {
-  color: crimson;
-}
-
-
-/* =========================
-   PLAYER LIST
-========================= */
-
-.st-list {
+.target-list {
   display: flex;
-  padding: 8px 0;
-  justify-content: space-between;
-  align-items: center;
-  border-bottom: 1.5px solid #555;
-}
-
-.st-list:last-child {
-  border-bottom: none;
-}
-
-.st-user {
-  display: flex;
-  align-items: center;
+  flex-direction: column;
   gap: 8px;
 }
 
-.st-profile {
+.target-button {
   display: flex;
-  width: 38px;
-  height: 38px;
-  flex-shrink: 0;
-  color: white;
-  background: coral;
-  border-radius: 50%;
-  justify-content: center;
-  align-items: center;
-  font-size: 20px;
-  overflow: hidden;
-}
-
-.st-profile img {
   width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-
-.st-nama {
-  color: #aaa;
-  font-size: 22px;
-}
-
-.st-healt {
-  color: #ffd700aa;
-  font-size: 18px;
-}
-
-.st-player-btn {
-  background: crimson;
-  border: none;
-  padding: 4px 10px;
-  font-size: 18px;
-  font-weight: bold;
-  color: white;
-  border-radius: 4px;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px;
+  border: 1px solid #444;
+  background: #1f1f1f;
+  color: #fff;
   cursor: pointer;
 }
 
-.st-player-btn:active {
-  transform: scale(.95);
+.target-button:active {
+  background: #333;
 }
 
+.target-info {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.target-hp {
+  color: crimson;
+  font-weight: bold;
+}
 
 /* =========================
-   HIDDEN
+   MESSAGE
 ========================= */
 
-.hidden {
-  display: none !important;
+.message {
+  display: none;
+  position: fixed;
+  top: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: calc(100% - 32px);
+  max-width: 500px;
+  padding: 12px 16px;
+  background: #333;
+  border: 1px solid #555;
+  color: #fff;
+  text-align: center;
+  z-index: 50;
 }
 
+.message.show {
+  display: block;
+}
 </style>
+</head>
 
+<body>
 
 <!-- =========================
-     LOGIN SCREEN
+     LOGIN
 ========================= -->
 
-<div class="login-screen hidden">
-
+<div class="login screen" id="loginScreen">
   <div class="login-box">
-
-    <div class="login-title">
-      Buckshot Roulette
-    </div>
-
-    <label class="login-label">
-      Nama
-    </label>
+    <div class="login-title">BUCKSHOT ROULETTE</div>
 
     <input
       type="text"
-      class="login-input login-name"
+      id="nameInput"
+      maxlength="20"
       placeholder="Masukkan nama"
-      maxlength="30">
-
-    <label class="login-label">
-
-      Profile URL
-
-      <span style="color:#777;">
-        (opsional)
-      </span>
-
-    </label>
+      autocomplete="off"
+    >
 
     <input
       type="url"
-      class="login-input login-profile"
-      placeholder="https://...">
+      id="profileInput"
+      placeholder="URL foto profil (opsional)"
+      autocomplete="off"
+    >
 
-    <button class="login-btn">
-      Masuk
+    <button id="loginButton">
+      MASUK
     </button>
-
-    <div class="login-message"></div>
-
   </div>
-
 </div>
-
 
 <!-- =========================
      LOBBY
 ========================= -->
 
-<div class="lobby hidden">
+<div class="lobby screen" id="lobbyScreen">
 
   <div class="header">
-
-    <div class="h-right">
-
-      <div class="profile header-profile">
-        C
-      </div>
-
-      <div class="nama header-name">
-        Christian
-      </div>
-
+    <div class="header-title">
+      LOBBY
     </div>
 
-    <div class="list">
+    <div class="header-player">
+      <span id="lobbyPlayerName">-</span>
 
-      <i data-lucide="list"></i>
+      <div class="profile-mini">
+        <img id="lobbyPlayerProfile" src="" alt="">
+      </div>
+    </div>
+  </div>
 
-      <div class="online">
-        0
+  <div class="lobby-content">
+
+    <div class="room-card">
+
+      <div class="room-title">
+        ROOM
+      </div>
+
+      <div class="room-status">
+        Status:
+        <span id="roomStatus">
+          Belum ada room
+        </span>
+      </div>
+
+      <div class="players-list" id="playersList"></div>
+
+      <div class="room-buttons">
+
+        <button
+          id="createRoomButton"
+          class="primary"
+        >
+          BUAT ROOM
+        </button>
+
+        <button
+          id="joinRoomButton"
+        >
+          GABUNG ROOM
+        </button>
+
+        <button
+          id="startGameButton"
+          class="primary"
+        >
+          MULAI
+        </button>
+
+        <button
+          id="leaveRoomButton"
+          class="danger"
+        >
+          KELUAR ROOM
+        </button>
+
       </div>
 
     </div>
 
   </div>
-
-
-  <div class="btns-top">
-
-    <button class="create">
-
-      <i data-lucide="plus"></i>
-
-      Buat room
-
-    </button>
-
-
-    <button class="join hidden">
-      Join
-    </button>
-
-
-    <div class="start-left hidden">
-
-      <button class="start">
-        Mulai
-      </button>
-
-      <button class="left">
-        Keluar
-      </button>
-
-    </div>
-
-  </div>
-
-
-  <div class="room-message"></div>
-
-
-  <div class="join-list"></div>
 
 </div>
-
 
 <!-- =========================
      GAME
 ========================= -->
 
-<div class="game hidden">
+<div class="game screen" id="gameScreen">
 
-  <div>
+  <div class="header">
 
-    <div class="header">
-
-      <div class="h-right">
-
-        <div class="profile game-profile">
-          C
-        </div>
-
-        <div class="nama game-name">
-          Christian
-        </div>
-
-      </div>
-
-
-      <div class="list">
-
-        <i data-lucide="list"></i>
-
-        <div class="game-online">
-          0
-        </div>
-
-      </div>
-
+    <div class="header-title">
+      GAME
     </div>
 
+    <div class="header-player">
+      <span id="gamePlayerName">-</span>
 
-    <div class="game-panel">
+      <div class="profile-mini">
+        <img id="gamePlayerProfile" src="" alt="">
+      </div>
+    </div>
 
-      <div class="gp-top">
+  </div>
 
-        <span class="game-current-name">
-          Christian
-        </span>
+  <div class="game-panel">
 
+    <div class="game-info">
 
-        <div class="healt">
-
-          <i
-            data-lucide="zap-off"
-            class="hp-off">
-          </i>
-
-          <i data-lucide="zap"></i>
-
-          <i data-lucide="zap"></i>
-
-        </div>
-
+      <div>
+        SHELL:
+        <strong id="currentShell">
+          0 / 8
+        </strong>
       </div>
 
-
-      <div class="next">
-
-        <i data-lucide="corner-down-right"></i>
-
-        <span class="next-name">
+      <div>
+        GILIRAN:
+        <strong
+          id="currentTurn"
+          class="current-turn"
+        >
           -
-        </span>
-
+        </strong>
       </div>
 
     </div>
 
-  </div>
+    <div class="game-players" id="gamePlayers"></div>
 
+    <div class="next-player">
+      Berikutnya:
+      <strong id="nextPlayer">
+        -
+      </strong>
+    </div>
 
-  <!-- RANDOM SHELL -->
+    <!-- RANDOM SHELL -->
 
-  <div class="random-shell">
+    <div class="random-shell" id="randomShell">
 
-    <div class="shell"></div>
+      <div class="shell" id="shellDisplay"></div>
 
-    <div class="shell-info">
+      <div class="shell-info">
+        <span class="alive-count">
+          Alive : 0
+        </span>
 
-      <span class="alive-count">
-        Alive : 0
-      </span>
-
-      <span class="blank-count">
-        Blank : 0
-      </span>
+        <span class="blank-count">
+          Blank : 0
+        </span>
+      </div>
 
     </div>
 
-  </div>
+    <!-- SHOT -->
 
+    <button
+      class="shot"
+      id="shotButton"
+    >
+      SHOT
+    </button>
 
-  <!-- SHOTGUN -->
+    <!-- BOTTOM -->
 
-  <div class="shot hidden">
-
-    <img
-      src="shot.png"
-      alt="Shotgun">
-
-  </div>
-
-
-  <div class="bottom">
-
-    <div class="shot-btn">
+    <div class="game-bottom">
 
       <button
-        class="other"
-        disabled>
-
-        Player
-
+        id="playerButton"
+        disabled
+      >
+        PLAYER
       </button>
 
       <button
-        class="self"
-        disabled>
-
-        You
-
+        id="youButton"
+        disabled
+      >
+        YOU
       </button>
 
     </div>
@@ -849,45 +774,57 @@ body {
   </div>
 
 </div>
-
 
 <!-- =========================
      OVERLAY
 ========================= -->
 
-<div class="overlay hidden"></div>
-
+<div
+  class="overlay"
+  id="overlay"
+></div>
 
 <!-- =========================
-     SHOT PLAYER POPUP
+     TARGET POPUP
 ========================= -->
 
-<div class="shot-list hidden">
+<div
+  class="shot-list"
+  id="shotList"
+>
 
-  <div class="st-list-top">
+  <div class="shot-list-header">
 
-    <span>
-      Shot the Player
-    </span>
+    <div class="shot-list-title">
+      PILIH TARGET
+    </div>
 
-    <i
-      data-lucide="x"
-      class="st-cancel">
-    </i>
+    <button
+      class="close-shot-list"
+      id="closeShotList"
+    >
+      <i data-lucide="x"></i>
+    </button>
 
   </div>
 
-
-  <div class="st-players"></div>
+  <div
+    class="target-list"
+    id="targetList"
+  ></div>
 
 </div>
 
+<div
+  class="message"
+  id="message"
+></div>
+
+<!-- =========================
+     FIREBASE
+========================= -->
 
 <script type="module">
-
-/* =========================
-   FIREBASE
-========================= */
 
 import {
   initializeApp
@@ -905,138 +842,113 @@ import {
 } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-database.js";
 
 
+/* ========================================
+   FIREBASE CONFIG
+======================================== */
+
 const firebaseConfig = {
-
-  apiKey:
-    "AIzaSyBQyI-9ESAqE5AFy49hIyP0rhul9gIlkc",
-
-  authDomain:
-    "buckshotroulette-4c7a1.firebaseapp.com",
-
-  databaseURL:
-    "https://buckshotroulette-4c7a1-default-rtdb.asia-southeast1.firebasedatabase.app",
-
-  projectId:
-    "buckshotroulette-4c7a1",
-
-  storageBucket:
-    "buckshotroulette-4c7a1.firebasestorage.app",
-
-  messagingSenderId:
-    "335951554199",
-
-  appId:
-    "1:335951554199:web:8d7475fc9dda0f76b32bd2",
-
-  measurementId:
-    "G-H5RLT7K97W"
-
+  apiKey: "AIzaSyBQyI-9ESAqE5AFy49hIyP0rhul9gIlkc",
+  authDomain: "buckshotroulette-4c7a1.firebaseapp.com",
+  databaseURL: "https://buckshotroulette-4c7a1-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "buckshotroulette-4c7a1",
+  storageBucket: "buckshotroulette-4c7a1.firebasestorage.app",
+  messagingSenderId: "335951554199",
+  appId: "1:335951554199:web:8d7475fc9dda0f76b32bd2",
+  measurementId: "G-H5RLT7K97W"
 };
 
-
-const app =
-  initializeApp(firebaseConfig);
-
-const db =
-  getDatabase(app);
+const app = initializeApp(firebaseConfig);
+const db = getDatabase(app);
 
 
-/* =========================
-   STATE
-========================= */
+/* ========================================
+   GLOBAL STATE
+======================================== */
 
 let currentPlayerId = null;
 let currentPlayer = null;
+
 let roomData = null;
 let gameData = null;
 
-let gamePlayers = [];
-
 let shotMode = false;
-let selectedTarget = null;
-
-let gameWatcherStarted = false;
-
-let roomWatcherStarted = false;
-
 let prepareTimer = null;
 
-let shootingLocked = false;
+let roomWatcher = null;
+let gameWatcher = null;
+
+let gameScreenActive = false;
 
 
-/* =========================
-   CONSTANT
-========================= */
-
-const shellCount = 8;
-
-
-/* =========================
-   ELEMENT
-========================= */
+/* ========================================
+   DOM
+======================================== */
 
 const loginScreen =
-  document.querySelector(".login-screen");
+  document.getElementById("loginScreen");
 
-const lobby =
-  document.querySelector(".lobby");
+const lobbyScreen =
+  document.getElementById("lobbyScreen");
 
-const game =
-  document.querySelector(".game");
+const gameScreen =
+  document.getElementById("gameScreen");
 
-const loginName =
-  document.querySelector(".login-name");
+const nameInput =
+  document.getElementById("nameInput");
 
-const loginProfile =
-  document.querySelector(".login-profile");
+const profileInput =
+  document.getElementById("profileInput");
 
-const loginBtn =
-  document.querySelector(".login-btn");
+const loginButton =
+  document.getElementById("loginButton");
 
-const loginMessage =
-  document.querySelector(".login-message");
+const createRoomButton =
+  document.getElementById("createRoomButton");
 
-const createBtn =
-  document.querySelector(".create");
+const joinRoomButton =
+  document.getElementById("joinRoomButton");
 
-const joinBtn =
-  document.querySelector(".join");
+const startGameButton =
+  document.getElementById("startGameButton");
 
-const startLeft =
-  document.querySelector(".start-left");
+const leaveRoomButton =
+  document.getElementById("leaveRoomButton");
 
-const startBtn =
-  document.querySelector(".start");
+const roomStatus =
+  document.getElementById("roomStatus");
 
-const leftBtn =
-  document.querySelector(".left");
+const playersList =
+  document.getElementById("playersList");
 
-const roomMessage =
-  document.querySelector(".room-message");
+const lobbyPlayerName =
+  document.getElementById("lobbyPlayerName");
 
-const joinList =
-  document.querySelector(".join-list");
+const lobbyPlayerProfile =
+  document.getElementById("lobbyPlayerProfile");
 
-const shot =
-  document.querySelector(".shot");
+const gamePlayerName =
+  document.getElementById("gamePlayerName");
 
-const playerBtn =
-  document.querySelector(".other");
+const gamePlayerProfile =
+  document.getElementById("gamePlayerProfile");
 
-const selfBtn =
-  document.querySelector(".self");
+const gamePlayers =
+  document.getElementById("gamePlayers");
 
-const popup =
-  document.querySelector(".shot-list");
+const currentShell =
+  document.getElementById("currentShell");
 
-const overlay =
-  document.querySelector(".overlay");
+const currentTurn =
+  document.getElementById("currentTurn");
 
-const playerContainer =
-  document.querySelector(".st-players");
+const nextPlayer =
+  document.getElementById("nextPlayer");
 
-const shellContainer =
-  document.querySelector(".shell");
+const randomShell =
+  document.getElementById("randomShell");
+
+const shellDisplay =
+  document.getElementById("shellDisplay");
 
 const aliveCount =
   document.querySelector(".alive-count");
@@ -1044,202 +956,195 @@ const aliveCount =
 const blankCount =
   document.querySelector(".blank-count");
 
+const shotButton =
+  document.getElementById("shotButton");
 
-/* =========================
-   NORMALIZE NAME
-========================= */
+const playerButton =
+  document.getElementById("playerButton");
+
+const youButton =
+  document.getElementById("youButton");
+
+const overlay =
+  document.getElementById("overlay");
+
+const shotList =
+  document.getElementById("shotList");
+
+const targetList =
+  document.getElementById("targetList");
+
+const closeShotList =
+  document.getElementById("closeShotList");
+
+const messageBox =
+  document.getElementById("message");
+
+
+/* ========================================
+   UTILITY
+======================================== */
+
+function showScreen(screen) {
+  loginScreen.style.display = "none";
+  lobbyScreen.style.display = "none";
+  gameScreen.style.display = "none";
+
+  screen.style.display = "block";
+}
+
+function showMessage(text, duration = 2500) {
+  messageBox.textContent = text;
+  messageBox.classList.add("show");
+
+  setTimeout(() => {
+    messageBox.classList.remove("show");
+  }, duration);
+}
 
 function normalizeName(name) {
-
   return name
     .trim()
     .toLowerCase()
     .replace(/\s+/g, " ");
-
 }
 
+function shuffle(array) {
+  const result = [...array];
 
-/* =========================
-   NAME EXISTS
-========================= */
+  for (let i = result.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
 
-async function nameExists(name) {
-
-  const targetName =
-    normalizeName(name);
-
-  const snapshot =
-    await get(ref(db, "players"));
-
-  if (!snapshot.exists()) {
-    return false;
+    [
+      result[i],
+      result[j]
+    ] = [
+      result[j],
+      result[i]
+    ];
   }
 
-  const players =
-    snapshot.val();
+  return result;
+}
 
-  return Object.values(players).some(
-    player => {
+function getPlayerName(playerId) {
+  if (!gameData?.players?.[playerId]) {
+    return "Unknown";
+  }
 
-      return normalizeName(
-        player.name || ""
-      ) === targetName;
-
-    }
-  );
-
+  return gameData.players[playerId].name || "Unknown";
 }
 
 
-/* =========================
-   RESERVE NAME
-========================= */
+/* ========================================
+   PLAYER ID
+======================================== */
+
+async function loadCurrentPlayer() {
+
+  const savedId =
+    localStorage.getItem("buckshotPlayerId");
+
+  if (!savedId) {
+    return;
+  }
+
+  const playerRef =
+    ref(db, `players/${savedId}`);
+
+  const snapshot =
+    await get(playerRef);
+
+  if (!snapshot.exists()) {
+    localStorage.removeItem("buckshotPlayerId");
+    return;
+  }
+
+  currentPlayerId = savedId;
+  currentPlayer = snapshot.val();
+
+  lobbyPlayerName.textContent =
+    currentPlayer.name;
+
+  gamePlayerName.textContent =
+    currentPlayer.name;
+
+  if (currentPlayer.profile) {
+    lobbyPlayerProfile.src =
+      currentPlayer.profile;
+
+    gamePlayerProfile.src =
+      currentPlayer.profile;
+  }
+
+  await watchRoom();
+
+  showScreen(lobbyScreen);
+}
+
+
+/* ========================================
+   NAME RESERVATION
+======================================== */
 
 async function reserveName(name) {
 
   const normalized =
     normalizeName(name);
 
-  const nameKey =
-    encodeURIComponent(normalized);
-
   const nameRef =
-    ref(db, "names/" + nameKey);
+    ref(db, `names/${normalized}`);
 
   const result =
     await runTransaction(
       nameRef,
       current => {
 
-        if (current === null) {
-
-          return {
-
-            name: name,
-
-            createdAt: Date.now()
-
-          };
-
+        if (current !== null) {
+          return;
         }
 
-        return;
-
+        return {
+          name: name.trim(),
+          createdAt: Date.now()
+        };
       }
     );
 
   return result.committed;
-
 }
 
 
-/* =========================
-   LOAD SAVED PLAYER
-========================= */
-
-async function loadSavedPlayer() {
-
-  const savedId =
-    localStorage.getItem(
-      "buckshotPlayerId"
-    );
-
-  if (!savedId) {
-    return false;
-  }
-
-  const snapshot =
-    await get(
-      ref(
-        db,
-        "players/" + savedId
-      )
-    );
-
-  if (!snapshot.exists()) {
-
-    localStorage.removeItem(
-      "buckshotPlayerId"
-    );
-
-    return false;
-
-  }
-
-  currentPlayerId =
-    savedId;
-
-  currentPlayer =
-    snapshot.val();
-
-  return true;
-
-}
-
-
-/* =========================
+/* ========================================
    LOGIN
-========================= */
+======================================== */
 
-loginBtn.addEventListener(
+loginButton.addEventListener(
   "click",
   async () => {
 
-    loginMessage.textContent = "";
-
     const name =
-      loginName.value.trim();
+      nameInput.value.trim();
 
     const profile =
-      loginProfile.value.trim();
+      profileInput.value.trim();
 
     if (!name) {
-
-      loginMessage.textContent =
-        "Nama wajib diisi.";
-
+      alert("Nama harus diisi.");
       return;
-
     }
 
-    if (name.length < 2) {
-
-      loginMessage.textContent =
-        "Nama minimal 2 karakter.";
-
-      return;
-
-    }
-
-    loginBtn.disabled = true;
-
-    loginBtn.textContent =
-      "Memproses...";
+    loginButton.disabled = true;
 
     try {
 
-      const exists =
-        await nameExists(name);
-
-      if (exists) {
-
-        loginMessage.textContent =
-          "Nama tersebut sudah digunakan.";
-
-        return;
-
-      }
-
-      const reserved =
+      const available =
         await reserveName(name);
 
-      if (!reserved) {
-
-        loginMessage.textContent =
-          "Nama tersebut sudah digunakan.";
-
+      if (!available) {
+        alert("Nama sudah digunakan.");
+        loginButton.disabled = false;
         return;
-
       }
 
       const playerRef =
@@ -1249,13 +1154,9 @@ loginBtn.addEventListener(
         playerRef.key;
 
       currentPlayer = {
-
-        name: name,
-
-        profile: profile,
-
+        name,
+        profile: profile || "",
         createdAt: Date.now()
-
       };
 
       await set(
@@ -1268,1644 +1169,991 @@ loginBtn.addEventListener(
         currentPlayerId
       );
 
-      showLobby();
+      lobbyPlayerName.textContent =
+        name;
+
+      gamePlayerName.textContent =
+        name;
+
+      if (profile) {
+        lobbyPlayerProfile.src =
+          profile;
+
+        gamePlayerProfile.src =
+          profile;
+      }
+
+      showScreen(lobbyScreen);
+
+      await watchRoom();
 
     } catch (error) {
 
       console.error(error);
 
-      loginMessage.textContent =
-        "Gagal masuk. Periksa koneksi Firebase.";
+      alert(
+        "Terjadi kesalahan saat masuk."
+      );
 
     } finally {
 
-      loginBtn.disabled = false;
-
-      loginBtn.textContent =
-        "Masuk";
-
+      loginButton.disabled = false;
     }
-
   }
 );
 
 
-/* =========================
-   SHOW LOGIN
-========================= */
+/* ========================================
+   ROOM WATCHER
+======================================== */
 
-function showLogin() {
+async function watchRoom() {
 
-  loginScreen.classList.remove(
-    "hidden"
-  );
-
-  lobby.classList.add(
-    "hidden"
-  );
-
-  game.classList.add(
-    "hidden"
-  );
-
-}
-
-
-/* =========================
-   SHOW LOBBY
-========================= */
-
-function showLobby() {
-
-  loginScreen.classList.add(
-    "hidden"
-  );
-
-  lobby.classList.remove(
-    "hidden"
-  );
-
-  game.classList.add(
-    "hidden"
-  );
-
-  closeShotPopup();
-
-  resetShot();
-
-  updateHeader();
-
-  watchRoom();
-
-}
-
-
-/* =========================
-   UPDATE HEADER
-========================= */
-
-function updateHeader() {
-
-  if (!currentPlayer) {
-    return;
+  if (roomWatcher) {
+    roomWatcher();
   }
 
-  const name =
-    currentPlayer.name || "?";
+  const roomRef =
+    ref(db, "room");
 
-  const profile =
-    currentPlayer.profile || "";
+  roomWatcher =
+    onValue(
+      roomRef,
+      snapshot => {
 
-  const firstLetter =
-    name.charAt(0).toUpperCase();
+        roomData =
+          snapshot.exists()
+            ? snapshot.val()
+            : null;
 
-  document
-    .querySelectorAll(
-      ".header-name, .game-name"
-    )
-    .forEach(element => {
+        renderRoom();
 
-      element.textContent = name;
+        if (
+          roomData?.status === "playing" &&
+          roomData?.players?.[currentPlayerId]
+        ) {
 
-    });
+          enterGame();
 
-  document
-    .querySelectorAll(
-      ".header-profile, .game-profile"
-    )
-    .forEach(element => {
+        } else if (
+          roomData?.status !== "playing"
+        ) {
 
-      if (profile) {
+          if (gameScreenActive) {
+            gameScreenActive = false;
+            gameData = null;
 
-        element.innerHTML = `
+            if (gameWatcher) {
+              gameWatcher();
+              gameWatcher = null;
+            }
+          }
 
-          <img
-            src="${profile}"
-            alt="Profile">
-
-        `;
-
-      } else {
-
-        element.textContent =
-          firstLetter;
-
+          showScreen(lobbyScreen);
+        }
       }
-
-    });
-
+    );
 }
 
 
-/* =========================
-   WATCH ROOM
-========================= */
+/* ========================================
+   ROOM RENDER
+======================================== */
 
-function watchRoom() {
-
-  if (roomWatcherStarted) {
-    return;
-  }
-
-  roomWatcherStarted = true;
-
-  onValue(
-    ref(db, "room"),
-    async snapshot => {
-
-      roomData =
-        snapshot.exists()
-          ? snapshot.val()
-          : null;
-
-      await renderRoom();
-
-    }
-  );
-
-}
-
-
-/* =========================
-   RENDER ROOM
-========================= */
-
-async function renderRoom() {
+function renderRoom() {
 
   if (!roomData) {
 
-    createBtn.classList.remove(
-      "hidden"
-    );
+    roomStatus.textContent =
+      "Belum ada room";
 
-    joinBtn.classList.add(
-      "hidden"
-    );
+    playersList.innerHTML = "";
 
-    startLeft.classList.add(
-      "hidden"
-    );
-
-    roomMessage.textContent =
-      "Belum ada room.";
-
-    joinList.innerHTML = "";
-
-    document.querySelector(
-      ".online"
-    ).textContent = "0";
+    startGameButton.disabled = true;
+    leaveRoomButton.disabled = true;
 
     return;
-
   }
 
-
-  if (roomData.status === "playing") {
-
-    const joined =
-      roomData.players &&
-      roomData.players[
-        currentPlayerId
-      ];
-
-    if (joined) {
-
-      await enterGame();
-
-      return;
-
-    }
-
-    createBtn.classList.add(
-      "hidden"
-    );
-
-    joinBtn.classList.add(
-      "hidden"
-    );
-
-    startLeft.classList.add(
-      "hidden"
-    );
-
-    roomMessage.textContent =
-      "Game sedang berjalan. Tunggu game selesai.";
-
-    return;
-
-  }
-
+  roomStatus.textContent =
+    roomData.status === "playing"
+      ? "Sedang bermain"
+      : "Lobby";
 
   const roomPlayers =
     roomData.players || {};
 
-  const joined =
-    !!roomPlayers[
-      currentPlayerId
-    ];
-
-  createBtn.classList.toggle(
-    "hidden",
-    !!roomData
-  );
-
-  joinBtn.classList.toggle(
-    "hidden",
-    joined
-  );
-
-  startLeft.classList.toggle(
-    "hidden",
-    !joined
-  );
-
-  roomMessage.textContent =
-    joined
-      ? "Kamu berada di room."
-      : "Room tersedia. Tekan Join untuk masuk.";
-
   const playerIds =
     Object.keys(roomPlayers);
 
-  document.querySelector(
-    ".online"
-  ).textContent =
-    playerIds.length;
+  playersList.innerHTML = "";
 
-  await renderLobbyPlayers(
-    playerIds
-  );
+  playerIds.forEach(
+    playerId => {
 
-}
+      const player =
+        roomPlayers[playerId];
 
+      const item =
+        document.createElement("div");
 
-/* =========================
-   RENDER LOBBY PLAYERS
-========================= */
+      item.className =
+        "player-item";
 
-async function renderLobbyPlayers(
-  playerIds
-) {
+      const left =
+        document.createElement("div");
 
-  joinList.innerHTML = "";
+      left.className =
+        "player-item-left";
 
-  if (playerIds.length === 0) {
+      const avatar =
+        document.createElement("div");
 
-    joinList.innerHTML = `
+      avatar.className =
+        "player-avatar";
 
-      <div class="empty-room">
-        Belum ada pemain.
-      </div>
+      const playerData =
+        playerId === currentPlayerId
+          ? currentPlayer
+          : null;
 
-    `;
+      if (playerData?.profile) {
 
-    return;
+        const img =
+          document.createElement("img");
 
-  }
+        img.src =
+          playerData.profile;
 
-  for (
-    const playerId of playerIds
-  ) {
-
-    const snapshot =
-      await get(
-        ref(
-          db,
-          "players/" + playerId
-        )
-      );
-
-    if (!snapshot.exists()) {
-      continue;
-    }
-
-    const player =
-      snapshot.val();
-
-    const item =
-      document.createElement("div");
-
-    item.className =
-      "pl-list";
-
-    const profile =
-      player.profile || "";
-
-    const firstLetter =
-      (player.name || "?")
-        .charAt(0)
-        .toUpperCase();
-
-    const profileHTML =
-      profile
-
-        ? `
-
-          <div class="profile">
-
-            <img
-              src="${profile}"
-              alt="Profile">
-
-          </div>
-
-        `
-
-        : `
-
-          <div class="profile">
-            ${firstLetter}
-          </div>
-
-        `;
-
-    item.innerHTML = `
-
-      ${profileHTML}
-
-      <div class="nama">
-        ${player.name || "Unknown"}
-      </div>
-
-    `;
-
-    joinList.appendChild(item);
-
-  }
-
-}
-
-
-/* =========================
-   CREATE ROOM
-========================= */
-
-createBtn.addEventListener(
-  "click",
-  async () => {
-
-    if (!currentPlayerId) {
-      return;
-    }
-
-    createBtn.disabled = true;
-
-    try {
-
-      const snapshot =
-        await get(
-          ref(db, "room")
-        );
-
-      if (snapshot.exists()) {
-
-        roomMessage.textContent =
-          "Room sudah dibuat pemain lain.";
-
-        return;
-
+        avatar.appendChild(img);
       }
 
-      await set(
-        ref(db, "room"),
-        {
+      const name =
+        document.createElement("div");
 
-          exists: true,
-
-          status: "lobby",
-
-          createdAt: Date.now(),
-
-          players: {
-
-            [currentPlayerId]: true
-
-          }
-
+      name.innerHTML = `
+        <div class="player-name">
+          ${escapeHtml(player.name || "Player")}
+        </div>
+        ${
+          playerId === currentPlayerId
+            ? `<div class="you-label">YOU</div>`
+            : ""
         }
-      );
+      `;
 
-      roomMessage.textContent =
-        "Room berhasil dibuat.";
+      left.appendChild(avatar);
+      left.appendChild(name);
 
-    } catch (error) {
+      item.appendChild(left);
 
-      console.error(error);
-
-      roomMessage.textContent =
-        "Gagal membuat room.";
-
-    } finally {
-
-      createBtn.disabled = false;
-
-    }
-
-  }
-);
-
-
-/* =========================
-   JOIN ROOM
-========================= */
-
-joinBtn.addEventListener(
-  "click",
-  async () => {
-
-    if (!currentPlayerId) {
-      return;
-    }
-
-    joinBtn.disabled = true;
-
-    try {
-
-      const snapshot =
-        await get(
-          ref(db, "room")
-        );
-
-      if (!snapshot.exists()) {
-
-        roomMessage.textContent =
-          "Room tidak tersedia.";
-
-        return;
-
-      }
-
-      const room =
-        snapshot.val();
-
-      if (room.status === "playing") {
-
-        roomMessage.textContent =
-          "Game sedang berjalan.";
-
-        return;
-
-      }
-
-      await set(
-        ref(
-          db,
-          "room/players/" +
-          currentPlayerId
-        ),
-        true
-      );
-
-    } catch (error) {
-
-      console.error(error);
-
-      roomMessage.textContent =
-        "Gagal join room.";
-
-    } finally {
-
-      joinBtn.disabled = false;
-
-    }
-
-  }
-);
-
-
-/* =========================
-   LEAVE ROOM
-========================= */
-
-leftBtn.addEventListener(
-  "click",
-  async () => {
-
-    if (!currentPlayerId) {
-      return;
-    }
-
-    try {
-
-      const snapshot =
-        await get(
-          ref(db, "room")
-        );
-
-      if (!snapshot.exists()) {
-        return;
-      }
-
-      const room =
-        snapshot.val();
-
-      if (room.status === "playing") {
-
-        roomMessage.textContent =
-          "Game sedang berjalan.";
-
-        return;
-
-      }
-
-      const players =
-        room.players || {};
-
-      delete players[
-        currentPlayerId
-      ];
-
-      const remaining =
-        Object.keys(players);
-
-      if (remaining.length === 0) {
-
-        await remove(
-          ref(db, "room")
-        );
-
-      } else {
-
-        await set(
-          ref(db, "room/players"),
-          players
-        );
-
-      }
-
-    } catch (error) {
-
-      console.error(error);
-
-      roomMessage.textContent =
-        "Gagal keluar dari room.";
-
-    }
-
-  }
-);
-
-
-/* =========================
-   SHUFFLE ARRAY
-========================= */
-
-function shuffleArray(array) {
-
-  const result =
-    [...array];
-
-  for (
-    let i = result.length - 1;
-    i > 0;
-    i--
-  ) {
-
-    const j =
-      Math.floor(
-        Math.random() * (i + 1)
-      );
-
-    [
-      result[i],
-      result[j]
-    ] = [
-      result[j],
-      result[i]
-    ];
-
-  }
-
-  return result;
-
-}
-
-
-/* =========================
-   CREATE GAME STATE
-========================= */
-
-function createGameState(
-  playerIds
-) {
-
-  const shuffledPlayers =
-    shuffleArray(playerIds);
-
-  const gamePlayersData = {};
-
-  shuffledPlayers.forEach(
-    (playerId, index) => {
-
-      gamePlayersData[playerId] = {
-
-        hp: 3,
-
-        turnOrder: index
-
-      };
-
+      playersList.appendChild(item);
     }
   );
 
+  const joined =
+    !!roomPlayers[currentPlayerId];
 
-  const alive =
-    Math.floor(
-      Math.random() * 7
-    ) + 1;
+  startGameButton.disabled =
+    !joined ||
+    playerIds.length < 2 ||
+    roomData.status === "playing";
 
-  const blank =
-    shellCount - alive;
-
-
-  const shellData = [];
-
-
-  for (
-    let i = 0;
-    i < alive;
-    i++
-  ) {
-
-    shellData.push(
-      "live"
-    );
-
-  }
-
-
-  for (
-    let i = 0;
-    i < blank;
-    i++
-  ) {
-
-    shellData.push(
-      "blank"
-    );
-
-  }
-
-
-  const shuffledShells =
-    shuffleArray(shellData);
-
-
-  const now =
-    Date.now();
-
-
-  return {
-
-    phase:
-      "preparing",
-
-    prepareEndsAt:
-      now + 3000,
-
-    players:
-      gamePlayersData,
-
-    turn: {
-
-      current:
-        shuffledPlayers[0],
-
-      index: 0
-
-    },
-
-    shells: {
-
-      total: 8,
-
-      alive: alive,
-
-      blank: blank,
-
-      current: 0,
-
-      sequence:
-        shuffledShells
-
-    },
-
-    startedAt:
-      now
-
-  };
-
+  leaveRoomButton.disabled =
+    !joined ||
+    roomData.status === "playing";
 }
 
 
-/* =========================
-   START GAME
-========================= */
+/* ========================================
+   CREATE ROOM
+======================================== */
 
-startBtn.addEventListener(
+createRoomButton.addEventListener(
   "click",
   async () => {
 
     if (!currentPlayerId) {
       return;
     }
-
-    startBtn.disabled = true;
 
     try {
 
       const roomRef =
         ref(db, "room");
 
-      const result =
-        await runTransaction(
-          roomRef,
-          room => {
+      const snapshot =
+        await get(roomRef);
 
-            if (!room) {
-              return;
-            }
+      if (
+        snapshot.exists() &&
+        snapshot.val()?.status === "playing"
+      ) {
+        alert(
+          "Game sedang berlangsung."
+        );
+        return;
+      }
 
-            if (
-              room.status ===
-              "playing"
-            ) {
-
-              return;
-
-            }
-
-            const players =
-              room.players || {};
-
-            const playerIds =
-              Object.keys(players);
-
-            if (
-              playerIds.length < 2
-            ) {
-
-              return;
-
-            }
-
-            if (
-              !players[
-                currentPlayerId
-              ]
-            ) {
-
-              return;
-
-            }
-
-            const gameState =
-              createGameState(
-                playerIds
-              );
-
-            return {
-
-              ...room,
-
-              status:
-                "playing",
-
-              game:
-                gameState
-
-            };
-
+      await set(
+        roomRef,
+        {
+          exists: true,
+          status: "lobby",
+          createdAt: Date.now(),
+          players: {
+            [currentPlayerId]: true
           }
+        }
+      );
+
+      showMessage("Room berhasil dibuat.");
+
+    } catch (error) {
+
+      console.error(error);
+
+      alert(
+        "Gagal membuat room."
+      );
+    }
+  }
+);
+
+
+/* ========================================
+   JOIN ROOM
+======================================== */
+
+joinRoomButton.addEventListener(
+  "click",
+  async () => {
+
+    if (!currentPlayerId) {
+      return;
+    }
+
+    try {
+
+      const roomRef =
+        ref(db, "room");
+
+      const snapshot =
+        await get(roomRef);
+
+      if (!snapshot.exists()) {
+        alert("Belum ada room.");
+        return;
+      }
+
+      const room =
+        snapshot.val();
+
+      if (room.status === "playing") {
+        alert(
+          "Game sedang berlangsung. Tidak bisa bergabung."
+        );
+        return;
+      }
+
+      const playerIds =
+        Object.keys(room.players || {});
+
+      if (
+        room.players?.[currentPlayerId]
+      ) {
+        showMessage(
+          "Kamu sudah berada di room."
+        );
+        return;
+      }
+
+      if (playerIds.length >= 2) {
+        alert(
+          "Room sementara dibatasi maksimal 2 pemain."
+        );
+        return;
+      }
+
+      const playerRef =
+        ref(
+          db,
+          `room/players/${currentPlayerId}`
         );
 
+      await set(
+        playerRef,
+        true
+      );
 
-      if (!result.committed) {
+      showMessage(
+        "Berhasil bergabung ke room."
+      );
 
-        const snapshot =
-          await get(
-            ref(db, "room")
-          );
+    } catch (error) {
 
-        if (
-          snapshot.exists() &&
-          snapshot.val().status ===
-          "lobby"
-        ) {
+      console.error(error);
 
-          const players =
-            snapshot.val().players ||
-            {};
+      alert(
+        "Gagal bergabung ke room."
+      );
+    }
+  }
+);
 
-          if (
-            Object.keys(players).length <
-            2
-          ) {
 
-            roomMessage.textContent =
-              "Minimal 2 pemain untuk memulai.";
+/* ========================================
+   LEAVE ROOM
+======================================== */
 
-          }
+leaveRoomButton.addEventListener(
+  "click",
+  async () => {
 
-        }
+    if (!roomData) {
+      return;
+    }
 
+    try {
+
+      await remove(
+        ref(
+          db,
+          `room/players/${currentPlayerId}`
+        )
+      );
+
+      const snapshot =
+        await get(
+          ref(db, "room/players")
+        );
+
+      if (!snapshot.exists()) {
+
+        await remove(
+          ref(db, "room")
+        );
       }
 
     } catch (error) {
 
       console.error(error);
 
-      roomMessage.textContent =
-        "Gagal memulai game.";
-
-    } finally {
-
-      startBtn.disabled = false;
-
+      alert(
+        "Gagal keluar dari room."
+      );
     }
-
   }
 );
 
 
-/* =========================
-   WATCH GAME
-========================= */
+/* ========================================
+   CREATE GAME STATE
+======================================== */
+
+function createGameState(playerIds) {
+
+  const shuffledPlayers =
+    shuffle(playerIds);
+
+  const liveCount =
+    Math.floor(
+      Math.random() * 7
+    ) + 1;
+
+  const blankCount =
+    8 - liveCount;
+
+  const shells = [
+    ...Array(liveCount).fill("live"),
+    ...Array(blankCount).fill("blank")
+  ];
+
+  const sequence =
+    shuffle(shells);
+
+  const players = {};
+
+  shuffledPlayers.forEach(
+    (playerId, index) => {
+
+      players[playerId] = {
+        name:
+          roomData.playersData?.[playerId]?.name ||
+          playerId,
+
+        profile:
+          roomData.playersData?.[playerId]?.profile ||
+          "",
+
+        hp: 3,
+
+        turnOrder: index
+      };
+    }
+  );
+
+  return {
+    phase: "preparing",
+
+    prepareEndsAt:
+      Date.now() + 3000,
+
+    players,
+
+    turn: {
+      current: shuffledPlayers[0],
+      index: 0
+    },
+
+    shells: {
+      total: 8,
+      alive: liveCount,
+      blank: blankCount,
+      current: 0,
+      sequence
+    },
+
+    startedAt: Date.now()
+  };
+}
+
+
+/* ========================================
+   START GAME
+======================================== */
+
+startGameButton.addEventListener(
+  "click",
+  async () => {
+
+    if (!roomData) {
+      return;
+    }
+
+    const playerIds =
+      Object.keys(
+        roomData.players || {}
+      );
+
+    if (playerIds.length < 2) {
+      alert(
+        "Minimal 2 pemain untuk memulai."
+      );
+      return;
+    }
+
+    if (roomData.status === "playing") {
+      return;
+    }
+
+    try {
+
+      const playersData = {};
+
+      for (const playerId of playerIds) {
+
+        const snapshot =
+          await get(
+            ref(db, `players/${playerId}`)
+          );
+
+        if (snapshot.exists()) {
+
+          playersData[playerId] =
+            snapshot.val();
+        }
+      }
+
+      roomData.playersData =
+        playersData;
+
+      const game =
+        createGameState(playerIds);
+
+      await set(
+        ref(db, "room/status"),
+        "playing"
+      );
+
+      await set(
+        ref(db, "room/game"),
+        game
+      );
+
+    } catch (error) {
+
+      console.error(error);
+
+      alert(
+        "Gagal memulai game."
+      );
+    }
+  }
+);
+
+
+/* ========================================
+   ENTER GAME
+======================================== */
+
+function enterGame() {
+
+  if (gameScreenActive) {
+    showScreen(gameScreen);
+    return;
+  }
+
+  gameScreenActive = true;
+
+  showScreen(gameScreen);
+
+  gamePlayerName.textContent =
+    currentPlayer?.name || "-";
+
+  if (currentPlayer?.profile) {
+
+    gamePlayerProfile.src =
+      currentPlayer.profile;
+  }
+
+  watchGame();
+}
+
+
+/* ========================================
+   GAME WATCHER
+======================================== */
 
 function watchGame() {
 
-  if (gameWatcherStarted) {
-    return;
+  if (gameWatcher) {
+    gameWatcher();
   }
 
-  gameWatcherStarted = true;
+  gameWatcher =
+    onValue(
+      ref(db, "room/game"),
+      snapshot => {
 
-  onValue(
-    ref(db, "room/game"),
-    async snapshot => {
+        if (!snapshot.exists()) {
+          return;
+        }
 
-      if (!snapshot.exists()) {
+        gameData =
+          snapshot.val();
 
-        gameData = null;
-
-        return;
-
+        renderGameState();
       }
-
-      gameData =
-        snapshot.val();
-
-      await renderGameState();
-
-    }
-  );
-
-}
-
-
-/* =========================
-   ENTER GAME
-========================= */
-
-async function enterGame() {
-
-  lobby.classList.add(
-    "hidden"
-  );
-
-  game.classList.remove(
-    "hidden"
-  );
-
-  updateHeader();
-
-  watchGame();
-
-  const snapshot =
-    await get(
-      ref(db, "room/game")
     );
-
-  if (snapshot.exists()) {
-
-    gameData =
-      snapshot.val();
-
-    await renderGameState();
-
-  }
-
 }
 
 
-/* =========================
-   LOAD GAME PLAYERS
-========================= */
+/* ========================================
+   RENDER GAME
+======================================== */
 
-async function loadGamePlayers() {
-
-  gamePlayers = [];
-
-  if (
-    !gameData ||
-    !gameData.players
-  ) {
-
-    return;
-
-  }
-
-  const playerData =
-    gameData.players;
-
-  const sortedPlayers =
-    Object.entries(
-      playerData
-    ).sort(
-      ([, a], [, b]) =>
-        Number(
-          a.turnOrder ?? 0
-        ) -
-        Number(
-          b.turnOrder ?? 0
-        )
-    );
-
-
-  for (
-    const [
-      playerId,
-      gamePlayer
-    ]
-    of sortedPlayers
-  ) {
-
-    const snapshot =
-      await get(
-        ref(
-          db,
-          "players/" +
-          playerId
-        )
-      );
-
-    if (
-      !snapshot.exists()
-    ) {
-
-      continue;
-
-    }
-
-    const player =
-      snapshot.val();
-
-    gamePlayers.push({
-
-      id:
-        playerId,
-
-      name:
-        player.name ||
-        "Unknown",
-
-      profile:
-        player.profile ||
-        "",
-
-      hp:
-        Number(
-          gamePlayer.hp ?? 3
-        ),
-
-      turnOrder:
-        Number(
-          gamePlayer.turnOrder ??
-          0
-        )
-
-    });
-
-  }
-
-}
-
-
-/* =========================
-   RENDER GAME STATE
-========================= */
-
-async function renderGameState() {
+function renderGameState() {
 
   if (!gameData) {
     return;
   }
 
-  await loadGamePlayers();
+  renderShell();
 
-  renderShellInfo();
+  renderGamePlayers();
 
-  document.querySelector(
-    ".game-online"
-  ).textContent =
-    gamePlayers.length;
+  updateTurnInfo();
 
-  updateCurrentTurn();
+  if (gameData.phase === "preparing") {
 
-  updateGameHealth();
+    startPreparation();
 
-  updateNextPlayer();
-
-  updateShotVisibility();
-
-  updatePreparation();
-
-}
-
-
-/* =========================
-   RENDER SHELL INFO
-========================= */
-
-function renderShellInfo() {
-
-  const alive =
-    Number(
-      gameData.shells?.alive || 0
-    );
-
-  const blank =
-    Number(
-      gameData.shells?.blank || 0
-    );
-
-  aliveCount.textContent =
-    "Alive : " + alive;
-
-  blankCount.textContent =
-    "Blank : " + blank;
-
-
-  shellContainer.innerHTML = "";
-
-
-  for (
-    let i = 0;
-    i < shellCount;
-    i++
-  ) {
-
-    const icon =
-      document.createElement("i");
-
-    icon.setAttribute(
-      "data-lucide",
-      "test-tube"
-    );
-
-    if (
-      i >= alive
-    ) {
-
-      icon.classList.add(
-        "blank"
-      );
-
-    }
-
-    shellContainer.appendChild(
-      icon
-    );
-
-  }
-
-  lucide.createIcons();
-
-}
-
-
-/* =========================
-   PREPARATION
-========================= */
-
-function updatePreparation() {
-
-  if (
-    !gameData ||
-    gameData.phase !==
-    "preparing"
+  } else if (
+    gameData.phase === "playing"
   ) {
 
     clearPreparationTimer();
 
-    document.querySelector(
-      ".random-shell"
-    ).classList.add(
-      "hidden"
-    );
+    randomShell.style.display =
+      "none";
 
-    return;
-
+    updateShotVisibility();
   }
+}
 
 
-  document.querySelector(
-    ".random-shell"
-  ).classList.remove(
-    "hidden"
-  );
+/* ========================================
+   PREPARATION
+======================================== */
 
+function startPreparation() {
 
-  shot.classList.add(
-    "hidden"
-  );
+  randomShell.style.display =
+    "flex";
 
-  disableShotButtons();
+  shotButton.style.display =
+    "none";
 
-  resetShot(false);
+  playerButton.disabled =
+    true;
 
+  youButton.disabled =
+    true;
+
+  clearPreparationTimer();
 
   const endsAt =
-    Number(
-      gameData.prepareEndsAt || 0
-    );
-
+    Number(gameData.prepareEndsAt || 0);
 
   const remaining =
-    endsAt - Date.now();
-
-
-  if (
-    remaining <= 0
-  ) {
-
-    finishPreparation();
-
-    return;
-
-  }
-
-
-  if (prepareTimer) {
-    return;
-  }
-
+    Math.max(
+      0,
+      endsAt - Date.now()
+    );
 
   prepareTimer =
     setTimeout(
-      () => {
+      async () => {
 
-        prepareTimer = null;
+        try {
 
-        finishPreparation();
+          await runTransaction(
+            ref(db, "room/game"),
+            game => {
+
+              if (!game) {
+                return;
+              }
+
+              if (
+                game.phase !== "preparing"
+              ) {
+                return game;
+              }
+
+              game.phase =
+                "playing";
+
+              delete game.prepareEndsAt;
+
+              return game;
+            }
+          );
+
+        } catch (error) {
+
+          console.error(
+            "Gagal mengakhiri preparation:",
+            error
+          );
+        }
 
       },
-      remaining + 50
+      remaining
     );
-
 }
-
-
-/* =========================
-   CLEAR PREPARATION TIMER
-========================= */
 
 function clearPreparationTimer() {
 
-  if (!prepareTimer) {
-    return;
+  if (prepareTimer) {
+
+    clearTimeout(
+      prepareTimer
+    );
+
+    prepareTimer = null;
   }
-
-  clearTimeout(
-    prepareTimer
-  );
-
-  prepareTimer = null;
-
 }
 
 
-/* =========================
-   FINISH PREPARATION
-========================= */
+/* ========================================
+   RENDER SHELL
+======================================== */
 
-async function finishPreparation() {
+function renderShell() {
 
-  if (
-    !gameData ||
-    gameData.phase !==
-    "preparing"
-  ) {
+  const shells =
+    gameData.shells || {};
 
-    return;
+  const total =
+    Number(shells.total || 8);
 
-  }
+  const alive =
+    Number(shells.alive || 0);
 
+  const blank =
+    Number(shells.blank || 0);
 
-  const gameRef =
-    ref(
-      db,
-      "room/game"
-    );
+  const current =
+    Number(shells.current || 0);
 
+  currentShell.textContent =
+    `${current} / ${total}`;
 
-  try {
+  aliveCount.textContent =
+    `Alive : ${alive}`;
 
-    const result =
-      await runTransaction(
-        gameRef,
-        game => {
+  blankCount.textContent =
+    `Blank : ${blank}`;
 
-          if (!game) {
-            return;
-          }
+  shellDisplay.innerHTML = "";
 
-          if (
-            game.phase !==
-            "preparing"
-          ) {
-
-            return;
-
-          }
-
-          const endsAt =
-            Number(
-              game.prepareEndsAt || 0
-            );
-
-          if (
-            Date.now() <
-            endsAt
-          ) {
-
-            return;
-
-          }
-
-          return {
-
-            ...game,
-
-            phase:
-              "playing"
-
-          };
-
-        }
-      );
-
-
-    if (
-      !result.committed
-    ) {
-
-      const snapshot =
-        await get(
-          gameRef
-        );
-
-      if (
-        snapshot.exists()
-      ) {
-
-        gameData =
-          snapshot.val();
-
-        await renderGameState();
-
-      }
-
-    }
-
-  } catch (error) {
-
-    console.error(
-      "Finish preparation error:",
-      error
-    );
-
-  }
-
-}
-
-
-/* =========================
-   CURRENT TURN
-========================= */
-
-function updateCurrentTurn() {
-
-  if (
-    !gameData ||
-    !gameData.turn
-  ) {
-
-    return;
-
-  }
-
-  const currentId =
-    gameData.turn.current;
-
-  const currentPlayer =
-    gamePlayers.find(
-      player =>
-        player.id ===
-        currentId
-    );
-
-  if (!currentPlayer) {
-
-    document.querySelector(
-      ".game-current-name"
-    ).textContent =
-      "-";
-
-    return;
-
-  }
-
-  document.querySelector(
-    ".game-current-name"
-  ).textContent =
-    currentPlayer.name;
-
-}
-
-
-/* =========================
-   NEXT PLAYER
-========================= */
-
-function updateNextPlayer() {
-
-  const nextElement =
-    document.querySelector(
-      ".next-name"
-    );
-
-
-  if (
-    !gameData ||
-    !gameData.turn ||
-    gamePlayers.length <= 1
-  ) {
-
-    nextElement.textContent =
-      "-";
-
-    return;
-
-  }
-
-
-  const currentIndex =
-    Number(
-      gameData.turn.index ?? 0
-    );
-
-
-  const nextIndex =
-    (
-      currentIndex + 1
-    ) %
-    gamePlayers.length;
-
-
-  const nextPlayer =
-    gamePlayers[
-      nextIndex
-    ];
-
-
-  nextElement.textContent =
-    nextPlayer
-      ? nextPlayer.name
-      : "-";
-
-}
-
-
-/* =========================
-   GAME HEALTH
-========================= */
-
-function updateGameHealth() {
-
-  if (
-    !gameData ||
-    !gameData.turn
-  ) {
-
-    return;
-
-  }
-
-
-  const currentId =
-    gameData.turn.current;
-
-
-  const currentPlayer =
-    gamePlayers.find(
-      player =>
-        player.id ===
-        currentId
-    );
-
-
-  if (!currentPlayer) {
-    return;
-  }
-
-
-  const healthContainer =
-    document.querySelector(
-      ".healt"
-    );
-
-
-  healthContainer.innerHTML = "";
-
-
-  const hp =
-    Math.max(
-      0,
-      Math.min(
-        3,
-        currentPlayer.hp
-      )
-    );
-
-
-  for (
-    let i = 0;
-    i < 3;
-    i++
-  ) {
+  for (let i = 0; i < alive; i++) {
 
     const icon =
       document.createElement("i");
 
     icon.setAttribute(
       "data-lucide",
-      i < hp
-        ? "zap"
-        : "zap-off"
+      "shell"
     );
 
-    if (
-      i >= hp
-    ) {
-
-      icon.classList.add(
-        "hp-off"
-      );
-
-    }
-
-    healthContainer.appendChild(
-      icon
-    );
-
+    shellDisplay.appendChild(icon);
   }
 
+  for (let i = 0; i < blank; i++) {
+
+    const icon =
+      document.createElement("i");
+
+    icon.setAttribute(
+      "data-lucide",
+      "shell"
+    );
+
+    icon.classList.add(
+      "blank"
+    );
+
+    shellDisplay.appendChild(icon);
+  }
 
   lucide.createIcons();
-
 }
 
 
-/* =========================
+/* ========================================
+   RENDER GAME PLAYERS
+======================================== */
+
+function renderGamePlayers() {
+
+  const players =
+    gameData.players || {};
+
+  const playerIds =
+    Object.keys(players)
+      .sort(
+        (a, b) =>
+          (players[a].turnOrder ?? 0) -
+          (players[b].turnOrder ?? 0)
+      );
+
+  gamePlayers.innerHTML = "";
+
+  playerIds.forEach(
+    playerId => {
+
+      const player =
+        players[playerId];
+
+      const hp =
+        Math.max(
+          0,
+          Number(player.hp ?? 0)
+        );
+
+      const card =
+        document.createElement("div");
+
+      card.className =
+        "game-player";
+
+      const label =
+        playerId === currentPlayerId
+          ? " YOU"
+          : "";
+
+      card.innerHTML = `
+        <div class="game-player-name">
+          ${escapeHtml(player.name || "Player")}
+          ${label}
+        </div>
+
+        <div class="game-player-hp">
+          HP : ${hp}
+        </div>
+      `;
+
+      gamePlayers.appendChild(card);
+    }
+  );
+}
+
+
+/* ========================================
+   TURN INFO
+======================================== */
+
+function updateTurnInfo() {
+
+  const players =
+    gameData.players || {};
+
+  const currentId =
+    gameData.turn?.current;
+
+  if (!currentId) {
+    currentTurn.textContent = "-";
+    nextPlayer.textContent = "-";
+    return;
+  }
+
+  const currentPlayerData =
+    players[currentId];
+
+  currentTurn.textContent =
+    currentId === currentPlayerId
+      ? "YOU"
+      : currentPlayerData?.name || "Player";
+
+  const playerIds =
+    Object.keys(players)
+      .sort(
+        (a, b) =>
+          (players[a].turnOrder ?? 0) -
+          (players[b].turnOrder ?? 0)
+      );
+
+  const currentIndex =
+    playerIds.indexOf(currentId);
+
+  if (currentIndex === -1) {
+    nextPlayer.textContent = "-";
+    return;
+  }
+
+  const nextIndex =
+    (currentIndex + 1) %
+    playerIds.length;
+
+  const nextId =
+    playerIds[nextIndex];
+
+  const nextData =
+    players[nextId];
+
+  nextPlayer.textContent =
+    nextId === currentPlayerId
+      ? "YOU"
+      : nextData?.name || "Player";
+}
+
+
+/* ========================================
    SHOT VISIBILITY
-========================= */
+======================================== */
 
 function updateShotVisibility() {
 
-  if (
-    !gameData ||
-    gameData.phase !==
-    "playing" ||
-    !gameData.turn
-  ) {
+  const isPlaying =
+    gameData.phase === "playing";
 
-    shot.classList.add(
-      "hidden"
-    );
-
-    disableShotButtons();
-
-    return;
-
-  }
-
-
-  const myTurn =
-    gameData.turn.current ===
+  const isMyTurn =
+    gameData.turn?.current ===
     currentPlayerId;
 
-
-  shot.classList.toggle(
-    "hidden",
-    !myTurn
-  );
-
-
-  if (!myTurn) {
-
-    resetShot();
-
-    return;
-
-  }
-
-
-  if (
+  const shellIndex =
     Number(
-      gameData.shells?.current || 0
-    ) >= shellCount
-  ) {
-
-    shot.classList.add(
-      "hidden"
+      gameData.shells?.current ?? 0
     );
 
-    disableShotButtons();
+  const total =
+    Number(
+      gameData.shells?.total ?? 8
+    );
 
-    return;
+  const canShoot =
+    isPlaying &&
+    isMyTurn &&
+    shellIndex < total;
 
+  shotButton.style.display =
+    canShoot
+      ? "block"
+      : "none";
+
+  shotButton.disabled =
+    !canShoot;
+
+  if (!canShoot) {
+
+    shotMode = false;
+
+    playerButton.disabled = true;
+    youButton.disabled = true;
+
+    closeTargetPopup();
   }
-
 }
 
 
-/* =========================
-   CLICK SHOTGUN
-========================= */
+/* ========================================
+   SHOT BUTTON
+======================================== */
 
-shot.addEventListener(
+shotButton.addEventListener(
   "click",
   () => {
 
-    if (shootingLocked) {
+    if (!gameData) {
       return;
     }
 
     if (
-      !gameData ||
-      gameData.phase !==
-      "playing"
+      gameData.phase !== "playing"
     ) {
-
       return;
-
     }
 
     if (
-      !gameData.turn ||
-      gameData.turn.current !==
+      gameData.turn?.current !==
       currentPlayerId
     ) {
-
       return;
-
     }
 
     const shellIndex =
       Number(
-        gameData.shells?.current || 0
+        gameData.shells?.current ?? 0
       );
 
-    if (
-      shellIndex >= shellCount
-    ) {
-
-      alert(
-        "Semua shell sudah habis."
+    const total =
+      Number(
+        gameData.shells?.total ?? 8
       );
 
+    if (shellIndex >= total) {
       return;
-
     }
 
     shotMode = true;
 
-    shot.classList.add(
-      "active"
-    );
+    playerButton.disabled =
+      false;
 
-    enableShotButtons();
-
+    youButton.disabled =
+      false;
   }
 );
 
 
-/* =========================
+/* ========================================
    PLAYER BUTTON
-========================= */
+======================================== */
 
-playerBtn.addEventListener(
+playerButton.addEventListener(
   "click",
   () => {
 
@@ -2913,605 +2161,537 @@ playerBtn.addEventListener(
       return;
     }
 
-    renderPlayerPopup();
+    if (
+      gameData?.turn?.current !==
+      currentPlayerId
+    ) {
+      return;
+    }
 
-    popup.classList.remove(
-      "hidden"
-    );
-
-    overlay.classList.remove(
-      "hidden"
-    );
-
+    openTargetPopup();
   }
 );
 
 
-/* =========================
-   SELF BUTTON
-========================= */
+/* ========================================
+   YOU BUTTON
+======================================== */
 
-selfBtn.addEventListener(
+youButton.addEventListener(
   "click",
-  () => {
+  async () => {
 
     if (!shotMode) {
       return;
     }
 
-    const target =
-      gamePlayers.find(
-        player =>
-          player.id ===
-          currentPlayerId
+    if (
+      gameData?.turn?.current !==
+      currentPlayerId
+    ) {
+      return;
+    }
+
+    await shoot(
+      currentPlayerId
+    );
+  }
+);
+
+
+/* ========================================
+   TARGET POPUP
+======================================== */
+
+function openTargetPopup() {
+
+  targetList.innerHTML = "";
+
+  const players =
+    gameData?.players || {};
+
+  const playerIds =
+    Object.keys(players)
+      .sort(
+        (a, b) =>
+          (players[a].turnOrder ?? 0) -
+          (players[b].turnOrder ?? 0)
       );
 
-    if (!target) {
-      return;
-    }
+  const targets =
+    playerIds.filter(
+      playerId =>
+        playerId !== currentPlayerId &&
+        Number(
+          players[playerId]?.hp ?? 0
+        ) > 0
+    );
 
-    selectedTarget =
-      target;
+  if (!targets.length) {
 
-    closeShotPopup();
+    targetList.innerHTML = `
+      <div style="
+        padding:16px;
+        text-align:center;
+        color:#888;
+      ">
+        Tidak ada target.
+      </div>
+    `;
 
-    shoot();
+  } else {
 
+    targets.forEach(
+      playerId => {
+
+        const player =
+          players[playerId];
+
+        const button =
+          document.createElement("button");
+
+        button.className =
+          "target-button";
+
+        button.innerHTML = `
+          <div class="target-info">
+            <span>
+              ${escapeHtml(player.name || "Player")}
+            </span>
+          </div>
+
+          <div class="target-hp">
+            HP ${Math.max(
+              0,
+              Number(player.hp ?? 0)
+            )}
+          </div>
+        `;
+
+        button.addEventListener(
+          "click",
+          async () => {
+
+            await shoot(
+              playerId
+            );
+          }
+        );
+
+        targetList.appendChild(
+          button
+        );
+      }
+    );
   }
-);
 
-
-/* =========================
-   CLOSE SHOT POPUP
-========================= */
-
-function closeShotPopup() {
-
-  popup.classList.add(
-    "hidden"
-  );
-
-  overlay.classList.add(
-    "hidden"
-  );
-
+  overlay.classList.add("show");
+  shotList.classList.add("show");
 }
 
 
-/* =========================
-   CLOSE BUTTON X
-========================= */
+/* ========================================
+   CLOSE POPUP
+======================================== */
 
-popup.addEventListener(
+function closeTargetPopup() {
+
+  overlay.classList.remove(
+    "show"
+  );
+
+  shotList.classList.remove(
+    "show"
+  );
+}
+
+closeShotList.addEventListener(
   "click",
-  event => {
+  () => {
 
-    const cancel =
-      event.target.closest(
-        ".st-cancel"
-      );
-
-    if (!cancel) {
-      return;
-    }
-
-    closeShotPopup();
-
-    resetShot();
-
+    closeTargetPopup();
   }
 );
-
-
-/* =========================
-   OVERLAY CLICK
-========================= */
 
 overlay.addEventListener(
   "click",
   () => {
 
-    closeShotPopup();
-
-    resetShot();
-
+    closeTargetPopup();
   }
 );
 
 
-/* =========================
-   RENDER PLAYER POPUP
-========================= */
-
-function renderPlayerPopup() {
-
-  playerContainer.innerHTML = "";
-
-
-  gamePlayers.forEach(
-    player => {
-
-      if (
-        player.id ===
-        currentPlayerId
-      ) {
-
-        return;
-
-      }
-
-
-      const item =
-        document.createElement(
-          "div"
-        );
-
-
-      item.className =
-        "st-list";
-
-
-      const firstLetter =
-        player.name
-          .charAt(0)
-          .toUpperCase();
-
-
-      let profileHTML;
-
-
-      if (player.profile) {
-
-        profileHTML = `
-
-          <span class="st-profile">
-
-            <img
-              src="${player.profile}"
-              alt="Profile">
-
-          </span>
-
-        `;
-
-      } else {
-
-        profileHTML = `
-
-          <span class="st-profile">
-            ${firstLetter}
-          </span>
-
-        `;
-
-      }
-
-
-      item.innerHTML = `
-
-        <div class="st-user">
-
-          ${profileHTML}
-
-          <span class="st-nama">
-            ${player.name}
-          </span>
-
-          <span class="st-healt">
-            (${player.hp})
-          </span>
-
-        </div>
-
-
-        <button
-          class="st-player-btn"
-          data-id="${player.id}">
-
-          Shot
-
-        </button>
-
-      `;
-
-
-      playerContainer.appendChild(
-        item
-      );
-
-    }
-  );
-
-
-  if (
-    playerContainer
-      .children.length === 0
-  ) {
-
-    playerContainer.innerHTML = `
-
-      <div
-        style="
-          padding:10px 0;
-          text-align:center;
-          color:#777;
-        ">
-
-        Tidak ada pemain lain.
-
-      </div>
-
-    `;
-
-  }
-
-}
-
-
-/* =========================
-   SELECT PLAYER
-========================= */
-
-playerContainer.addEventListener(
-  "click",
-  event => {
-
-    const button =
-      event.target.closest(
-        ".st-player-btn"
-      );
-
-    if (!button) {
-      return;
-    }
-
-    const targetId =
-      button.dataset.id;
-
-
-    const target =
-      gamePlayers.find(
-        player =>
-          player.id ===
-          targetId
-      );
-
-
-    if (!target) {
-      return;
-    }
-
-
-    selectedTarget =
-      target;
-
-
-    closeShotPopup();
-
-    shoot();
-
-  }
-);
-
-
-/* =========================
+/* ========================================
    SHOOT
-========================= */
+======================================== */
 
 async function shoot(targetId) {
-  if (!gameData) return;
 
-  const currentTurn = gameData.turn?.current;
-
-  if (currentTurn !== currentPlayerId) {
-    alert("Bukan giliran kamu.");
+  if (!gameData) {
     return;
   }
 
-  const shellIndex = gameData.shells?.current ?? 0;
-  const sequence = gameData.shells?.sequence;
-
-  if (shellIndex >= 8 || !sequence) {
-    alert("Tidak ada shell tersisa.");
+  if (
+    gameData.phase !== "playing"
+  ) {
     return;
   }
 
-  const shell = sequence[shellIndex];
-
-  if (!shell) {
-    alert("Shell tidak ditemukan.");
+  if (
+    gameData.turn?.current !==
+    currentPlayerId
+  ) {
+    alert(
+      "Bukan giliran kamu."
+    );
     return;
   }
 
-  const isAlive = shell === "live";
-  const isSelf = targetId === currentPlayerId;
+  const shellIndex =
+    Number(
+      gameData.shells?.current ?? 0
+    );
+
+  const total =
+    Number(
+      gameData.shells?.total ?? 8
+    );
+
+  if (shellIndex >= total) {
+    alert(
+      "Semua shell sudah digunakan."
+    );
+    return;
+  }
+
+  shotMode = false;
+
+  playerButton.disabled = true;
+  youButton.disabled = true;
+
+  closeTargetPopup();
 
   let shotResult = null;
-  let nextPlayerId = null;
+  let shotTargetName = "";
+  let shotTargetHp = null;
+  let shotTargetWasSelf = false;
+  let nextTurnPlayer = null;
 
-  const gameRef = ref(db, "room/game");
+  const gameRef =
+    ref(db, "room/game");
 
-  const result = await runTransaction(gameRef, currentGame => {
-    if (!currentGame) return;
+  const transactionResult =
+    await runTransaction(
+      gameRef,
+      game => {
 
-    if (currentGame.phase !== "playing") {
-      return;
-    }
+        if (!game) {
+          return;
+        }
 
-    if (currentGame.turn?.current !== currentPlayerId) {
-      return;
-    }
+        if (
+          game.phase !== "playing"
+        ) {
+          return;
+        }
 
-    const currentShell = currentGame.shells?.current ?? 0;
-    const currentSequence = currentGame.shells?.sequence;
+        if (
+          game.turn?.current !==
+          currentPlayerId
+        ) {
+          return;
+        }
 
-    if (currentShell >= 8 || !currentSequence) {
-      return;
-    }
+        const shells =
+          game.shells;
 
-    const currentShellType = currentSequence[currentShell];
+        if (!shells) {
+          return;
+        }
 
-    if (!currentShellType) {
-      return;
-    }
+        const currentShell =
+          Number(
+            shells.current ?? 0
+          );
 
-    const players = currentGame.players || {};
+        const sequence =
+          shells.sequence;
 
-    if (!players[targetId]) {
-      return;
-    }
+        if (
+          currentShell >= 8 ||
+          !sequence
+        ) {
+          return;
+        }
 
-    const playerIds = Object.keys(players)
-      .filter(id => players[id])
-      .sort((a, b) => {
-        return (players[a].turnOrder ?? 0) - (players[b].turnOrder ?? 0);
-      });
+        const shell =
+          sequence[currentShell];
 
-    if (!playerIds.length) {
-      return;
-    }
+        if (
+          shell !== "live" &&
+          shell !== "blank"
+        ) {
+          return;
+        }
 
-    const targetPlayer = players[targetId];
+        const players =
+          game.players || {};
 
-    if (!targetPlayer) {
-      return;
-    }
+        if (!players[targetId]) {
+          return;
+        }
 
-    // Ambil HP saat ini
-    const targetHp = Number(targetPlayer.hp ?? 0);
+        const target =
+          players[targetId];
 
-    // ==========================================
-    // ALIVE
-    // ==========================================
-    if (currentShellType === "live") {
-      targetPlayer.hp = Math.max(0, targetHp - 1);
-      shotResult = "live";
-    }
+        if (
+          Number(target.hp ?? 0) <= 0
+        ) {
+          return;
+        }
 
-    // ==========================================
-    // BLANK
-    // ==========================================
-    else {
-      shotResult = "blank";
-    }
+        const playerIds =
+          Object.keys(players)
+            .sort(
+              (a, b) =>
+                (players[a].turnOrder ?? 0) -
+                (players[b].turnOrder ?? 0)
+            );
 
-    // Shell berikutnya
-    currentGame.shells.current = currentShell + 1;
+        if (!playerIds.length) {
+          return;
+        }
 
-    // ==========================================
-    // TENTUKAN GILIRAN
-    // ==========================================
-    //
-    // Blank + diri sendiri
-    // = tetap giliran pemain sekarang
-    //
-    if (currentShellType === "blank" && isSelf) {
-      nextPlayerId = currentPlayerId;
+        const currentIndex =
+          playerIds.indexOf(
+            currentPlayerId
+          );
 
-      currentGame.turn.current = currentPlayerId;
-      currentGame.turn.index =
-        playerIds.indexOf(currentPlayerId);
-    }
+        if (currentIndex === -1) {
+          return;
+        }
 
-    // Semua kondisi lainnya = ganti giliran
-    else {
-      const currentIndex = playerIds.indexOf(currentPlayerId);
+        const isSelf =
+          targetId === currentPlayerId;
 
-      const nextIndex =
-        (currentIndex + 1) % playerIds.length;
+        shotTargetWasSelf =
+          isSelf;
 
-      nextPlayerId = playerIds[nextIndex];
+        shotResult =
+          shell;
 
-      currentGame.turn.current = nextPlayerId;
-      currentGame.turn.index = nextIndex;
-    }
+        shotTargetName =
+          target.name || "Player";
 
-    return currentGame;
-  });
+        /* =================================
+           ALIVE
+        ================================= */
 
-  if (!result.committed) {
-    alert("Tembakan gagal. Silakan coba lagi.");
+        if (shell === "live") {
+
+          const oldHp =
+            Number(
+              target.hp ?? 0
+            );
+
+          target.hp =
+            Math.max(
+              0,
+              oldHp - 1
+            );
+
+          shotTargetHp =
+            target.hp;
+        }
+
+        /* =================================
+           BLANK
+        ================================= */
+
+        else {
+
+          shotTargetHp =
+            Number(
+              target.hp ?? 0
+            );
+        }
+
+        /* =================================
+           CONSUME SHELL
+        ================================= */
+
+        game.shells.current =
+          currentShell + 1;
+
+        /* =================================
+           TURN RULE
+        =================================
+
+           LIVE + PLAYER
+           -> NEXT PLAYER
+
+           BLANK + PLAYER
+           -> NEXT PLAYER
+
+           LIVE + SELF
+           -> NEXT PLAYER
+
+           BLANK + SELF
+           -> SAME PLAYER
+        */
+
+        if (
+          shell === "blank" &&
+          isSelf
+        ) {
+
+          game.turn.current =
+            currentPlayerId;
+
+          game.turn.index =
+            currentIndex;
+
+          nextTurnPlayer =
+            currentPlayerId;
+
+        } else {
+
+          const nextIndex =
+            (
+              currentIndex + 1
+            ) % playerIds.length;
+
+          const nextId =
+            playerIds[nextIndex];
+
+          game.turn.current =
+            nextId;
+
+          game.turn.index =
+            nextIndex;
+
+          nextTurnPlayer =
+            nextId;
+        }
+
+        return game;
+      }
+    );
+
+  if (!transactionResult.committed) {
+
+    shotMode = false;
+
+    playerButton.disabled = true;
+    youButton.disabled = true;
+
+    alert(
+      "Tembakan gagal. State game mungkin sudah berubah."
+    );
+
     return;
   }
 
-  shotMode = false;
-  selectedTarget = null;
-
-  document.querySelector(".shot-list").classList.remove("show");
-  document.querySelector(".overlay").classList.remove("show");
+  /* ========================================
+     HASIL TEMBAKAN
+  ======================================== */
 
   if (shotResult === "live") {
-    alert(
-      "💥 LIVE!\n\n" +
-      (isSelf ? "Kamu terkena peluru!" : "Target terkena peluru!")
-    );
-  } else {
-    alert("⚪ BLANK!");
-  }
 
-  renderGameState(gameData);
-}
+    if (shotTargetWasSelf) {
 
-
-/* =========================
-   ENABLE SHOT BUTTON
-========================= */
-
-function enableShotButtons() {
-
-  playerBtn.disabled =
-    false;
-
-  selfBtn.disabled =
-    false;
-
-}
-
-
-/* =========================
-   DISABLE SHOT BUTTON
-========================= */
-
-function disableShotButtons() {
-
-  playerBtn.disabled =
-    true;
-
-  selfBtn.disabled =
-    true;
-
-}
-
-
-/* =========================
-   RESET SHOT
-========================= */
-
-function resetShot(
-  hideShotMode = true
-) {
-
-  shotMode = false;
-
-  selectedTarget = null;
-
-  shot.classList.remove(
-    "active"
-  );
-
-  disableShotButtons();
-
-}
-
-
-/* =========================
-   CLICK OUTSIDE
-========================= */
-
-document.addEventListener(
-  "click",
-  event => {
-
-    if (!shotMode) {
-      return;
-    }
-
-
-    const clickedShot =
-      event.target.closest(
-        ".shot"
+      alert(
+        `💥 LIVE!\n\n` +
+        `Kamu terkena peluru!\n` +
+        `HP kamu sekarang: ${shotTargetHp}`
       );
-
-
-    const clickedPlayerBtn =
-      event.target.closest(
-        ".other"
-      );
-
-
-    const clickedSelfBtn =
-      event.target.closest(
-        ".self"
-      );
-
-
-    const clickedPopup =
-      event.target.closest(
-        ".shot-list"
-      );
-
-
-    if (clickedShot) {
-      return;
-    }
-
-
-    if (clickedPlayerBtn) {
-      return;
-    }
-
-
-    if (clickedSelfBtn) {
-      return;
-    }
-
-
-    if (clickedPopup) {
-      return;
-    }
-
-
-    resetShot();
-
-  }
-);
-
-
-/* =========================
-   INITIALIZE
-========================= */
-
-async function initialize() {
-
-  try {
-
-    const loaded =
-      await loadSavedPlayer();
-
-
-    if (loaded) {
-
-      showLobby();
 
     } else {
 
-      showLogin();
-
+      alert(
+        `💥 LIVE!\n\n` +
+        `${shotTargetName} terkena peluru!\n` +
+        `HP sekarang: ${shotTargetHp}`
+      );
     }
 
-  } catch (error) {
+  } else {
 
-    console.error(error);
+    if (shotTargetWasSelf) {
 
-    showLogin();
+      alert(
+        `⚪ BLANK!\n\n` +
+        `Tidak ada damage.\n` +
+        `Kamu tetap mendapatkan giliran.`
+      );
 
+    } else {
+
+      alert(
+        `⚪ BLANK!\n\n` +
+        `Tidak ada damage.\n` +
+        `Giliran berpindah.`
+      );
+    }
   }
 
+  /* ========================================
+     RENDER TERBARU
+  ======================================== */
+
+  if (nextTurnPlayer) {
+
+    if (
+      nextTurnPlayer ===
+      currentPlayerId
+    ) {
+
+      showMessage(
+        "Giliran kamu."
+      );
+
+    } else {
+
+      showMessage(
+        `Giliran ${getPlayerName(nextTurnPlayer)}.`
+      );
+    }
+  }
+
+  renderGameState();
 }
 
 
-/* =========================
-   LUCIDE
-========================= */
+/* ========================================
+   ESCAPE HTML
+======================================== */
+
+function escapeHtml(value) {
+
+  return String(value)
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#039;");
+}
+
+
+/* ========================================
+   INITIALIZE
+======================================== */
 
 lucide.createIcons();
 
+loadCurrentPlayer()
+  .catch(error => {
 
-/* =========================
-   START
-========================= */
-
-initialize();
+    console.error(
+      "Gagal memuat player:",
+      error
+    );
+  });
 
 </script>
 
