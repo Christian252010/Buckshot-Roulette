@@ -631,12 +631,6 @@ body {
   height: 30px;
 }
 
-.item.empty {
-  background: #333;
-  color: #555;
-  cursor: default;
-}
-
 .item.disabled {
   opacity: .45;
   cursor: not-allowed;
@@ -644,8 +638,15 @@ body {
 }
 
 .item.selected {
-  background: crimson;
+  background: crimson !important;
   box-shadow: 0 0 0 2px #fff2;
+  color: white;
+}
+
+.item.empty {
+  background: #333;
+  color: #555;
+  cursor: default;
 }
 
 /* =========================
@@ -3080,13 +3081,20 @@ const ITEM_DEFINITIONS = {
 };
 
 function createPlayerItems(playerCount) {
-  const types = shuffleArray(Object.keys(ITEM_DEFINITIONS));
+  const types = Object.keys(ITEM_DEFINITIONS);
+  const slots = [];
 
-  // Item dibagikan acak setiap shell baru diacak.
-  // Untuk sementara tiap pemain mendapat 1-4 item berbeda.
-  const amount = Math.floor(Math.random() * types.length) + 1;
+  /*
+     Setiap reload shell pemain mendapatkan 4 slot item baru.
+     Setiap slot diacak sendiri dan dapat berisi item atau kosong.
+     Item boleh muncul lebih dari sekali.
+  */
+  for (let i = 0; i < 4; i++) {
+    const roll = Math.floor(Math.random() * (types.length + 1));
+    slots.push(roll === types.length ? "" : types[roll]);
+  }
 
-  return types.slice(0, amount);
+  return slots;
 
 }
 
@@ -3112,27 +3120,11 @@ function renderMyItems() {
     resetItemSelection();
   }
 
-  itemElements.forEach(item => {
-    const type = item.dataset.item;
-    const owned = !!type && items.includes(type);
-
-    item.classList.toggle("empty", !owned);
-    item.classList.toggle("disabled", owned && !canUseItems);
-    item.classList.toggle("selected", owned && selectedItemType === type);
-
-    if (!owned) {
-      item.dataset.item = "";
-      item.innerHTML = "";
-    }
-  });
-
-  const ownedTypes = items.slice(0, itemElements.length);
-
   itemElements.forEach((item, index) => {
-    const type = ownedTypes[index] || "";
+    const type = items[index] || "";
     item.dataset.item = type;
 
-    if (!type) {
+    if (!type || !ITEM_DEFINITIONS[type]) {
       item.classList.add("empty");
       item.classList.remove("disabled", "selected");
       item.innerHTML = "";
@@ -5277,7 +5269,7 @@ selfBtn.addEventListener(
       return;
     }
 
-    if (!shotMode) {
+    if (!shotMode && !itemMode) {
       return;
     }
 
@@ -5708,9 +5700,10 @@ async function shoot(targetId) {
       }
 
       isSelf = targetId === currentPlayerId;
+      let damage = 0;
 
       if (currentShellType === "live") {
-        const damage = Number(players[currentPlayerId]?.sawActive ?? 0) ? 2 : 1;
+        damage = Number(players[currentPlayerId]?.sawActive ?? 0) ? 2 : 1;
         targetPlayer.hp = Math.max(0, Number(targetPlayer.hp ?? 0) - damage);
         players[currentPlayerId].sawActive = false;
         shotResult = "live";
