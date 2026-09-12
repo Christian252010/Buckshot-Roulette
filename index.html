@@ -1,3 +1,4 @@
+```html
 <!DOCTYPE html>
 <html lang="id">
 
@@ -646,6 +647,7 @@ body {
   margin-left: -8px;
   margin-right: -8px;
   border-radius: 4px;
+  border-bottom: none;
 }
 
 .player-list .pl-user {
@@ -3868,13 +3870,6 @@ function updateShotVisibility() {
    GAME PLAYER LIST BUTTON
 ========================= */
 
-const closePlayerList = document.getElementById("closePlayerList");
-const playerListPopup = document.getElementById("playerListPopup");
-
-closePlayerList.addEventListener("click", () => {
-  playerListPopup.classList.remove("show");
-});
-
 const gameListButton =
   document.querySelector(".game .header .list");
 
@@ -3890,9 +3885,19 @@ if (gameListButton) {
 }
 
 
-closePlayerList.addEventListener(
+/* Lucide mengganti <i> menjadi <svg>,
+   jadi gunakan event delegation agar tombol X
+   tetap berfungsi setelah icon dirender. */
+playerListPopup.addEventListener(
   "click",
-  () => {
+  event => {
+    const closeButton =
+      event.target.closest(".list-pemain svg");
+
+    if (!closeButton) {
+      return;
+    }
+
     closeGamePlayerList();
   }
 );
@@ -5002,3 +5007,4 @@ initialize();
 
 </body>
 </html>
+```
