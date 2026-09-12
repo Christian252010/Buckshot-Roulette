@@ -296,6 +296,10 @@ body {
   z-index: 1;
 }
 
+.game-panel.current-turn {
+  background: crimson;
+}
+
 .gp-top {
   display: flex;
   width: 100%;
@@ -665,7 +669,7 @@ body {
 }
 
 .winner-title {
-  font-family: "Archivo Black", sans-serif !important;
+  font-family: "Archivo Black", sans-serif;
   font-size: clamp(3rem, 16vw, 5rem);
   line-height: 1;
   margin-bottom: 4px;
@@ -1132,6 +1136,7 @@ let winnerCleanupStartedAt = null;
 let lobbyRenderToken = 0;
 let shellRenderId = null;
 let shellRevealTimer = null;
+let lastRenderedShotId = null;
 
 
 /* =========================
@@ -2507,6 +2512,7 @@ async function renderGameState() {
   await loadGamePlayers();
 
   renderShellInfo();
+  renderShotEffects();
 
   document.querySelector(
     ".game-online"
@@ -2514,6 +2520,7 @@ async function renderGameState() {
     gamePlayers.length;
 
   updateCurrentTurn();
+  updateTurnPanel();
 
   updateGameHealth();
 
@@ -2778,20 +2785,11 @@ function renderShellInfo() {
 
   if (
     setId &&
-    setId !== shellRenderId &&
-    gameData.phase === "playing"
+    gameData.phase === "playing" &&
+    setId !== shellRenderId
   ) {
-
     shellRenderId = setId;
     showShellReveal();
-
-  } else if (
-    setId &&
-    !shellRenderId
-  ) {
-
-    shellRenderId = setId;
-
   }
 
 }
@@ -2829,6 +2827,28 @@ function triggerDamageFlash() {
 }
 
 
+function renderShotEffects() {
+  const shotData = gameData?.lastShot;
+
+  if (!shotData?.id) {
+    return;
+  }
+
+  if (shotData.id === lastRenderedShotId) {
+    return;
+  }
+
+  lastRenderedShotId = shotData.id;
+
+  if (
+    shotData.result === "live" &&
+    shotData.targetId === currentPlayerId
+  ) {
+    triggerDamageFlash();
+  }
+}
+
+
 /* =========================
    PREPARATION
 ========================= */
@@ -2843,11 +2863,15 @@ function updatePreparation() {
 
     clearPreparationTimer();
 
-    document.querySelector(
-      ".random-shell"
-    ).classList.add(
-      "hidden"
-    );
+    if (
+      !gameData ||
+      gameData.phase === "finished"
+    ) {
+      clearTimeout(shellRevealTimer);
+      document.querySelector(
+        ".random-shell"
+      ).classList.add("hidden");
+    }
 
     return;
 
@@ -3086,6 +3110,26 @@ function updateCurrentTurn() {
       ? currentPlayer.name
       : "-";
 
+}
+
+
+function updateTurnPanel() {
+  const panel =
+    document.querySelector(".game-panel");
+
+  if (!panel) {
+    return;
+  }
+
+  const hasTurn =
+    gameData &&
+    gameData.phase === "playing" &&
+    !!gameData.turn?.current;
+
+  panel.classList.toggle(
+    "current-turn",
+    hasTurn
+  );
 }
 
 
@@ -4008,6 +4052,16 @@ async function shoot(targetId) {
 
           currentGame.shells.current =
             currentShell + 1;
+
+          currentGame.lastShot = {
+            id:
+              Date.now().toString(36) +
+              Math.random().toString(36).slice(2, 8),
+            targetId,
+            result: shotResult,
+            shellType: currentShellType,
+            at: Date.now()
+          };
 
           const livingPlayerIds =
             playerIds.filter(
