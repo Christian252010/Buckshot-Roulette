@@ -2274,31 +2274,135 @@ async function loadGamePlayers() {
    RENDER GAME STATE
 ========================= */
 
-async function renderGameState() {
+function renderGameState() {
+  if (!gameData || !currentPlayerId) return;
 
-  if (!gameData) {
-    return;
+  const players = gameData.players || {};
+  const currentTurnId = gameData.turn?.current || null;
+
+  const myPlayerData = players[currentPlayerId] || {};
+  const currentTurnPlayer = players[currentTurnId] || {};
+
+  /*
+   * =========================
+   * HEALTH DIRI SENDIRI
+   * =========================
+   */
+
+  const myHp = Math.max(
+    0,
+    Math.min(3, Number(myPlayerData.hp ?? 0))
+  );
+
+  const healthContainer =
+    document.querySelector(".healt");
+
+  if (healthContainer) {
+    healthContainer.innerHTML = "";
+
+    for (let i = 0; i < 3; i++) {
+      const icon = document.createElement("i");
+
+      if (i < myHp) {
+        icon.setAttribute("data-lucide", "zap");
+      } else {
+        icon.setAttribute("data-lucide", "zap-off");
+        icon.classList.add("hp-off");
+      }
+
+      healthContainer.appendChild(icon);
+    }
   }
 
-  await loadGamePlayers();
+  /*
+   * =========================
+   * NAMA PEMAIN YANG GILIRAN
+   * =========================
+   */
 
-  renderShellInfo();
+  const currentName =
+    document.querySelector(".game-current-name");
 
-  document.querySelector(
-    ".game-online"
-  ).textContent =
-    gamePlayers.length;
+  if (currentName) {
+    currentName.textContent =
+      currentTurnPlayer.name || "-";
+  }
 
-  updateCurrentTurn();
+  /*
+   * =========================
+   * URUTAN PEMAIN
+   * =========================
+   */
 
-  updateGameHealth();
+  const playerIds = Object.keys(players)
+    .filter(id => players[id])
+    .sort((a, b) => {
+      return (
+        Number(players[a].turnOrder ?? 0) -
+        Number(players[b].turnOrder ?? 0)
+      );
+    });
 
-  updateNextPlayer();
+  /*
+   * =========================
+   * PEMAIN SELANJUTNYA
+   * =========================
+   */
 
-  updateShotVisibility();
+  let nextPlayerId = null;
+
+  const currentIndex =
+    playerIds.indexOf(currentTurnId);
+
+  if (
+    playerIds.length > 0 &&
+    currentIndex >= 0
+  ) {
+    const nextIndex =
+      (currentIndex + 1) % playerIds.length;
+
+    nextPlayerId =
+      playerIds[nextIndex];
+  }
+
+  const nextPlayer =
+    nextPlayerId
+      ? players[nextPlayerId]
+      : null;
+
+  const nextName =
+    document.querySelector(".next-name");
+
+  if (nextName) {
+    nextName.textContent =
+      nextPlayer?.name || "-";
+  }
+
+  /*
+   * =========================
+   * UPDATE ICON LUCIDE
+   * =========================
+   */
+
+  if (window.lucide) {
+    lucide.createIcons();
+  }
+
+  /*
+   * =========================
+   * PREPARATION
+   * =========================
+   */
 
   updatePreparation();
 
+  /*
+   * =========================
+   * SHOT VISIBILITY
+   * =========================
+   */
+
+  updateShotVisibility();
 }
 
 
