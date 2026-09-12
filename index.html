@@ -588,6 +588,26 @@ body {
 
 
 /* =========================
+   DAMAGE FLASH
+========================= */
+
+.damage-flash {
+  display: block;
+  position: fixed;
+  inset: 0;
+  background: rgba(255, 0, 0, 0.72);
+  z-index: 99;
+  pointer-events: none;
+  animation: damageFlash 0.55s ease-out forwards;
+}
+
+@keyframes damageFlash {
+  0% { opacity: 0; }
+  20% { opacity: 1; }
+  100% { opacity: 0; }
+}
+
+/* =========================
    WINNER SCREEN
 ========================= */
 
@@ -975,6 +995,8 @@ body {
 </div>
 
 
+<div class="damage-flash hidden"></div>
+
 <!-- =========================
      WINNER OVERLAY
 ========================= -->
@@ -1107,6 +1129,9 @@ let lastWinnerId = null;
 let lastFinishedStartedAt = null;
 let winnerTimer = null;
 let winnerCleanupStartedAt = null;
+let lobbyRenderToken = 0;
+let shellRenderId = null;
+let shellRevealTimer = null;
 
 
 /* =========================
@@ -1179,6 +1204,9 @@ const overlay =
 
 const playerContainer =
   document.querySelector(".st-players");
+
+const damageFlash =
+  document.querySelector(".damage-flash");
 
 const winnerScreen =
   document.querySelector(".winner-screen");
@@ -1727,6 +1755,9 @@ async function renderLobbyPlayers(
   playerIds
 ) {
 
+  const renderToken =
+    ++lobbyRenderToken;
+
   joinList.innerHTML = "";
 
   if (playerIds.length === 0) {
@@ -1758,6 +1789,10 @@ async function renderLobbyPlayers(
 
     if (!snapshot.exists()) {
       continue;
+    }
+
+    if (renderToken !== lobbyRenderToken) {
+      return;
     }
 
     const player =
@@ -2111,6 +2146,10 @@ function createShellSet() {
 
   return {
 
+    setId:
+      Date.now().toString(36) +
+      Math.random().toString(36).slice(2, 8),
+
     total:
       shellCount,
 
@@ -2401,92 +2440,59 @@ async function enterGame() {
 
 async function loadGamePlayers() {
 
-  gamePlayers = [];
-
   if (
     !gameData ||
     !gameData.players
   ) {
 
+    gamePlayers = [];
     return;
 
   }
 
-  const playerData =
-    gameData.players;
-
   const sortedPlayers =
     Object.entries(
-      playerData
+      gameData.players
     ).sort(
       ([, a], [, b]) =>
-        Number(
-          a.turnOrder ?? 0
-        ) -
-        Number(
-          b.turnOrder ?? 0
-        )
+        Number(a.turnOrder ?? 0) -
+        Number(b.turnOrder ?? 0)
     );
 
+  const loadedPlayers =
+    await Promise.all(
+      sortedPlayers.map(
+        async ([playerId, gamePlayer]) => {
 
-  for (
-    const [
-      playerId,
-      gamePlayer
-    ]
-    of sortedPlayers
-  ) {
+          const snapshot =
+            await get(
+              ref(
+                db,
+                "players/" + playerId
+              )
+            );
 
-    const snapshot =
-      await get(
-        ref(
-          db,
-          "players/" +
-          playerId
-        )
-      );
+          if (!snapshot.exists()) {
+            return null;
+          }
 
-    if (
-      !snapshot.exists()
-    ) {
+          const player = snapshot.val();
 
-      continue;
+          return {
+            id: playerId,
+            name: player.name || "Unknown",
+            profile: player.profile || "",
+            hp: Number(gamePlayer.hp ?? 3),
+            turnOrder: Number(gamePlayer.turnOrder ?? 0)
+          };
 
-    }
+        }
+      )
+    );
 
-    const player =
-      snapshot.val();
-
-    gamePlayers.push({
-
-      id:
-        playerId,
-
-      name:
-        player.name ||
-        "Unknown",
-
-      profile:
-        player.profile ||
-        "",
-
-      hp:
-        Number(
-          gamePlayer.hp ?? 3
-        ),
-
-      turnOrder:
-        Number(
-          gamePlayer.turnOrder ??
-          0
-        )
-
-    });
-
-  }
+  gamePlayers = loadedPlayers.filter(Boolean);
 
 }
-
 
 /* =========================
    RENDER GAME STATE
@@ -2767,6 +2773,59 @@ function renderShellInfo() {
 
   lucide.createIcons();
 
+  const setId =
+    gameData.shells?.setId || null;
+
+  if (
+    setId &&
+    setId !== shellRenderId &&
+    gameData.phase === "playing"
+  ) {
+
+    shellRenderId = setId;
+    showShellReveal();
+
+  } else if (
+    setId &&
+    !shellRenderId
+  ) {
+
+    shellRenderId = setId;
+
+  }
+
+}
+
+function showShellReveal() {
+
+  const shellElement =
+    document.querySelector(".random-shell");
+
+  clearTimeout(shellRevealTimer);
+
+  shellElement.classList.remove("hidden");
+
+  shellRevealTimer = setTimeout(() => {
+    if (gameData?.phase === "playing") {
+      shellElement.classList.add("hidden");
+    }
+  }, 2500);
+
+}
+
+function triggerDamageFlash() {
+
+  damageFlash.classList.remove("hidden");
+  damageFlash.classList.remove("damage-flash");
+
+  void damageFlash.offsetWidth;
+
+  damageFlash.classList.add("damage-flash");
+
+  setTimeout(() => {
+    damageFlash.classList.add("hidden");
+  }, 600);
+
 }
 
 
@@ -2941,6 +3000,16 @@ async function finishPreparation() {
         }
       );
 
+
+    if (
+      result.committed &&
+      shotResult === "live" &&
+      isSelf
+    ) {
+
+      triggerDamageFlash();
+
+    }
 
     if (
       !result.committed
@@ -3167,15 +3236,8 @@ function updateGameHealth() {
 
 
     if (
-      i < hp
+      i < 3 - hp
     ) {
-
-      icon.setAttribute(
-        "data-lucide",
-        "zap"
-      );
-
-    } else {
 
       icon.setAttribute(
         "data-lucide",
@@ -3184,6 +3246,13 @@ function updateGameHealth() {
 
       icon.classList.add(
         "hp-off"
+      );
+
+    } else {
+
+      icon.setAttribute(
+        "data-lucide",
+        "zap"
       );
 
     }
