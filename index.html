@@ -1,3 +1,4 @@
+```html
 <!DOCTYPE html>
 <html lang="id">
 
@@ -1471,6 +1472,63 @@ const spectatorListContainer =
 
 const gameMessage =
   document.querySelector("#gameMessage");
+
+/* =========================
+   GAME SOUNDS
+========================= */
+
+const gameSounds = {};
+
+function getGameSound(name) {
+  if (!gameSounds[name]) {
+    const audio = new Audio(`sound/${name}.ogg`);
+    audio.preload = "auto";
+    audio.dataset.fallbackTried = "false";
+
+    audio.addEventListener("error", () => {
+      if (audio.dataset.fallbackTried === "true") {
+        return;
+      }
+
+      audio.dataset.fallbackTried = "true";
+      audio.src = `sound/${name}.wav`;
+      audio.load();
+    });
+
+    gameSounds[name] = audio;
+  }
+
+  return gameSounds[name];
+}
+
+function playGameSound(name, volume = 1, delay = 0) {
+  const play = () => {
+    const audio = getGameSound(name);
+
+    try {
+      audio.pause();
+      audio.currentTime = 0;
+      audio.volume = Math.max(0, Math.min(1, volume));
+
+      const promise = audio.play();
+
+      if (promise?.catch) {
+        promise.catch(error => {
+          /* Browser dapat menolak playback sebelum ada user gesture. */
+          console.debug(`Sound ${name} tidak dapat diputar:`, error);
+        });
+      }
+    } catch (error) {
+      console.debug(`Sound ${name} error:`, error);
+    }
+  };
+
+  if (delay > 0) {
+    setTimeout(play, delay);
+  } else {
+    play();
+  }
+}
 
 let messageSequenceId = null;
 let messageTimers = [];
@@ -3139,6 +3197,10 @@ function showGameEvent(eventData) {
   if (eventData.type === "start") {
     clearGameMessage();
 
+    /* Game dimulai: bell + active bersamaan. */
+    playGameSound("bell");
+    playGameSound("active", 0.9, 120);
+
     appendGameMessage(
       "Game di mulai",
       "info",
@@ -3161,6 +3223,9 @@ function showGameEvent(eventData) {
   }
 
   if (eventData.type === "shot_pending") {
+    /* Chat "X menembak Y..." menjadi titik mulai charge-shot. */
+    playGameSound("charge-shot");
+
     appendGameMessage(
       shooterName + " menembak " + targetName + "...",
       "info",
@@ -3176,6 +3241,10 @@ function showGameEvent(eventData) {
   }
 
   if (eventData.result === "live") {
+    /* Live-shot saat pelatuk/tembakan, lalu hit sebagai suara impact. */
+    playGameSound("live-shot");
+    playGameSound("hit", 1, 140);
+
     const hpText =
       Number(eventData.targetHp || 0) > 0
         ? " kehilangan 1 nyawa"
@@ -3187,7 +3256,14 @@ function showGameEvent(eventData) {
       "test-tube",
       3600
     );
+
+    /* Death hanya diputar jika HP target benar-benar menjadi 0. */
+    if (Number(eventData.targetHp || 0) <= 0) {
+      playGameSound("death", 1, 220);
+    }
   } else {
+    playGameSound("blank-shot");
+
     appendGameMessage(
       "Peluru blank",
       "blank",
@@ -3202,6 +3278,10 @@ function showGameEvent(eventData) {
         const winnerName =
           getPlayerNameById(eventData.winnerId);
 
+        /* Kemenangan: levelup terlebih dahulu, lalu winner. */
+        playGameSound("levelup");
+        playGameSound("winner", 1, 700);
+
         appendGameMessage(
           winnerName + " pemenangnya",
           "win",
@@ -3212,6 +3292,9 @@ function showGameEvent(eventData) {
       }
 
       if (eventData.reload) {
+        /* Shell lama keluar, lalu shell baru masuk. */
+        playGameSound("out");
+
         appendGameMessage(
           "Shell telah habis",
           "info",
@@ -3221,6 +3304,8 @@ function showGameEvent(eventData) {
 
         messageTimers.push(
           setTimeout(() => {
+            playGameSound("in");
+
             appendGameMessage(
               "Mengisi ulang shell...",
               "info",
@@ -5024,3 +5109,4 @@ initialize();
 
 </body>
 </html>
+```
