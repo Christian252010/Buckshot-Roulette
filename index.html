@@ -298,6 +298,7 @@ body {
 
 .game-panel.current-turn {
   background: crimson;
+  box-shadow: 0 2px 16px 0 #dc143c;
 }
 
 .gp-top {
@@ -602,7 +603,7 @@ body {
   background: rgba(255, 0, 0, 0.72);
   z-index: 99;
   pointer-events: none;
-  animation: damageFlash 0.55s ease-out forwards;
+  animation: damageFlash 1.5s ease-out forwards;
 }
 
 @keyframes damageFlash {
@@ -1651,6 +1652,7 @@ async function renderRoom() {
     joinBtn.classList.add(
       "hidden"
     );
+    joinBtn.disabled = false;
 
     startLeft.classList.add(
       "hidden"
@@ -1717,6 +1719,12 @@ async function renderRoom() {
       currentPlayerId
     ];
 
+  const playerIds =
+    Object.keys(roomPlayers);
+
+  const playerCount =
+    playerIds.length;
+
   createBtn.classList.toggle(
     "hidden",
     !!roomData
@@ -1727,6 +1735,10 @@ async function renderRoom() {
     joined
   );
 
+  joinBtn.disabled =
+    !joined &&
+    playerCount >= 6;
+
   startLeft.classList.toggle(
     "hidden",
     !joined
@@ -1736,9 +1748,6 @@ async function renderRoom() {
     joined
       ? "Kamu berada di room."
       : "Room tersedia. Tekan Join untuk masuk.";
-
-  const playerIds =
-    Object.keys(roomPlayers);
 
   document.querySelector(
     ".online"
@@ -1942,43 +1951,62 @@ joinBtn.addEventListener(
 
     try {
 
-      const snapshot =
-        await get(
-          ref(db, "room")
+      const roomRef =
+        ref(db, "room");
+
+      const result =
+        await runTransaction(
+          roomRef,
+          room => {
+
+            if (!room) {
+              return;
+            }
+
+            if (room.status === "playing") {
+              return;
+            }
+
+            const players =
+              room.players || {};
+
+            if (players[currentPlayerId]) {
+              return room;
+            }
+
+            if (Object.keys(players).length >= 6) {
+              return;
+            }
+
+            return {
+              ...room,
+              players: {
+                ...players,
+                [currentPlayerId]: true
+              }
+            };
+
+          }
         );
 
-      if (!snapshot.exists()) {
+      if (!result.committed) {
+        const snapshot =
+          await get(roomRef);
 
-        roomMessage.textContent =
-          "Room tidak tersedia.";
+        if (snapshot.exists()) {
+          const room = snapshot.val();
+          const count =
+            Object.keys(room.players || {}).length;
 
-        return;
-
+          if (count >= 6) {
+            roomMessage.textContent =
+              "Room penuh. Maksimal 6 pemain.";
+          } else if (room.status === "playing") {
+            roomMessage.textContent =
+              "Game sedang berjalan.";
+          }
+        }
       }
-
-      const room =
-        snapshot.val();
-
-      if (
-        room.status ===
-        "playing"
-      ) {
-
-        roomMessage.textContent =
-          "Game sedang berjalan.";
-
-        return;
-
-      }
-
-      await set(
-        ref(
-          db,
-          "room/players/" +
-          currentPlayerId
-        ),
-        true
-      );
 
     } catch (error) {
 
@@ -2112,15 +2140,49 @@ function shuffleArray(array) {
    CREATE GAME STATE
 ========================= */
 
-function createShellSet() {
+function createShellSet(playerCount = 2) {
+
+  let totalMin;
+  let totalMax;
+  let aliveMin;
+  let aliveMax;
+
+  if (playerCount <= 2) {
+    totalMin = 4;
+    totalMax = 6;
+    aliveMin = 1;
+    aliveMax = 5;
+  } else if (playerCount === 3) {
+    totalMin = 5;
+    totalMax = 7;
+    aliveMin = 2;
+    aliveMax = 5;
+  } else {
+    totalMin = 6;
+    totalMax = 8;
+    aliveMin = 2;
+    aliveMax = 6;
+  }
+
+  const total =
+    Math.floor(
+      Math.random() *
+      (totalMax - totalMin + 1)
+    ) + totalMin;
+
+  aliveMax = Math.min(
+    aliveMax,
+    total - 1
+  );
 
   const alive =
     Math.floor(
-      Math.random() * 7
-    ) + 1;
+      Math.random() *
+      (aliveMax - aliveMin + 1)
+    ) + aliveMin;
 
   const blank =
-    shellCount - alive;
+    total - alive;
 
   const shellData =
     [];
@@ -2130,11 +2192,9 @@ function createShellSet() {
     i < alive;
     i++
   ) {
-
     shellData.push(
       "live"
     );
-
   }
 
   for (
@@ -2142,34 +2202,21 @@ function createShellSet() {
     i < blank;
     i++
   ) {
-
     shellData.push(
       "blank"
     );
-
   }
 
   return {
-
     setId:
       Date.now().toString(36) +
       Math.random().toString(36).slice(2, 8),
-
-    total:
-      shellCount,
-
+    total,
     alive,
-
     blank,
-
-    current:
-      0,
-
-    sequence:
-      shuffleArray(shellData)
-
+    current: 0,
+    sequence: shuffleArray(shellData)
   };
-
 }
 
 
@@ -2202,7 +2249,7 @@ function createGameState(
   );
 
   const shells =
-    createShellSet();
+    createShellSet(shuffledPlayers.length);
 
   const now =
     Date.now();
@@ -2393,8 +2440,24 @@ function watchGame() {
 
       }
 
-      gameData =
+      const nextGameData =
         snapshot.val();
+
+      const nextShot =
+        nextGameData?.lastShot;
+
+      if (
+        nextShot?.id &&
+        nextShot.id !== lastRenderedShotId &&
+        nextShot.result === "live" &&
+        nextShot.targetId === currentPlayerId
+      ) {
+        lastRenderedShotId = nextShot.id;
+        triggerDamageFlash();
+      }
+
+      gameData =
+        nextGameData;
 
       await renderGameState();
 
@@ -2733,6 +2796,11 @@ function renderShellInfo() {
       gameData.shells?.alive || 0
     );
 
+  const total =
+    Number(
+      gameData.shells?.total || 0
+    );
+
   const blank =
     Number(
       gameData.shells?.blank || 0
@@ -2750,7 +2818,7 @@ function renderShellInfo() {
 
   for (
     let i = 0;
-    i < shellCount;
+    i < total;
     i++
   ) {
 
@@ -2785,7 +2853,8 @@ function renderShellInfo() {
 
   if (
     setId &&
-    gameData.phase === "playing" &&
+    (gameData.phase === "preparing" ||
+      gameData.phase === "playing") &&
     setId !== shellRenderId
   ) {
     shellRenderId = setId;
@@ -2822,7 +2891,7 @@ function triggerDamageFlash() {
 
   setTimeout(() => {
     damageFlash.classList.add("hidden");
-  }, 600);
+  }, 1550);
 
 }
 
@@ -3124,7 +3193,7 @@ function updateTurnPanel() {
   const hasTurn =
     gameData &&
     gameData.phase === "playing" &&
-    !!gameData.turn?.current;
+    gameData.turn?.current === currentPlayerId;
 
   panel.classList.toggle(
     "current-turn",
@@ -3385,7 +3454,9 @@ function updateShotVisibility() {
   if (
     Number(
       gameData.shells?.current || 0
-    ) >= shellCount
+    ) >= Number(
+      gameData.shells?.total || 0
+    )
   ) {
 
     shot.classList.add(
@@ -3440,7 +3511,9 @@ shot.addEventListener(
 
 
     if (
-      shellIndex >= shellCount
+      shellIndex >= Number(
+        gameData.shells?.total || 0
+      )
     ) {
 
       alert(
@@ -3907,7 +3980,9 @@ async function shoot(targetId) {
           ) {
 
             shells =
-              createShellSet();
+              createShellSet(
+                Object.keys(currentGame.players || {}).length
+              );
 
             currentGame.shells =
               shells;
@@ -3916,10 +3991,15 @@ async function shoot(targetId) {
 
           }
 
-          if (currentShell >= shellCount) {
+          if (
+            currentShell >=
+            Number(shells?.total || 0)
+          ) {
 
             shells =
-              createShellSet();
+              createShellSet(
+                Object.keys(currentGame.players || {}).length
+              );
 
             currentGame.shells =
               shells;
@@ -4102,11 +4182,13 @@ async function shoot(targetId) {
 
           if (
             currentGame.shells.current >=
-            shellCount
+            Number(currentGame.shells.total || 0)
           ) {
 
             const newShells =
-              createShellSet();
+              createShellSet(
+                playerIds.length
+              );
 
             currentGame.shells =
               newShells;
@@ -4264,31 +4346,11 @@ async function shoot(targetId) {
 
 
     if (
-      shotResult ===
-      "live"
+      shotResult === "live" &&
+      isSelf
     ) {
-
-      alert(
-
-        "💥 LIVE!\n\n" +
-
-        (
-          isSelf
-            ? "Kamu terkena peluru!"
-            : shotTargetName +
-              " terkena peluru!"
-        )
-
-      );
-
-    } else {
-
-      alert(
-        "⚪ BLANK!"
-      );
-
+      triggerDamageFlash();
     }
-
 
     const snapshot =
       await get(
