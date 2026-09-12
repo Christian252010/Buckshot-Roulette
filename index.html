@@ -1,3 +1,4 @@
+```html
 <!DOCTYPE html>
 <html lang="id">
 
@@ -349,9 +350,10 @@ body {
 .gp-bottom {
   display: flex;
   width: 100%;
-  justify-content: space-between;
+  justify-content: flex-start;
   align-items: center;
   margin-top: 6px;
+  padding-left: 8px;
 }
 
 .i-shell {
@@ -495,9 +497,10 @@ body {
 
 .shell-info {
   display: flex;
-  justify-content: space-around;
+  justify-content: flex-end;
+  gap: 18px;
   border-top: 1.5px solid #666;
-  padding-top: 10px;
+  padding: 10px 8px 0;
   font-weight: bold;
   color: #888;
 }
@@ -630,7 +633,14 @@ body {
 }
 
 .item.empty {
-  visibility: hidden;
+  background: #333;
+  color: #555;
+  cursor: default;
+}
+
+.item.disabled {
+  opacity: .45;
+  cursor: not-allowed;
   pointer-events: none;
 }
 
@@ -1479,11 +1489,11 @@ body {
     <div class="shell-info">
 
       <span class="alive-count">
-        Alive : 0
+        Peluru Alive : 0
       </span>
 
       <span class="blank-count">
-        Blank : 0
+        Peluru Blank : 0
       </span>
 
     </div>
@@ -3046,33 +3056,38 @@ function shuffleArray(array) {
 const ITEM_DEFINITIONS = {
   magnifying_glass: {
     name: "Magnifying Glass",
+    icon: "search",
     info: "Melihat jenis peluru yang sedang berada di posisi sekarang.",
     target: false
   },
   hand_saw: {
     name: "Hand Saw",
+    icon: "pocket-knife",
     info: "Tembakan live berikutnya memberikan double damage (2 HP).",
     target: false
   },
   cigarette: {
     name: "Cigarette Pack",
+    icon: "cigarette",
     info: "Memulihkan 1 HP. Tidak dapat digunakan jika HP sudah penuh.",
     target: false
   },
   handcuff: {
     name: "Handcuff",
+    icon: "lock-keyhole-open",
     info: "Membuat pemain yang terkena dilewati 1 giliran.",
     target: true
   }
 };
 
 function createPlayerItems(playerCount) {
-  const types = Object.keys(ITEM_DEFINITIONS);
-  const items = [];
+  const types = shuffleArray(Object.keys(ITEM_DEFINITIONS));
 
-  // Setiap pemain mendapat 4 item berbeda ketika shell baru dibagikan.
-  // Urutannya diacak agar posisi item tidak selalu sama.
-  return shuffleArray(types);
+  // Item dibagikan acak setiap shell baru diacak.
+  // Untuk sementara tiap pemain mendapat 1-4 item berbeda.
+  const amount = Math.floor(Math.random() * types.length) + 1;
+
+  return types.slice(0, amount);
 
 }
 
@@ -3089,12 +3104,53 @@ function renderMyItems() {
     ? gameData.players[currentPlayerId].items
     : [];
 
+  const canUseItems =
+    gameData?.phase === "playing" &&
+    gameData?.turn?.current === currentPlayerId &&
+    !shootingLocked;
+
+  if (!canUseItems && itemMode) {
+    resetItemSelection();
+  }
+
   itemElements.forEach(item => {
     const type = item.dataset.item;
-    const owned = items.includes(type);
-    item.classList.toggle("hidden", !owned);
-    item.classList.toggle("selected", selectedItemType === type);
+    const owned = !!type && items.includes(type);
+
+    item.classList.toggle("empty", !owned);
+    item.classList.toggle("disabled", owned && !canUseItems);
+    item.classList.toggle("selected", owned && selectedItemType === type);
+
+    if (!owned) {
+      item.dataset.item = "";
+      item.innerHTML = "";
+    }
   });
+
+  const ownedTypes = items.slice(0, itemElements.length);
+
+  itemElements.forEach((item, index) => {
+    const type = ownedTypes[index] || "";
+    item.dataset.item = type;
+
+    if (!type) {
+      item.classList.add("empty");
+      item.classList.remove("disabled", "selected");
+      item.innerHTML = "";
+      return;
+    }
+
+    const definition = ITEM_DEFINITIONS[type];
+    item.classList.remove("empty");
+    item.classList.toggle("disabled", !canUseItems);
+    item.classList.toggle("selected", selectedItemType === type);
+    item.innerHTML = `
+      <i data-lucide="${definition.icon}"></i>
+      <span>${definition.name}</span>
+    `;
+  });
+
+  lucide.createIcons();
 }
 
 function setItemMode(type) {
@@ -3226,7 +3282,14 @@ async function useSelectedItem(targetId = null) {
 
 itemElements.forEach(item => {
   item.addEventListener("click", () => {
-    if (shootingLocked || item.classList.contains("hidden")) return;
+    if (shootingLocked || item.classList.contains("empty") || item.classList.contains("disabled")) {
+      return;
+    }
+
+    if (!gameData || gameData.phase !== "playing" || gameData.turn?.current !== currentPlayerId) {
+      return;
+    }
+
     setItemMode(item.dataset.item);
   });
 });
@@ -4070,35 +4133,34 @@ function showGameEvent(eventData) {
   }
 
   if (eventData.result === "live") {
-    /* Live-shot saat pelatuk/tembakan, lalu hit sebagai suara impact. */
-    playGameSound("live-shot");
-    playGameSound("hit", 1, 140);
-
+    const damageText = Number(eventData.damage || 1);
     const hpText =
       Number(eventData.targetHp || 0) > 0
-        ? " kehilangan 1 nyawa"
+        ? ` kehilangan ${damageText} nyawa`
         : " kehilangan seluruh nyawa dan keluar dari permainan";
 
+    /* Suara ditembakkan tepat saat teks hasil muncul. */
     appendGameMessage(
       "Peluru Alive " + targetName + hpText,
       "live",
       "test-tube",
       3600
     );
+    playGameSound("shot-alive");
+    playGameSound("hit", 1, 140);
 
     /* Death hanya diputar jika HP target benar-benar menjadi 0. */
     if (Number(eventData.targetHp || 0) <= 0 && !eventData.finished) {
       playGameSound("death", 1, 220);
     }
   } else {
-    playGameSound("blank-shot");
-
     appendGameMessage(
       "Peluru blank",
       "blank",
       "test-tube",
       3600
     );
+    playGameSound("shot-blank");
   }
 
   messageTimers.push(
@@ -4416,26 +4478,37 @@ async function cleanupFinishedRoom(
 
 function renderShellInfo() {
 
-  const alive =
-    Number(
-      gameData.shells?.alive || 0
-    );
-
   const total =
     Number(
       gameData.shells?.total || 0
     );
 
-  const blank =
-    Number(
-      gameData.shells?.blank || 0
-    );
+  const current = Math.max(
+    0,
+    Number(gameData.shells?.current || 0)
+  );
+
+  const sequence =
+    Array.isArray(gameData.shells?.sequence)
+      ? gameData.shells.sequence
+      : [];
+
+  const remaining =
+    sequence.slice(current);
+
+  const alive = remaining.filter(
+    type => type === "live"
+  ).length;
+
+  const blank = remaining.filter(
+    type => type === "blank"
+  ).length;
 
   aliveCount.textContent =
-    "Alive : " + alive;
+    "Peluru Alive : " + alive;
 
   blankCount.textContent =
-    "Blank : " + blank;
+    "Peluru Blank : " + blank;
 
   if (gameLiveCount) {
     gameLiveCount.textContent = alive;
@@ -5170,7 +5243,7 @@ playerBtn.addEventListener(
       return;
     }
 
-    if (!shotMode) {
+    if (!shotMode && !itemMode) {
       return;
     }
 
@@ -5638,7 +5711,7 @@ async function shoot(targetId) {
       isSelf = targetId === currentPlayerId;
 
       if (currentShellType === "live") {
-        const damage = playerId === currentPlayerId && Number(players[currentPlayerId]?.sawActive ?? 0) ? 2 : 1;
+        const damage = Number(players[currentPlayerId]?.sawActive ?? 0) ? 2 : 1;
         targetPlayer.hp = Math.max(0, Number(targetPlayer.hp ?? 0) - damage);
         players[currentPlayerId].sawActive = false;
         shotResult = "live";
@@ -5675,6 +5748,7 @@ async function shoot(targetId) {
           playerId: currentPlayerId,
           targetId,
           result: shotResult,
+          damage: shotResult === "live" ? damage : 0,
           targetHp: Number(targetPlayer.hp ?? 0),
           isSelf,
           finished: true,
@@ -5738,6 +5812,7 @@ async function shoot(targetId) {
         playerId: currentPlayerId,
         targetId,
         result: shotResult,
+        damage: shotResult === "live" ? damage : 0,
         targetHp: Number(targetPlayer.hp ?? 0),
         isSelf,
         finished: false,
@@ -5890,6 +5965,12 @@ document.addEventListener(
       );
 
 
+    const clickedItem =
+      event.target.closest(
+        ".items-have .item"
+      );
+
+
     const clickedPopup =
       event.target.closest(
         ".shot-list"
@@ -5903,6 +5984,9 @@ document.addEventListener(
 
 
     if (clickedShot) {
+      if (itemMode) {
+        resetShot();
+      }
       return;
     }
 
@@ -5913,6 +5997,11 @@ document.addEventListener(
 
 
     if (clickedSelfBtn) {
+      return;
+    }
+
+
+    if (clickedItem) {
       return;
     }
 
@@ -5983,3 +6072,4 @@ initialize();
 
 </body>
 </html>
+```
