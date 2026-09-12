@@ -703,6 +703,14 @@ body {
   font-size: 15px;
 }
 
+.player-list {
+  display: none;
+}
+
+.player-list.show {
+  display: flex;
+}
+
 
 /* =========================
    DAMAGE FLASH
@@ -3867,6 +3875,13 @@ function updateShotVisibility() {
 /* =========================
    GAME PLAYER LIST BUTTON
 ========================= */
+
+const closePlayerList = document.getElementById("closePlayerList");
+const playerListPopup = document.getElementById("playerListPopup");
+
+closePlayerList.addEventListener("click", () => {
+  playerListPopup.classList.remove("show");
+});
 
 const gameListButton =
   document.querySelector(".game .header .list");
