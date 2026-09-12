@@ -343,53 +343,45 @@ body {
 
 
 /* =========================
-   REMAINING SHELL COUNTER
+   GAME PANEL BOTTOM INFO
 ========================= */
 
-.game-shell-counts {
+.gp-bottom {
   display: flex;
   width: 100%;
-  justify-content: flex-end;
+  justify-content: space-between;
   align-items: center;
-  gap: 6px;
   margin-top: 6px;
 }
 
-.game-shell-count {
+.i-shell {
   display: flex;
-  min-width: 42px;
-  height: 32px;
-  padding: 4px 8px;
   align-items: center;
-  justify-content: center;
+  gap: 6px;
+}
+
+.i-live, .i-blank {
+  display: flex;
+  align-items: center;
   gap: 4px;
-  background: #2f2f2f;
-  border: 1px solid #444;
-  border-radius: 5px;
-  font-size: 18px;
+  background: #333;
+  padding: 2px 6px;
+  border-radius: 4px;
   font-weight: bold;
 }
 
-.game-shell-count svg {
-  width: 18px;
-  height: 18px;
+.i-live {
+  color: crimson;
+}
+
+.i-blank {
+  color: #888;
+}
+
+.i-shell svg {
+  width: 14px;
+  height: 14px;
   rotate: 180deg;
-}
-
-.game-shell-count.live {
-  color: crimson;
-}
-
-.game-shell-count.live svg {
-  color: crimson;
-}
-
-.game-shell-count.blank {
-  color: #888;
-}
-
-.game-shell-count.blank svg {
-  color: #888;
 }
 
 
@@ -488,8 +480,9 @@ body {
   gap: 12px;
   width: 100%;
   justify-content: center;
-  top: 50%;
-  transform: translateY(-50%);
+  top: 45%;
+  transform: translateX(-50%) translateY(-60%);
+  left: 50%;
   padding: 12px;
   background: #2a2a2a;
   z-index: 10;
@@ -533,8 +526,8 @@ body {
   position: absolute;
   display: flex;
   left: 50%;
-  top: 50%;
-  transform: translateX(-50%) translateY(-50%);
+  top: 45%;
+  transform: translateX(-50%) translateY(-60%);
   padding: 14px;
   border-radius: 50%;
   cursor: pointer;
@@ -569,6 +562,7 @@ body {
 .bottom {
   display: flex;
   width: 100%;
+  flex-direction: column;
   flex-shrink: 0;
 }
 
@@ -605,6 +599,45 @@ body {
   cursor: not-allowed;
 }
 
+.items-have {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 6px;
+  margin-top: -8px;
+  padding: 8px;
+}
+
+.item {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+  background: #444;
+  height: 70px;
+  border-radius: 4px;
+  color: white;
+  font-weight: bold;
+  font-size: 8px;
+  cursor: pointer;
+  user-select: none;
+}
+
+.item svg {
+  width: 30px;
+  height: 30px;
+}
+
+.item.empty {
+  visibility: hidden;
+  pointer-events: none;
+}
+
+.item.selected {
+  background: crimson;
+  box-shadow: 0 0 0 2px #fff2;
+}
 
 /* =========================
    OVERLAY
@@ -1417,19 +1450,18 @@ body {
 
     </div>
 
-    <!-- REMAINING SHELL COUNTER -->
-    <div class="game-shell-counts">
-
-      <div class="game-shell-count live">
-        <i data-lucide="test-tube"></i>
-        <span class="game-live-count">0</span>
+    <!-- SHELL INFO -->
+    <div class="gp-bottom">
+      <div class="i-shell">
+        <div class="i-live">
+          <i data-lucide="test-tube"></i>
+          <span class="game-live-count">0</span>
+        </div>
+        <div class="i-blank">
+          <i data-lucide="test-tube"></i>
+          <span class="game-blank-count">0</span>
+        </div>
       </div>
-
-      <div class="game-shell-count blank">
-        <i data-lucide="test-tube"></i>
-        <span class="game-blank-count">0</span>
-      </div>
-
     </div>
 
     <!-- TEMPORARY GAME MESSAGE -->
@@ -1473,23 +1505,31 @@ body {
   <div class="bottom">
 
     <div class="shot-btn">
+      <button class="other" disabled>Player</button>
+      <button class="self" disabled>Self</button>
+    </div>
 
-      <button
-        class="other"
-        disabled>
-
-        Player
-
-      </button>
-
-      <button
-        class="self"
-        disabled>
-
-        You
-
-      </button>
-
+    <div class="items-have">
+      <div class="item" data-item="magnifying_glass">
+        <i data-lucide="search"></i>
+        <span>Magnifying Glass</span>
+      </div>
+      <div class="item" data-item="hand_saw">
+        <i data-lucide="pocket-knife"></i>
+        <span>Hand Saw</span>
+      </div>
+      <div class="item" data-item="cigarette">
+        <i data-lucide="cigarette"></i>
+        <span>Cigarette Pack</span>
+      </div>
+      <div class="item" data-item="handcuff">
+        <i data-lucide="lock-keyhole-open"></i>
+        <span>Handcuff</span>
+      </div>
+      <div class="item empty"></div>
+      <div class="item empty"></div>
+      <div class="item empty"></div>
+      <div class="item empty"></div>
     </div>
 
   </div>
@@ -1621,6 +1661,8 @@ let gamePlayers = [];
 
 let shotMode = false;
 let selectedTarget = null;
+let selectedItemType = null;
+let itemMode = false;
 
 let gameWatcherStarted = false;
 let roomWatcherStarted = false;
@@ -1795,6 +1837,9 @@ const spectatorListContainer =
 
 const gameMessage =
   document.querySelector("#gameMessage");
+
+const itemElements =
+  document.querySelectorAll(".items-have .item[data-item]");
 
 /* =========================
    GAME SOUNDS
@@ -2995,6 +3040,199 @@ function shuffleArray(array) {
 
 
 /* =========================
+   ITEMS
+========================= */
+
+const ITEM_DEFINITIONS = {
+  magnifying_glass: {
+    name: "Magnifying Glass",
+    info: "Melihat jenis peluru yang sedang berada di posisi sekarang.",
+    target: false
+  },
+  hand_saw: {
+    name: "Hand Saw",
+    info: "Tembakan live berikutnya memberikan double damage (2 HP).",
+    target: false
+  },
+  cigarette: {
+    name: "Cigarette Pack",
+    info: "Memulihkan 1 HP. Tidak dapat digunakan jika HP sudah penuh.",
+    target: false
+  },
+  handcuff: {
+    name: "Handcuff",
+    info: "Membuat pemain yang terkena dilewati 1 giliran.",
+    target: true
+  }
+};
+
+function createPlayerItems(playerCount) {
+  const types = Object.keys(ITEM_DEFINITIONS);
+  const items = [];
+
+  // Setiap pemain mendapat 4 item berbeda ketika shell baru dibagikan.
+  // Urutannya diacak agar posisi item tidak selalu sama.
+  return shuffleArray(types);
+
+}
+
+function resetItemSelection() {
+  selectedItemType = null;
+  itemMode = false;
+  itemElements.forEach(item => item.classList.remove("selected"));
+  playerBtn.textContent = "Player";
+  selfBtn.textContent = "Self";
+}
+
+function renderMyItems() {
+  const items = Array.isArray(gameData?.players?.[currentPlayerId]?.items)
+    ? gameData.players[currentPlayerId].items
+    : [];
+
+  itemElements.forEach(item => {
+    const type = item.dataset.item;
+    const owned = items.includes(type);
+    item.classList.toggle("hidden", !owned);
+    item.classList.toggle("selected", selectedItemType === type);
+  });
+}
+
+function setItemMode(type) {
+  if (!gameData || gameData.phase !== "playing") return;
+  if (gameData.turn?.current !== currentPlayerId) {
+    alert("Bukan giliran kamu.");
+    return;
+  }
+
+  const items = gameData.players?.[currentPlayerId]?.items || [];
+  if (!items.includes(type)) return;
+
+  selectedItemType = type;
+  itemMode = true;
+  itemElements.forEach(item => item.classList.toggle("selected", item.dataset.item === type));
+  playerBtn.textContent = "Use";
+  selfBtn.textContent = "Info";
+  enableShotButtons();
+}
+
+async function showSelectedItemInfo() {
+  if (!selectedItemType) return;
+
+  const definition = ITEM_DEFINITIONS[selectedItemType];
+  if (!definition) return;
+
+  if (selectedItemType === "magnifying_glass") {
+    const index = Number(gameData.shells?.current || 0);
+    const type = gameData.shells?.sequence?.[index];
+    const label = type === "live" ? "LIVE" : type === "blank" ? "BLANK" : "tidak diketahui";
+    alert(`Magnifying Glass\n\nPeluru saat ini: ${label}`);
+    return;
+  }
+
+  alert(`${definition.name}\n\n${definition.info}`);
+}
+
+async function useSelectedItem(targetId = null) {
+  if (!selectedItemType || shootingLocked || !gameData) return;
+  if (gameData.phase !== "playing" || gameData.turn?.current !== currentPlayerId) {
+    alert("Item hanya dapat digunakan saat giliran kamu.");
+    return;
+  }
+
+  const type = selectedItemType;
+  const definition = ITEM_DEFINITIONS[type];
+  if (!definition) return;
+
+  if (definition.target && !targetId) {
+    renderPlayerPopup();
+    popup.classList.remove("hidden");
+    overlay.classList.remove("hidden");
+    return;
+  }
+
+  if (type === "magnifying_glass") {
+    const index = Number(gameData.shells?.current || 0);
+    const shellType = gameData.shells?.sequence?.[index];
+    const label = shellType === "live" ? "LIVE" : shellType === "blank" ? "BLANK" : "tidak diketahui";
+    alert(`Magnifying Glass\n\nPeluru saat ini: ${label}`);
+  }
+
+  shootingLocked = true;
+  try {
+    const gameRef = ref(db, "room/game");
+    const result = await runTransaction(gameRef, game => {
+      if (!game || game.phase !== "playing") return;
+      if (game.turn?.current !== currentPlayerId) return;
+
+      const player = game.players?.[currentPlayerId];
+      if (!player || player.hp <= 0) return;
+
+      const inventory = Array.isArray(player.items) ? [...player.items] : [];
+      const itemIndex = inventory.indexOf(type);
+      if (itemIndex < 0) return;
+
+      if (type === "cigarette") {
+        if (Number(player.hp) >= 3) return;
+        player.hp = Math.min(3, Number(player.hp) + 1);
+      } else if (type === "hand_saw") {
+        player.sawActive = true;
+      } else if (type === "handcuff") {
+        if (!targetId || targetId === currentPlayerId) return;
+        const target = game.players?.[targetId];
+        if (!target || Number(target.hp ?? 0) <= 0) return;
+        target.skipTurns = Number(target.skipTurns ?? 0) + 1;
+      } else if (type === "magnifying_glass") {
+        // Magnifying Glass tidak mengubah HP/turn, tetapi item tetap dikonsumsi.
+      }
+
+      inventory.splice(itemIndex, 1);
+      player.items = inventory;
+      game.lastEvent = {
+        id: Date.now().toString(36) + Math.random().toString(36).slice(2, 8),
+        type: "item",
+        itemType: type,
+        playerId: currentPlayerId,
+        targetId: targetId || null,
+        at: Date.now()
+      };
+
+      return game;
+    });
+
+    if (!result.committed) {
+      const snapshot = await get(gameRef);
+      if (snapshot.exists()) {
+        gameData = snapshot.val();
+        await renderGameState();
+      }
+      return;
+    }
+
+    closeShotPopup();
+    resetShot();
+    resetItemSelection();
+
+    const snapshot = await get(gameRef);
+    if (snapshot.exists()) {
+      gameData = snapshot.val();
+      await renderGameState();
+    }
+  } catch (error) {
+    console.error("Use item error:", error);
+  } finally {
+    shootingLocked = false;
+  }
+}
+
+itemElements.forEach(item => {
+  item.addEventListener("click", () => {
+    if (shootingLocked || item.classList.contains("hidden")) return;
+    setItemMode(item.dataset.item);
+  });
+});
+
+
+/* =========================
    CREATE GAME STATE
 ========================= */
 
@@ -3099,7 +3337,10 @@ function createGameState(
 
         hp: 3,
 
-        turnOrder: index
+        turnOrder: index,
+        items: createPlayerItems(shuffledPlayers.length),
+        sawActive: false,
+        skipTurns: 0
 
       };
 
@@ -3798,6 +4039,18 @@ function showGameEvent(eventData) {
     return;
   }
 
+  if (eventData.type === "item") {
+    const itemName = ITEM_DEFINITIONS[eventData.itemType]?.name || "Item";
+    const userName = getPlayerNameById(eventData.playerId);
+    appendGameMessage(
+      `${userName} menggunakan ${itemName}${eventData.targetId ? " pada " + getPlayerNameById(eventData.targetId) : ""}.`,
+      "info",
+      null,
+      3600
+    );
+    return;
+  }
+
   if (eventData.type === "shot_pending") {
     /* Chat "X menembak Y..." menjadi titik mulai charge-shot. */
     playGameSound("charge-shot");
@@ -3942,6 +4195,7 @@ async function renderGameState() {
   showGameEvent(gameData.lastEvent);
 
   renderShellInfo();
+  renderMyItems();
 
   if (playerListPopup.classList.contains("show")) {
     renderGamePlayerList();
@@ -4907,15 +5161,18 @@ playerBtn.addEventListener(
   "click",
   () => {
 
-    if (
-      !shotMode ||
-      shootingLocked
-    ) {
-
+    if (shootingLocked) {
       return;
-
     }
 
+    if (itemMode && selectedItemType) {
+      useSelectedItem();
+      return;
+    }
+
+    if (!shotMode) {
+      return;
+    }
 
     renderPlayerPopup();
 
@@ -4939,15 +5196,18 @@ selfBtn.addEventListener(
   "click",
   () => {
 
-    if (
-      !shotMode ||
-      shootingLocked
-    ) {
-
+    if (shootingLocked) {
       return;
-
     }
 
+    if (itemMode && selectedItemType) {
+      showSelectedItemInfo();
+      return;
+    }
+
+    if (!shotMode) {
+      return;
+    }
 
     const target =
       gamePlayers.find(
@@ -5218,6 +5478,10 @@ playerContainer.addEventListener(
     selectedTarget =
       target;
 
+    if (itemMode && selectedItemType === "handcuff") {
+      useSelectedItem(targetId);
+      return;
+    }
 
     closeShotPopup();
 
@@ -5374,9 +5638,13 @@ async function shoot(targetId) {
       isSelf = targetId === currentPlayerId;
 
       if (currentShellType === "live") {
-        targetPlayer.hp = Math.max(0, Number(targetPlayer.hp ?? 0) - 1);
+        const damage = playerId === currentPlayerId && Number(players[currentPlayerId]?.sawActive ?? 0) ? 2 : 1;
+        targetPlayer.hp = Math.max(0, Number(targetPlayer.hp ?? 0) - damage);
+        players[currentPlayerId].sawActive = false;
         shotResult = "live";
       } else {
+        // Hand Saw hanya berlaku untuk peluru live berikutnya.
+        players[currentPlayerId].sawActive = false;
         shotResult = "blank";
       }
 
@@ -5422,6 +5690,13 @@ async function shoot(targetId) {
       let shellReloaded = false;
       if (currentGame.shells.current >= Number(currentGame.shells.total || 0)) {
         currentGame.shells = createShellSet(playerIds.length);
+        playerIds.forEach(id => {
+          if (players[id]) {
+            players[id].items = createPlayerItems(playerIds.length);
+            players[id].sawActive = false;
+            players[id].skipTurns = 0;
+          }
+        });
         shellReloaded = true;
       }
 
@@ -5441,6 +5716,12 @@ async function shoot(targetId) {
         while (checked < playerIds.length) {
           const candidateId = playerIds[nextIndex];
           if (Number(players[candidateId]?.hp ?? 0) > 0) {
+            if (Number(players[candidateId]?.skipTurns ?? 0) > 0) {
+              players[candidateId].skipTurns = Number(players[candidateId].skipTurns) - 1;
+              nextIndex = (nextIndex + 1) % playerIds.length;
+              checked++;
+              continue;
+            }
             break;
           }
           nextIndex = (nextIndex + 1) % playerIds.length;
@@ -5523,6 +5804,14 @@ function enableShotButtons() {
   selfBtn.disabled =
     false;
 
+  if (itemMode && selectedItemType) {
+    playerBtn.textContent = "Use";
+    selfBtn.textContent = "Info";
+  } else {
+    playerBtn.textContent = "Player";
+    selfBtn.textContent = "Self";
+  }
+
 }
 
 
@@ -5557,6 +5846,7 @@ function resetShot(
 
 
   selectedTarget = null;
+  resetItemSelection();
 
 
   shot.classList.remove(
