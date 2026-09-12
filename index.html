@@ -3198,296 +3198,158 @@ playerContainer.addEventListener(
    SHOOT
 ========================= */
 
-async function shoot() {
+async function shoot(targetId) {
+  if (!gameData) return;
 
-  if (
-    shootingLocked ||
-    !selectedTarget
-  ) {
+  const currentTurn = gameData.turn?.current;
 
+  if (currentTurn !== currentPlayerId) {
+    alert("Bukan giliran kamu.");
     return;
-
   }
 
+  const shellIndex = gameData.shells?.current ?? 0;
+  const sequence = gameData.shells?.sequence;
 
-  if (
-    !gameData ||
-    gameData.phase !==
-    "playing" ||
-    !gameData.turn
-  ) {
-
-    resetShot();
-
+  if (shellIndex >= 8 || !sequence) {
+    alert("Tidak ada shell tersisa.");
     return;
-
   }
 
+  const shell = sequence[shellIndex];
 
-  if (
-    gameData.turn.current !==
-    currentPlayerId
-  ) {
-
-    resetShot();
-
+  if (!shell) {
+    alert("Shell tidak ditemukan.");
     return;
-
   }
 
+  const isAlive = shell === "live";
+  const isSelf = targetId === currentPlayerId;
 
-  shootingLocked = true;
+  let shotResult = null;
+  let nextPlayerId = null;
 
+  const gameRef = ref(db, "room/game");
 
-  const targetId =
-    selectedTarget.id;
+  const result = await runTransaction(gameRef, currentGame => {
+    if (!currentGame) return;
 
-
-  const targetName =
-    selectedTarget.name;
-
-
-  let resultShell =
-    null;
-
-
-  let resultTarget =
-    targetName;
-
-
-  try {
-
-    const roomGameRef =
-      ref(
-        db,
-        "room/game"
-      );
-
-
-    const result =
-      await runTransaction(
-        roomGameRef,
-        game => {
-
-          if (!game) {
-            return;
-          }
-
-
-          if (
-            game.phase !==
-            "playing"
-          ) {
-
-            return;
-
-          }
-
-
-          if (
-            !game.turn ||
-            game.turn.current !==
-            currentPlayerId
-          ) {
-
-            return;
-
-          }
-
-
-          const shellIndex =
-            Number(
-              game.shells?.current ||
-              0
-            );
-
-
-          if (
-            shellIndex >=
-            shellCount
-          ) {
-
-            return;
-
-          }
-
-
-          const sequence =
-            game.shells?.sequence ||
-            [];
-
-
-          const shell =
-            sequence[
-              shellIndex
-            ];
-
-
-          if (!shell) {
-            return;
-          }
-
-
-          const players =
-            game.players || {};
-
-
-          if (
-            !players[targetId]
-          ) {
-
-            return;
-
-          }
-
-
-          const orderedPlayers =
-            Object.entries(
-              players
-            )
-              .sort(
-                ([, a], [, b]) =>
-                  Number(
-                    a.turnOrder ?? 0
-                  ) -
-                  Number(
-                    b.turnOrder ?? 0
-                  )
-              );
-
-
-          const currentIndex =
-            orderedPlayers.findIndex(
-              ([id]) =>
-                id ===
-                currentPlayerId
-            );
-
-
-          if (
-            currentIndex ===
-            -1
-          ) {
-
-            return;
-
-          }
-
-
-          const nextIndex =
-            (
-              currentIndex + 1
-            ) %
-            orderedPlayers.length;
-
-
-          const nextPlayer =
-            orderedPlayers[
-              nextIndex
-            ];
-
-
-          if (!nextPlayer) {
-            return;
-          }
-
-
-          resultShell =
-            shell;
-
-
-          return {
-
-            ...game,
-
-            shells: {
-
-              ...game.shells,
-
-              current:
-                shellIndex + 1
-
-            },
-
-            turn: {
-
-              current:
-                nextPlayer[0],
-
-              index:
-                nextIndex
-
-            }
-
-          };
-
-        }
-      );
-
-
-    if (
-      !result.committed
-    ) {
-
-      alert(
-        "Aksi tidak dapat dilakukan."
-      );
-
-      resetShot();
-
+    if (currentGame.phase !== "playing") {
       return;
-
     }
 
-
-    closeShotPopup();
-
-
-    if (
-      resultShell ===
-      "live"
-    ) {
-
-      alert(
-
-        "💥 LIVE!\n\n" +
-        "Target: " +
-        resultTarget
-
-      );
-
-    } else {
-
-      alert(
-
-        "BLANK!\n\n" +
-        "Target: " +
-        resultTarget
-
-      );
-
+    if (currentGame.turn?.current !== currentPlayerId) {
+      return;
     }
 
+    const currentShell = currentGame.shells?.current ?? 0;
+    const currentSequence = currentGame.shells?.sequence;
 
-  } catch (error) {
+    if (currentShell >= 8 || !currentSequence) {
+      return;
+    }
 
-    console.error(
-      "Shoot error:",
-      error
-    );
+    const currentShellType = currentSequence[currentShell];
 
-    alert(
-      "Gagal melakukan shot."
-    );
+    if (!currentShellType) {
+      return;
+    }
 
-  } finally {
+    const players = currentGame.players || {};
 
-    resetShot();
+    if (!players[targetId]) {
+      return;
+    }
 
-    shootingLocked = false;
+    const playerIds = Object.keys(players)
+      .filter(id => players[id])
+      .sort((a, b) => {
+        return (players[a].turnOrder ?? 0) - (players[b].turnOrder ?? 0);
+      });
 
+    if (!playerIds.length) {
+      return;
+    }
+
+    const targetPlayer = players[targetId];
+
+    if (!targetPlayer) {
+      return;
+    }
+
+    // Ambil HP saat ini
+    const targetHp = Number(targetPlayer.hp ?? 0);
+
+    // ==========================================
+    // ALIVE
+    // ==========================================
+    if (currentShellType === "live") {
+      targetPlayer.hp = Math.max(0, targetHp - 1);
+      shotResult = "live";
+    }
+
+    // ==========================================
+    // BLANK
+    // ==========================================
+    else {
+      shotResult = "blank";
+    }
+
+    // Shell berikutnya
+    currentGame.shells.current = currentShell + 1;
+
+    // ==========================================
+    // TENTUKAN GILIRAN
+    // ==========================================
+    //
+    // Blank + diri sendiri
+    // = tetap giliran pemain sekarang
+    //
+    if (currentShellType === "blank" && isSelf) {
+      nextPlayerId = currentPlayerId;
+
+      currentGame.turn.current = currentPlayerId;
+      currentGame.turn.index =
+        playerIds.indexOf(currentPlayerId);
+    }
+
+    // Semua kondisi lainnya = ganti giliran
+    else {
+      const currentIndex = playerIds.indexOf(currentPlayerId);
+
+      const nextIndex =
+        (currentIndex + 1) % playerIds.length;
+
+      nextPlayerId = playerIds[nextIndex];
+
+      currentGame.turn.current = nextPlayerId;
+      currentGame.turn.index = nextIndex;
+    }
+
+    return currentGame;
+  });
+
+  if (!result.committed) {
+    alert("Tembakan gagal. Silakan coba lagi.");
+    return;
   }
 
+  shotMode = false;
+  selectedTarget = null;
+
+  document.querySelector(".shot-list").classList.remove("show");
+  document.querySelector(".overlay").classList.remove("show");
+
+  if (shotResult === "live") {
+    alert(
+      "💥 LIVE!\n\n" +
+      (isSelf ? "Kamu terkena peluru!" : "Target terkena peluru!")
+    );
+  } else {
+    alert("⚪ BLANK!");
+  }
+
+  renderGameState(gameData);
 }
 
 
