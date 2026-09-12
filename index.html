@@ -343,6 +343,57 @@ body {
 
 
 /* =========================
+   REMAINING SHELL COUNTER
+========================= */
+
+.game-shell-counts {
+  display: flex;
+  width: 100%;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 6px;
+  margin-top: 6px;
+}
+
+.game-shell-count {
+  display: flex;
+  min-width: 42px;
+  height: 32px;
+  padding: 4px 8px;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  background: #2f2f2f;
+  border: 1px solid #444;
+  border-radius: 5px;
+  font-size: 18px;
+  font-weight: bold;
+}
+
+.game-shell-count svg {
+  width: 18px;
+  height: 18px;
+  rotate: 180deg;
+}
+
+.game-shell-count.live {
+  color: crimson;
+}
+
+.game-shell-count.live svg {
+  color: crimson;
+}
+
+.game-shell-count.blank {
+  color: #888;
+}
+
+.game-shell-count.blank svg {
+  color: #888;
+}
+
+
+/* =========================
    GAME MESSAGE
 ========================= */
 
@@ -358,6 +409,12 @@ body {
   text-align: left;
   z-index: 2;
   pointer-events: none;
+}
+
+.game-message .message-line.info {
+  width: fit-content;
+  max-width: calc(100% - 10px);
+  margin-left: 10px;
 }
 
 .game-message .message-line {
@@ -1360,6 +1417,21 @@ body {
 
     </div>
 
+    <!-- REMAINING SHELL COUNTER -->
+    <div class="game-shell-counts">
+
+      <div class="game-shell-count live">
+        <i data-lucide="test-tube"></i>
+        <span class="game-live-count">0</span>
+      </div>
+
+      <div class="game-shell-count blank">
+        <i data-lucide="test-tube"></i>
+        <span class="game-blank-count">0</span>
+      </div>
+
+    </div>
+
     <!-- TEMPORARY GAME MESSAGE -->
     <div class="game-message" id="gameMessage"></div>
 
@@ -1696,6 +1768,12 @@ const aliveCount =
 
 const blankCount =
   document.querySelector(".blank-count");
+
+const gameLiveCount =
+  document.querySelector(".game-live-count");
+
+const gameBlankCount =
+  document.querySelector(".game-blank-count");
 
 const playerListPopup =
   document.querySelector("#playerListPopup");
@@ -3624,10 +3702,18 @@ function appendGameMessage(
   icon = null,
   duration = 3600
 ) {
-  /* Maksimal 2 baris seperti chat.
-     Pesan terbaru selalu berada di bawah. */
-  while (gameMessage.children.length >= 2) {
-    gameMessage.firstElementChild.remove();
+  /* Pesan info dapat menampilkan maksimal 5 card.
+     Pesan hasil tembakan tetap dibatasi 2 card. */
+  const maxMessages = type === "info" ? 5 : 2;
+
+  if (type === "info") {
+    while (gameMessage.querySelectorAll(".message-line.info").length >= maxMessages) {
+      gameMessage.querySelector(".message-line.info")?.remove();
+    }
+  } else {
+    while (gameMessage.children.length >= maxMessages) {
+      gameMessage.firstElementChild.remove();
+    }
   }
 
   const line = document.createElement("div");
@@ -4096,6 +4182,14 @@ function renderShellInfo() {
 
   blankCount.textContent =
     "Blank : " + blank;
+
+  if (gameLiveCount) {
+    gameLiveCount.textContent = alive;
+  }
+
+  if (gameBlankCount) {
+    gameBlankCount.textContent = blank;
+  }
 
 
   shellContainer.innerHTML = "";
