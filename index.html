@@ -41,7 +41,9 @@ body {
 }
 
 body {
+  height: 100dvh;
   min-height: 100dvh;
+  overflow: hidden;
   background: #1f1f1f;
 }
 
@@ -961,6 +963,8 @@ let roomWatcherStarted = false;
 let prepareTimer = null;
 
 let shootingLocked = false;
+let lastWinnerId = null;
+let lastFinishedStartedAt = null;
 
 
 /* =========================
@@ -1902,6 +1906,67 @@ function shuffleArray(array) {
    CREATE GAME STATE
 ========================= */
 
+function createShellSet() {
+
+  const alive =
+    Math.floor(
+      Math.random() * 7
+    ) + 1;
+
+  const blank =
+    shellCount - alive;
+
+  const shellData =
+    [];
+
+  for (
+    let i = 0;
+    i < alive;
+    i++
+  ) {
+
+    shellData.push(
+      "live"
+    );
+
+  }
+
+  for (
+    let i = 0;
+    i < blank;
+    i++
+  ) {
+
+    shellData.push(
+      "blank"
+    );
+
+  }
+
+  return {
+
+    total:
+      shellCount,
+
+    alive,
+
+    blank,
+
+    current:
+      0,
+
+    sequence:
+      shuffleArray(shellData)
+
+  };
+
+}
+
+
+/* =========================
+   CREATE GAME STATE
+========================= */
+
 function createGameState(
   playerIds
 ) {
@@ -1926,53 +1991,11 @@ function createGameState(
     }
   );
 
-
-  const alive =
-    Math.floor(
-      Math.random() * 7
-    ) + 1;
-
-  const blank =
-    shellCount - alive;
-
-
-  const shellData =
-    [];
-
-
-  for (
-    let i = 0;
-    i < alive;
-    i++
-  ) {
-
-    shellData.push(
-      "live"
-    );
-
-  }
-
-
-  for (
-    let i = 0;
-    i < blank;
-    i++
-  ) {
-
-    shellData.push(
-      "blank"
-    );
-
-  }
-
-
-  const shuffledShells =
-    shuffleArray(shellData);
-
+  const shells =
+    createShellSet();
 
   const now =
     Date.now();
-
 
   return {
 
@@ -1994,24 +2017,7 @@ function createGameState(
 
     },
 
-    shells: {
-
-      total:
-        shellCount,
-
-      alive:
-        alive,
-
-      blank:
-        blank,
-
-      current:
-        0,
-
-      sequence:
-        shuffledShells
-
-    },
+    shells,
 
     startedAt:
       now
@@ -2345,6 +2351,60 @@ async function renderGameState() {
 
   updatePreparation();
 
+  handleGameFinished();
+
+}
+
+
+/* =========================
+   HANDLE GAME FINISHED
+========================= */
+
+function handleGameFinished() {
+
+  if (
+    !gameData ||
+    gameData.phase !==
+    "finished"
+  ) {
+
+    return;
+
+  }
+
+  const winnerId =
+    gameData.winner ||
+    null;
+
+  if (
+    !winnerId ||
+    (winnerId === lastWinnerId &&
+      gameData.startedAt === lastFinishedStartedAt)
+  ) {
+    return;
+  }
+
+  lastWinnerId =
+    winnerId;
+  lastFinishedStartedAt =
+    gameData.startedAt || null;
+
+  const winner =
+    gamePlayers.find(
+      player =>
+        player.id === winnerId
+    );
+
+  const winnerName =
+    winner?.name ||
+    "Unknown";
+
+  alert(
+    "🏆 PEMENANG!\n\n" +
+    winnerName +
+    " memenangkan permainan!"
+  );
+
 }
 
 
@@ -2670,11 +2730,9 @@ function updateNextPlayer() {
       ".next-name"
     );
 
-
   if (
     !gameData ||
-    !gameData.turn ||
-    gamePlayers.length <= 1
+    !gameData.turn
   ) {
 
     nextElement.textContent =
@@ -2683,23 +2741,17 @@ function updateNextPlayer() {
     return;
 
   }
-
 
   const currentId =
     gameData.turn.current;
 
-
   const currentIndex =
     gamePlayers.findIndex(
       player =>
-        player.id ===
-        currentId
+        player.id === currentId
     );
 
-
-  if (
-    currentIndex < 0
-  ) {
+  if (currentIndex < 0) {
 
     nextElement.textContent =
       "-";
@@ -2708,24 +2760,50 @@ function updateNextPlayer() {
 
   }
 
+  const livingPlayers =
+    gamePlayers.filter(
+      player =>
+        player.hp > 0
+    );
 
-  const nextIndex =
-    (
-      currentIndex + 1
-    ) %
-    gamePlayers.length;
+  if (livingPlayers.length <= 1) {
 
+    nextElement.textContent =
+      "-";
 
-  const nextPlayer =
-    gamePlayers[
-      nextIndex
-    ];
+    return;
 
+  }
+
+  for (
+    let step = 1;
+    step <= gamePlayers.length;
+    step++
+  ) {
+
+    const nextIndex =
+      (currentIndex + step) %
+      gamePlayers.length;
+
+    const nextPlayer =
+      gamePlayers[nextIndex];
+
+    if (
+      nextPlayer &&
+      nextPlayer.hp > 0
+    ) {
+
+      nextElement.textContent =
+        nextPlayer.name;
+
+      return;
+
+    }
+
+  }
 
   nextElement.textContent =
-    nextPlayer
-      ? nextPlayer.name
-      : "-";
+    "-";
 
 }
 
@@ -3354,25 +3432,6 @@ async function shoot(targetId) {
   }
 
 
-  const shellIndex =
-    Number(
-      gameData.shells?.current ?? 0
-    );
-
-
-  if (
-    shellIndex >= shellCount
-  ) {
-
-    alert(
-      "Tidak ada shell tersisa."
-    );
-
-    return;
-
-  }
-
-
   shootingLocked = true;
 
 
@@ -3420,31 +3479,43 @@ async function shoot(targetId) {
           }
 
 
-          const currentShell =
+          let shells =
+            currentGame.shells;
+
+          let currentShell =
             Number(
-              currentGame.shells?.current ?? 0
+              shells?.current ?? 0
             );
 
-
-          const currentSequence =
-            currentGame.shells?.sequence;
-
-
           if (
-            currentShell >= shellCount ||
-            !currentSequence
+            !shells ||
+            !shells.sequence
           ) {
 
-            return;
+            shells =
+              createShellSet();
+
+            currentGame.shells =
+              shells;
+
+            currentShell = 0;
 
           }
 
+          if (currentShell >= shellCount) {
+
+            shells =
+              createShellSet();
+
+            currentGame.shells =
+              shells;
+
+            currentShell = 0;
+
+          }
 
           const currentShellType =
-            currentSequence[
-              currentShell
-            ];
-
+            shells.sequence[currentShell];
 
           if (!currentShellType) {
             return;
@@ -3567,6 +3638,56 @@ async function shoot(targetId) {
 
           currentGame.shells.current =
             currentShell + 1;
+
+          const livingPlayerIds =
+            playerIds.filter(
+              id =>
+                Number(
+                  players[id]?.hp ?? 0
+                ) > 0
+            );
+
+          if (livingPlayerIds.length <= 1) {
+
+            currentGame.phase =
+              "finished";
+
+            currentGame.winner =
+              livingPlayerIds[0] ||
+              null;
+
+            currentGame.turn.current =
+              livingPlayerIds[0] ||
+              currentPlayerId;
+
+            currentGame.turn.index =
+              livingPlayerIds[0]
+                ? playerIds.indexOf(livingPlayerIds[0])
+                : 0;
+
+            return currentGame;
+
+          }
+
+          /* =========================
+             RESET SHELL SET
+          =========================
+             Setelah shell ke-8 ditembak,
+             buat 8 shell baru secara acak.
+          */
+
+          if (
+            currentGame.shells.current >=
+            shellCount
+          ) {
+
+            const newShells =
+              createShellSet();
+
+            currentGame.shells =
+              newShells;
+
+          }
 
 
           /* =========================
