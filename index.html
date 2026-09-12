@@ -1,7 +1,9 @@
+```html
 <!DOCTYPE html>
 <html lang="id">
 
 <head>
+
   <meta charset="UTF-8">
 
   <meta
@@ -11,6 +13,7 @@
   <title>Buckshot Roulette</title>
 
   <script src="https://unpkg.com/lucide@latest"></script>
+
 </head>
 
 <body>
@@ -617,10 +620,13 @@ body {
       maxlength="30">
 
     <label class="login-label">
+
       Profile URL
+
       <span style="color:#777;">
         (opsional)
       </span>
+
     </label>
 
     <input
@@ -903,7 +909,7 @@ import {
 const firebaseConfig = {
 
   apiKey:
-    "AIzaSyBQqE5AFy49hIyP0rhul9gIlkc",
+    "AIzaSyBQYI-9ESAqE5AFy49hIyP0rhul9gIlkc",
 
   authDomain:
     "buckshotroulette-4c7a1.firebaseapp.com",
@@ -1063,7 +1069,9 @@ async function nameExists(name) {
     normalizeName(name);
 
   const snapshot =
-    await get(ref(db, "players"));
+    await get(
+      ref(db, "players")
+    );
 
   if (!snapshot.exists()) {
     return false;
@@ -1098,7 +1106,10 @@ async function reserveName(name) {
     encodeURIComponent(normalized);
 
   const nameRef =
-    ref(db, "names/" + nameKey);
+    ref(
+      db,
+      "names/" + nameKey
+    );
 
   const result =
     await runTransaction(
@@ -1108,8 +1119,11 @@ async function reserveName(name) {
         if (current === null) {
 
           return {
+
             name: name,
+
             createdAt: Date.now()
+
           };
 
         }
@@ -1234,7 +1248,9 @@ loginBtn.addEventListener(
       }
 
       const playerRef =
-        push(ref(db, "players"));
+        push(
+          ref(db, "players")
+        );
 
       currentPlayerId =
         playerRef.key;
@@ -1356,7 +1372,8 @@ function updateHeader() {
     )
     .forEach(element => {
 
-      element.textContent = name;
+      element.textContent =
+        name;
 
     });
 
@@ -1369,9 +1386,11 @@ function updateHeader() {
       if (profile) {
 
         element.innerHTML = `
+
           <img
             src="${profile}"
             alt="Profile">
+
         `;
 
       } else {
@@ -1449,7 +1468,10 @@ async function renderRoom() {
   }
 
 
-  if (roomData.status === "playing") {
+  if (
+    roomData.status ===
+    "playing"
+  ) {
 
     const joined =
       roomData.players &&
@@ -1541,9 +1563,11 @@ async function renderLobbyPlayers(
   if (playerIds.length === 0) {
 
     joinList.innerHTML = `
+
       <div class="empty-room">
         Belum ada pemain.
       </div>
+
     `;
 
     return;
@@ -1558,7 +1582,8 @@ async function renderLobbyPlayers(
       await get(
         ref(
           db,
-          "players/" + playerId
+          "players/" +
+          playerId
         )
       );
 
@@ -1587,25 +1612,33 @@ async function renderLobbyPlayers(
       profile
 
         ? `
+
           <div class="profile">
+
             <img
               src="${profile}"
               alt="Profile">
+
           </div>
+
         `
 
         : `
+
           <div class="profile">
             ${firstLetter}
           </div>
+
         `;
 
     item.innerHTML = `
+
       ${profileHTML}
 
       <div class="nama">
         ${player.name || "Unknown"}
       </div>
+
     `;
 
     joinList.appendChild(item);
@@ -1717,7 +1750,10 @@ joinBtn.addEventListener(
       const room =
         snapshot.val();
 
-      if (room.status === "playing") {
+      if (
+        room.status ===
+        "playing"
+      ) {
 
         roomMessage.textContent =
           "Game sedang berjalan.";
@@ -1778,7 +1814,10 @@ leftBtn.addEventListener(
       const room =
         snapshot.val();
 
-      if (room.status === "playing") {
+      if (
+        room.status ===
+        "playing"
+      ) {
 
         roomMessage.textContent =
           "Game sedang berjalan.";
@@ -1871,7 +1910,8 @@ function createGameState(
   const shuffledPlayers =
     shuffleArray(playerIds);
 
-  const gamePlayersData = {};
+  const gamePlayersData =
+    {};
 
   shuffledPlayers.forEach(
     (playerId, index) => {
@@ -1897,7 +1937,8 @@ function createGameState(
     shellCount - alive;
 
 
-  const shellData = [];
+  const shellData =
+    [];
 
 
   for (
@@ -1956,13 +1997,17 @@ function createGameState(
 
     shells: {
 
-      total: 8,
+      total:
+        shellCount,
 
-      alive: alive,
+      alive:
+        alive,
 
-      blank: blank,
+      blank:
+        blank,
 
-      current: 0,
+      current:
+        0,
 
       sequence:
         shuffledShells
@@ -2059,7 +2104,9 @@ startBtn.addEventListener(
         );
 
 
-      if (!result.committed) {
+      if (
+        !result.committed
+      ) {
 
         const snapshot =
           await get(
@@ -2274,135 +2321,31 @@ async function loadGamePlayers() {
    RENDER GAME STATE
 ========================= */
 
-function renderGameState() {
-  if (!gameData || !currentPlayerId) return;
+async function renderGameState() {
 
-  const players = gameData.players || {};
-  const currentTurnId = gameData.turn?.current || null;
-
-  const myPlayerData = players[currentPlayerId] || {};
-  const currentTurnPlayer = players[currentTurnId] || {};
-
-  /*
-   * =========================
-   * HEALTH DIRI SENDIRI
-   * =========================
-   */
-
-  const myHp = Math.max(
-    0,
-    Math.min(3, Number(myPlayerData.hp ?? 0))
-  );
-
-  const healthContainer =
-    document.querySelector(".healt");
-
-  if (healthContainer) {
-    healthContainer.innerHTML = "";
-
-    for (let i = 0; i < 3; i++) {
-      const icon = document.createElement("i");
-
-      if (i < myHp) {
-        icon.setAttribute("data-lucide", "zap");
-      } else {
-        icon.setAttribute("data-lucide", "zap-off");
-        icon.classList.add("hp-off");
-      }
-
-      healthContainer.appendChild(icon);
-    }
+  if (!gameData) {
+    return;
   }
 
-  /*
-   * =========================
-   * NAMA PEMAIN YANG GILIRAN
-   * =========================
-   */
+  await loadGamePlayers();
 
-  const currentName =
-    document.querySelector(".game-current-name");
+  renderShellInfo();
 
-  if (currentName) {
-    currentName.textContent =
-      currentTurnPlayer.name || "-";
-  }
+  document.querySelector(
+    ".game-online"
+  ).textContent =
+    gamePlayers.length;
 
-  /*
-   * =========================
-   * URUTAN PEMAIN
-   * =========================
-   */
+  updateCurrentTurn();
 
-  const playerIds = Object.keys(players)
-    .filter(id => players[id])
-    .sort((a, b) => {
-      return (
-        Number(players[a].turnOrder ?? 0) -
-        Number(players[b].turnOrder ?? 0)
-      );
-    });
+  updateGameHealth();
 
-  /*
-   * =========================
-   * PEMAIN SELANJUTNYA
-   * =========================
-   */
+  updateNextPlayer();
 
-  let nextPlayerId = null;
-
-  const currentIndex =
-    playerIds.indexOf(currentTurnId);
-
-  if (
-    playerIds.length > 0 &&
-    currentIndex >= 0
-  ) {
-    const nextIndex =
-      (currentIndex + 1) % playerIds.length;
-
-    nextPlayerId =
-      playerIds[nextIndex];
-  }
-
-  const nextPlayer =
-    nextPlayerId
-      ? players[nextPlayerId]
-      : null;
-
-  const nextName =
-    document.querySelector(".next-name");
-
-  if (nextName) {
-    nextName.textContent =
-      nextPlayer?.name || "-";
-  }
-
-  /*
-   * =========================
-   * UPDATE ICON LUCIDE
-   * =========================
-   */
-
-  if (window.lucide) {
-    lucide.createIcons();
-  }
-
-  /*
-   * =========================
-   * PREPARATION
-   * =========================
-   */
+  updateShotVisibility();
 
   updatePreparation();
 
-  /*
-   * =========================
-   * SHOT VISIBILITY
-   * =========================
-   */
-
-  updateShotVisibility();
 }
 
 
@@ -2597,14 +2540,14 @@ async function finishPreparation() {
     const result =
       await runTransaction(
         gameRef,
-        currentGame => {
+        game => {
 
-          if (!currentGame) {
+          if (!game) {
             return;
           }
 
           if (
-            currentGame.phase !==
+            game.phase !==
             "preparing"
           ) {
 
@@ -2614,7 +2557,7 @@ async function finishPreparation() {
 
           const endsAt =
             Number(
-              currentGame.prepareEndsAt || 0
+              game.prepareEndsAt || 0
             );
 
           if (
@@ -2628,7 +2571,7 @@ async function finishPreparation() {
 
           return {
 
-            ...currentGame,
+            ...game,
 
             phase:
               "playing"
@@ -2679,17 +2622,27 @@ async function finishPreparation() {
 
 function updateCurrentTurn() {
 
+  const currentElement =
+    document.querySelector(
+      ".game-current-name"
+    );
+
   if (
     !gameData ||
     !gameData.turn
   ) {
 
+    currentElement.textContent =
+      "-";
+
     return;
 
   }
 
+
   const currentId =
     gameData.turn.current;
+
 
   const currentPlayer =
     gamePlayers.find(
@@ -2698,21 +2651,11 @@ function updateCurrentTurn() {
         currentId
     );
 
-  if (!currentPlayer) {
 
-    document.querySelector(
-      ".game-current-name"
-    ).textContent =
-      "-";
-
-    return;
-
-  }
-
-  document.querySelector(
-    ".game-current-name"
-  ).textContent =
-    currentPlayer.name;
+  currentElement.textContent =
+    currentPlayer
+      ? currentPlayer.name
+      : "-";
 
 }
 
@@ -2743,10 +2686,28 @@ function updateNextPlayer() {
   }
 
 
+  const currentId =
+    gameData.turn.current;
+
+
   const currentIndex =
-    Number(
-      gameData.turn.index ?? 0
+    gamePlayers.findIndex(
+      player =>
+        player.id ===
+        currentId
     );
+
+
+  if (
+    currentIndex < 0
+  ) {
+
+    nextElement.textContent =
+      "-";
+
+    return;
+
+  }
 
 
   const nextIndex =
@@ -2776,33 +2737,6 @@ function updateNextPlayer() {
 
 function updateGameHealth() {
 
-  if (
-    !gameData ||
-    !gameData.turn
-  ) {
-
-    return;
-
-  }
-
-
-  const currentId =
-    gameData.turn.current;
-
-
-  const currentPlayer =
-    gamePlayers.find(
-      player =>
-        player.id ===
-        currentId
-    );
-
-
-  if (!currentPlayer) {
-    return;
-  }
-
-
   const healthContainer =
     document.querySelector(
       ".healt"
@@ -2812,12 +2746,34 @@ function updateGameHealth() {
   healthContainer.innerHTML = "";
 
 
+  /*
+    HP YANG DITAMPILKAN ADALAH
+    HP PEMAIN SENDIRI.
+  */
+
+  const myPlayer =
+    gamePlayers.find(
+      player =>
+        player.id ===
+        currentPlayerId
+    );
+
+
+  if (!myPlayer) {
+
+    return;
+
+  }
+
+
   const hp =
     Math.max(
       0,
       Math.min(
         3,
-        currentPlayer.hp
+        Number(
+          myPlayer.hp ?? 0
+        )
       )
     );
 
@@ -2831,22 +2787,29 @@ function updateGameHealth() {
     const icon =
       document.createElement("i");
 
-    icon.setAttribute(
-      "data-lucide",
-      i < hp
-        ? "zap"
-        : "zap-off"
-    );
 
     if (
-      i >= hp
+      i < hp
     ) {
+
+      icon.setAttribute(
+        "data-lucide",
+        "zap"
+      );
+
+    } else {
+
+      icon.setAttribute(
+        "data-lucide",
+        "zap-off"
+      );
 
       icon.classList.add(
         "hp-off"
       );
 
     }
+
 
     healthContainer.appendChild(
       icon
@@ -2898,6 +2861,30 @@ function updateShotVisibility() {
   if (!myTurn) {
 
     resetShot();
+
+    return;
+
+  }
+
+
+  const myPlayer =
+    gamePlayers.find(
+      player =>
+        player.id ===
+        currentPlayerId
+    );
+
+
+  if (
+    !myPlayer ||
+    myPlayer.hp <= 0
+  ) {
+
+    shot.classList.add(
+      "hidden"
+    );
+
+    disableShotButtons();
 
     return;
 
@@ -2960,6 +2947,7 @@ shot.addEventListener(
         gameData.shells?.current || 0
       );
 
+
     if (
       shellIndex >= shellCount
     ) {
@@ -2971,6 +2959,7 @@ shot.addEventListener(
       return;
 
     }
+
 
     shotMode = true;
 
@@ -2992,9 +2981,15 @@ playerBtn.addEventListener(
   "click",
   () => {
 
-    if (!shotMode) {
+    if (
+      !shotMode ||
+      shootingLocked
+    ) {
+
       return;
+
     }
+
 
     renderPlayerPopup();
 
@@ -3018,9 +3013,15 @@ selfBtn.addEventListener(
   "click",
   () => {
 
-    if (!shotMode) {
+    if (
+      !shotMode ||
+      shootingLocked
+    ) {
+
       return;
+
     }
+
 
     const target =
       gamePlayers.find(
@@ -3029,12 +3030,15 @@ selfBtn.addEventListener(
           currentPlayerId
       );
 
+
     if (!target) {
       return;
     }
 
+
     selectedTarget =
       target;
+
 
     closeShotPopup();
 
@@ -3076,9 +3080,11 @@ popup.addEventListener(
         ".st-cancel"
       );
 
+
     if (!cancel) {
       return;
     }
+
 
     closeShotPopup();
 
@@ -3157,19 +3163,25 @@ function renderPlayerPopup() {
       if (player.profile) {
 
         profileHTML = `
+
           <span class="st-profile">
+
             <img
               src="${player.profile}"
               alt="Profile">
+
           </span>
+
         `;
 
       } else {
 
         profileHTML = `
+
           <span class="st-profile">
             ${firstLetter}
           </span>
+
         `;
 
       }
@@ -3217,6 +3229,7 @@ function renderPlayerPopup() {
   ) {
 
     playerContainer.innerHTML = `
+
       <div
         style="
           padding:10px 0;
@@ -3227,6 +3240,7 @@ function renderPlayerPopup() {
         Tidak ada pemain lain.
 
       </div>
+
     `;
 
   }
@@ -3247,9 +3261,16 @@ playerContainer.addEventListener(
         ".st-player-btn"
       );
 
+
     if (!button) {
       return;
     }
+
+
+    if (shootingLocked) {
+      return;
+    }
+
 
     const targetId =
       button.dataset.id;
@@ -3288,81 +3309,87 @@ playerContainer.addEventListener(
 
 async function shoot(targetId) {
 
-  if (shootingLocked) {
+  if (
+    shootingLocked ||
+    !gameData
+  ) {
+
     return;
+
   }
+
+
+  if (!targetId) {
+
+    alert(
+      "Target tidak ditemukan."
+    );
+
+    return;
+
+  }
+
+
+  if (
+    gameData.phase !==
+    "playing"
+  ) {
+
+    return;
+
+  }
+
+
+  if (
+    !gameData.turn ||
+    gameData.turn.current !==
+    currentPlayerId
+  ) {
+
+    alert(
+      "Bukan giliran kamu."
+    );
+
+    return;
+
+  }
+
+
+  const shellIndex =
+    Number(
+      gameData.shells?.current ?? 0
+    );
+
+
+  if (
+    shellIndex >= shellCount
+  ) {
+
+    alert(
+      "Tidak ada shell tersisa."
+    );
+
+    return;
+
+  }
+
 
   shootingLocked = true;
 
 
+  let shotResult = null;
+  let isSelf = false;
+  let shotTargetName = "Unknown";
+
+
+  const gameRef =
+    ref(
+      db,
+      "room/game"
+    );
+
+
   try {
-
-    if (!gameData) {
-      return;
-    }
-
-
-    /* =========================
-       VALIDASI GILIRAN
-    ========================= */
-
-    if (
-      !gameData.turn ||
-      gameData.turn.current !==
-      currentPlayerId
-    ) {
-
-      alert(
-        "Bukan giliran kamu."
-      );
-
-      return;
-
-    }
-
-
-    if (!targetId) {
-
-      alert(
-        "Target tidak ditemukan."
-      );
-
-      return;
-
-    }
-
-
-    const shellIndex =
-      Number(
-        gameData.shells?.current || 0
-      );
-
-
-    if (
-      shellIndex >= shellCount
-    ) {
-
-      alert(
-        "Tidak ada shell tersisa."
-      );
-
-      return;
-
-    }
-
-
-    let shotResult = null;
-    let shotTargetName = "";
-    let damagePlayerName = "";
-    let damageAmount = 0;
-
-
-    const gameRef =
-      ref(
-        db,
-        "room/game"
-      );
-
 
     const result =
       await runTransaction(
@@ -3385,8 +3412,7 @@ async function shoot(targetId) {
 
 
           if (
-            !currentGame.turn ||
-            currentGame.turn.current !==
+            currentGame.turn?.current !==
             currentPlayerId
           ) {
 
@@ -3397,12 +3423,17 @@ async function shoot(targetId) {
 
           const currentShell =
             Number(
-              currentGame.shells?.current || 0
+              currentGame.shells?.current ?? 0
             );
 
 
+          const currentSequence =
+            currentGame.shells?.sequence;
+
+
           if (
-            currentShell >= shellCount
+            currentShell >= shellCount ||
+            !currentSequence
           ) {
 
             return;
@@ -3410,20 +3441,13 @@ async function shoot(targetId) {
           }
 
 
-          const sequence =
-            currentGame.shells?.sequence;
+          const currentShellType =
+            currentSequence[
+              currentShell
+            ];
 
 
-          if (!sequence) {
-            return;
-          }
-
-
-          const shell =
-            sequence[currentShell];
-
-
-          if (!shell) {
+          if (!currentShellType) {
             return;
           }
 
@@ -3432,26 +3456,8 @@ async function shoot(targetId) {
             currentGame.players || {};
 
 
-          const targetPlayer =
-            players[targetId];
-
-
-          if (!targetPlayer) {
-            return;
-          }
-
-
-          /*
-           * Pastikan target masih hidup.
-           *
-           * Pemain yang HP 0 tidak dapat
-           * ditembak.
-           */
-
           if (
-            Number(
-              targetPlayer.hp ?? 0
-            ) <= 0
+            !players[targetId]
           ) {
 
             return;
@@ -3461,6 +3467,10 @@ async function shoot(targetId) {
 
           const playerIds =
             Object.keys(players)
+              .filter(
+                id =>
+                  players[id]
+              )
               .sort(
                 (a, b) =>
                   Number(
@@ -3481,14 +3491,23 @@ async function shoot(targetId) {
           }
 
 
-          const currentIndex =
-            playerIds.indexOf(
-              currentPlayerId
+          const targetPlayer =
+            players[targetId];
+
+
+          if (!targetPlayer) {
+            return;
+          }
+
+
+          const targetHp =
+            Number(
+              targetPlayer.hp ?? 0
             );
 
 
           if (
-            currentIndex === -1
+            targetHp <= 0
           ) {
 
             return;
@@ -3496,62 +3515,41 @@ async function shoot(targetId) {
           }
 
 
-          const isSelf =
+          isSelf =
             targetId ===
             currentPlayerId;
 
 
-          const isAlive =
-            shell === "live";
-
-
-          /*
-           * Simpan nama target
-           * untuk pesan setelah transaction.
-           */
-
-          const targetPlayerIndex =
-            playerIds.indexOf(
-              targetId
+          const selectedPlayer =
+            gamePlayers.find(
+              player =>
+                player.id ===
+                targetId
             );
 
 
           shotTargetName =
-            targetPlayerIndex !== -1
-              ? (
-                  gamePlayers.find(
-                    player =>
-                      player.id ===
-                      targetId
-                  )?.name ||
-                  "Unknown"
-                )
-              : "Unknown";
+            selectedPlayer?.name ||
+            "Unknown";
 
 
           /* =========================
-             ALIVE
+             LIVE
           ========================= */
 
-          if (isAlive) {
+          if (
+            currentShellType ===
+            "live"
+          ) {
 
             targetPlayer.hp =
               Math.max(
                 0,
-                Number(
-                  targetPlayer.hp ?? 0
-                ) - 1
+                targetHp - 1
               );
-
 
             shotResult =
               "live";
-
-
-            damagePlayerName =
-              shotTargetName;
-
-            damageAmount = 1;
 
           }
 
@@ -3568,110 +3566,128 @@ async function shoot(targetId) {
           }
 
 
-          /*
-           * Shell selalu dikonsumsi.
-           */
-
           currentGame.shells.current =
             currentShell + 1;
 
 
           /* =========================
-             TENTUKAN GILIRAN
-          ========================= */
+             NEXT TURN
+          =========================
 
-          /*
-           * BLANK + DIRI SENDIRI
-           *
-           * Tetap giliran pemain.
-           */
+             Blank + self
+             = tetap giliran.
+
+             Selain itu
+             = pemain berikutnya.
+          */
 
           if (
-            !isAlive &&
+            currentShellType ===
+            "blank" &&
             isSelf
           ) {
+
+            const currentIndex =
+              playerIds.indexOf(
+                currentPlayerId
+              );
+
 
             currentGame.turn.current =
               currentPlayerId;
 
+
             currentGame.turn.index =
-              currentIndex;
+              currentIndex >= 0
+                ? currentIndex
+                : 0;
 
-            return currentGame;
+          } else {
 
-          }
-
-
-          /*
-           * Kondisi lainnya:
-           *
-           * ALIVE + SELF
-           * ALIVE + PLAYER LAIN
-           * BLANK + PLAYER LAIN
-           *
-           * semuanya ganti giliran.
-           */
-
-          let nextIndex =
-            currentIndex + 1;
+            const currentIndex =
+              playerIds.indexOf(
+                currentPlayerId
+              );
 
 
-          /*
-           * Cari pemain hidup
-           * berikutnya.
-           */
+            if (
+              currentIndex < 0
+            ) {
 
-          for (
-            let i = 0;
-            i < playerIds.length;
-            i++
-          ) {
+              return;
 
-            const checkIndex =
+            }
+
+
+            let nextIndex =
               (
-                currentIndex +
-                1 +
-                i
+                currentIndex + 1
               ) %
               playerIds.length;
 
 
-            const checkPlayerId =
-              playerIds[
-                checkIndex
-              ];
+            /*
+              Lewati pemain yang
+              sudah HP 0.
+            */
+
+            let checked = 0;
 
 
-            const checkPlayer =
-              players[
-                checkPlayerId
-              ];
-
-
-            if (
-              Number(
-                checkPlayer?.hp ?? 0
-              ) > 0
+            while (
+              checked <
+              playerIds.length
             ) {
 
-              nextIndex =
-                checkIndex;
+              const candidateId =
+                playerIds[
+                  nextIndex
+                ];
 
-              break;
+
+              const candidate =
+                players[
+                  candidateId
+                ];
+
+
+              if (
+                Number(
+                  candidate.hp ?? 0
+                ) > 0
+              ) {
+
+                break;
+
+              }
+
+
+              nextIndex =
+                (
+                  nextIndex + 1
+                ) %
+                playerIds.length;
+
+
+              checked++;
 
             }
 
+
+            const nextId =
+              playerIds[
+                nextIndex
+              ];
+
+
+            currentGame.turn.current =
+              nextId;
+
+
+            currentGame.turn.index =
+              nextIndex;
+
           }
-
-
-          currentGame.turn.current =
-            playerIds[
-              nextIndex
-            ];
-
-
-          currentGame.turn.index =
-            nextIndex;
 
 
           return currentGame;
@@ -3679,10 +3695,6 @@ async function shoot(targetId) {
         }
       );
 
-
-    /* =========================
-       TRANSACTION GAGAL
-    ========================= */
 
     if (
       !result.committed
@@ -3697,58 +3709,35 @@ async function shoot(targetId) {
     }
 
 
-    /* =========================
-       RESET MODE TEMBAK
-    ========================= */
-
     shotMode = false;
 
     selectedTarget = null;
 
+
     closeShotPopup();
 
-    shot.classList.remove(
-      "active"
-    );
+    resetShot();
 
-    disableShotButtons();
-
-
-    /* =========================
-       HASIL TEMBAKAN
-    ========================= */
 
     if (
       shotResult ===
       "live"
     ) {
 
-      if (
-        targetId ===
-        currentPlayerId
-      ) {
+      alert(
 
-        alert(
-          "💥 LIVE!\n\n" +
-          "Kamu terkena peluru!\n" +
-          "HP -1"
-        );
+        "💥 LIVE!\n\n" +
 
-      } else {
+        (
+          isSelf
+            ? "Kamu terkena peluru!"
+            : shotTargetName +
+              " terkena peluru!"
+        )
 
-        alert(
-          "💥 LIVE!\n\n" +
-          damagePlayerName +
-          " terkena peluru!\n" +
-          "HP -1"
-        );
+      );
 
-      }
-
-    } else if (
-      shotResult ===
-      "blank"
-    ) {
+    } else {
 
       alert(
         "⚪ BLANK!"
@@ -3757,10 +3746,23 @@ async function shoot(targetId) {
     }
 
 
-    /*
-     * Firebase onValue akan otomatis
-     * memperbarui gameData dan UI.
-     */
+    const snapshot =
+      await get(
+        gameRef
+      );
+
+
+    if (
+      snapshot.exists()
+    ) {
+
+      gameData =
+        snapshot.val();
+
+      await renderGameState();
+
+    }
+
 
   } catch (error) {
 
@@ -3787,6 +3789,10 @@ async function shoot(targetId) {
 ========================= */
 
 function enableShotButtons() {
+
+  if (shootingLocked) {
+    return;
+  }
 
   playerBtn.disabled =
     false;
@@ -3821,14 +3827,19 @@ function resetShot(
 ) {
 
   if (hideShotMode) {
+
     shotMode = false;
+
   }
 
+
   selectedTarget = null;
+
 
   shot.classList.remove(
     "active"
   );
+
 
   disableShotButtons();
 
@@ -3872,6 +3883,12 @@ document.addEventListener(
       );
 
 
+    const clickedOverlay =
+      event.target.closest(
+        ".overlay"
+      );
+
+
     if (clickedShot) {
       return;
     }
@@ -3888,6 +3905,11 @@ document.addEventListener(
 
 
     if (clickedPopup) {
+      return;
+    }
+
+
+    if (clickedOverlay) {
       return;
     }
 
@@ -3948,3 +3970,4 @@ initialize();
 
 </body>
 </html>
+```
