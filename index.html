@@ -526,6 +526,102 @@ body {
    SHOTGUN
 ========================= */
 
+/* =========================
+   ITEM SPIN
+========================= */
+
+:root {
+  --spbg: #4A1620;
+}
+
+.item-spin {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  background: var(--spbg);
+  position: absolute;
+  top: 44.5%;
+  left: 0;
+  transform: translateY(-60%);
+  width: 100%;
+  height: 140px;
+  gap: 16px;
+  z-index: 10;
+  overflow: hidden;
+}
+
+.item-spin.hidden {
+  display: none !important;
+}
+
+.spin-top, .spin-bottom {
+  background: #1f1f1f;
+  width: 100%;
+  height: 40px;
+  flex-shrink: 0;
+  z-index: 11;
+}
+
+.spin-top {
+  border-bottom: 4px solid crimson;
+  box-shadow: 0 16px 0 0 var(--spbg);
+}
+
+.spin-bottom {
+  border-top: 4px solid crimson;
+  box-shadow: 0 -16px 0 0 var(--spbg);
+}
+
+.bdr-spin {
+  display: flex;
+  width: 100%;
+  justify-content: space-evenly;
+  z-index: 11;
+}
+
+.bdr-spin span {
+  width: 52px;
+  height: 52px;
+  border: 4px solid crimson;
+  border-radius: 4px;
+}
+
+.it-sp {
+  display: flex;
+  justify-content: space-evenly;
+  position: absolute;
+  width: 100%;
+  color: white;
+  z-index: 12;
+}
+
+.it-sp svg {
+  width: 38px;
+  height: 38px;
+  padding: 9px;
+  background: #1f1f1f;
+}
+
+.item-spin.spinning .it-sp {
+  animation: itemSpinRoll 1.15s cubic-bezier(.22,.61,.36,1) infinite;
+}
+
+.item-spin.spinning .bdr-spin span {
+  animation: itemSpinPulse .23s ease-in-out infinite alternate;
+}
+
+@keyframes itemSpinRoll {
+  0% { transform: translateY(-86px); opacity: .15; }
+  45% { opacity: 1; }
+  100% { transform: translateY(86px); opacity: .15; }
+}
+
+@keyframes itemSpinPulse {
+  from { transform: translateY(-3px); }
+  to { transform: translateY(3px); }
+}
+
 .shot {
   position: absolute;
   display: flex;
@@ -1416,9 +1512,6 @@ body {
 
       <div id="playersListContainer"></div>
 
-      <span class="spect" id="spectatorTitle">Spectator : 0</span>
-
-      <div id="spectatorListContainer"></div>
 
     </div>
 
@@ -1500,6 +1593,21 @@ body {
 
   </div>
 
+
+  <!-- ITEM SPIN -->
+
+  <div class="item-spin hidden" id="itemSpin">
+    <span class="spin-top"></span>
+    <div class="bdr-spin">
+      <span></span>
+      <span></span>
+    </div>
+    <div class="it-sp">
+      <i data-lucide="search"></i>
+      <i data-lucide="cigarette"></i>
+    </div>
+    <span class="spin-bottom"></span>
+  </div>
 
   <!-- SHOTGUN -->
 
@@ -1680,6 +1788,9 @@ let lastRenderedShotId = null;
 let lastReloadEventId = null;
 let reloadShotTimer = null;
 let reloadShotHiddenUntil = 0;
+let itemSpinTimer = null;
+let itemSpinHideTimer = null;
+let lastItemSpinEventId = null;
 
 
 /* =========================
@@ -1830,12 +1941,6 @@ const playerListTitle =
 
 const playersListContainer =
   document.querySelector("#playersListContainer");
-
-const spectatorTitle =
-  document.querySelector("#spectatorTitle");
-
-const spectatorListContainer =
-  document.querySelector("#spectatorListContainer");
 
 const gameMessage =
   document.querySelector("#gameMessage");
@@ -3076,16 +3181,13 @@ function createPlayerItems(playerCount) {
   const types = Object.keys(ITEM_DEFINITIONS);
   const items = [];
 
-  // Tepat 4 hasil acak. Setiap hasil bisa item atau kosong.
-  for (let i = 0; i < 4; i++) {
-    const roll = Math.floor(Math.random() * (types.length + 1));
-    if (roll < types.length) {
-      items.push(types[roll]);
-    }
+  // Setiap reload shell selalu memberikan tepat 2 item acak.
+  for (let i = 0; i < 2; i++) {
+    const roll = Math.floor(Math.random() * types.length);
+    items.push(types[roll]);
   }
 
-  // Simpan maksimal 4 item sebagai inventory logis.
-  // Saat ditampilkan, inventory akan diisi dari kanan atas.
+  // Item disimpan berurutan agar slot tidak memiliki celah.
   return items;
 }
 
@@ -3780,6 +3882,7 @@ function renderGamePlayerList() {
       document.createElement("span");
 
     profile.className = "profile";
+    applyAvatarStyle(profile, player);
 
     if (player.profile) {
 
@@ -3843,114 +3946,6 @@ function renderGamePlayerList() {
     playersListContainer.appendChild(row);
 
   });
-
-  const gamePlayerIds =
-    new Set(players.map(player => player.id));
-
-  const roomPlayers =
-    roomData?.players || {};
-
-  /*
-   * Jika sistem room memiliki node spectators,
-   * gunakan node tersebut. Jika tidak ada, pemain
-   * yang berada di room tetapi tidak ada di game
-   * dianggap spectator.
-   */
-  const spectatorIds = [];
-
-  const roomSpectators =
-    roomData?.spectators || {};
-
-  Object.keys(roomSpectators).forEach(id => {
-    if (!spectatorIds.includes(id)) {
-      spectatorIds.push(id);
-    }
-  });
-
-  Object.keys(roomPlayers).forEach(id => {
-    if (
-      !gamePlayerIds.has(id) &&
-      !spectatorIds.includes(id)
-    ) {
-      spectatorIds.push(id);
-    }
-  });
-
-  spectatorTitle.textContent =
-    "Spectator : " + spectatorIds.length;
-
-  spectatorListContainer.innerHTML = "";
-
-  if (spectatorIds.length === 0) {
-
-    const empty =
-      document.createElement("div");
-
-    empty.className = "sp-empty";
-    empty.textContent = "Tidak ada spectator.";
-
-    spectatorListContainer.appendChild(empty);
-
-  } else {
-
-    spectatorIds.forEach(async id => {
-
-      let player = null;
-
-      const snapshot =
-        await get(ref(db, "players/" + id));
-
-      if (snapshot.exists()) {
-        player = snapshot.val();
-      }
-
-      if (!player) {
-        return;
-      }
-
-      const row =
-        document.createElement("div");
-
-      row.className = "sp-list";
-
-      const profile =
-        document.createElement("span");
-
-      profile.className = "profile";
-      profile.style.background = getPlayerAvatarColor(player);
-
-      if (player.profile) {
-
-        const image =
-          document.createElement("img");
-
-        image.src = player.profile;
-        image.alt = "Profile";
-        profile.appendChild(image);
-
-      } else {
-
-        profile.textContent =
-          (player.name || "?")
-            .charAt(0)
-            .toUpperCase();
-
-      }
-
-      const name =
-        document.createElement("span");
-
-      name.className = "nama";
-      name.textContent =
-        player.name || "Unknown";
-
-      row.appendChild(profile);
-      row.appendChild(name);
-      spectatorListContainer.appendChild(row);
-
-    });
-
-  }
 
   lucide.createIcons();
 
@@ -4181,7 +4176,7 @@ function showGameEvent(eventData) {
       }
 
       if (eventData.reload) {
-        /* Shell lama keluar, lalu shell baru masuk. */
+        /* Shell lama keluar, lalu shell baru masuk dan item di-roll. */
         playGameSound("out");
 
         appendGameMessage(
@@ -4194,6 +4189,7 @@ function showGameEvent(eventData) {
         messageTimers.push(
           setTimeout(() => {
             playGameSound("in");
+            showItemSpin();
 
             appendGameMessage(
               "Mengisi ulang shell...",
@@ -4567,7 +4563,61 @@ function renderShellInfo() {
 
 }
 
+function getItemSpinIcon(type) {
+  return ITEM_DEFINITIONS[type]?.icon || "package";
+}
+
+function showItemSpin() {
+  const spin = document.querySelector("#itemSpin");
+  if (!spin) return;
+
+  clearTimeout(itemSpinTimer);
+  clearTimeout(itemSpinHideTimer);
+
+  const myItems = Array.isArray(gameData?.players?.[currentPlayerId]?.items)
+    ? gameData.players[currentPlayerId].items.slice(0, 2)
+    : [];
+
+  const icons = spin.querySelectorAll(".it-sp i");
+  icons.forEach((icon, index) => {
+    icon.setAttribute("data-lucide", getItemSpinIcon(myItems[index]));
+  });
+
+  spin.classList.remove("hidden", "spinning");
+  void spin.offsetWidth;
+  spin.classList.add("spinning");
+  lucide.createIcons();
+
+  // Lima click selama animasi roll, lalu bunyi saat item didapat.
+  for (let i = 0; i < 5; i++) {
+    playGameSound("click", 0.7, i * 230);
+  }
+  playGameSound("get-item", 1, 1200);
+
+  appendGameMessage(
+    "Mendapatkan 2 item...",
+    "info",
+    null,
+    1600
+  );
+
+  itemSpinTimer = setTimeout(() => {
+    spin.classList.remove("spinning");
+    lucide.createIcons();
+  }, 1250);
+
+  itemSpinHideTimer = setTimeout(() => {
+    spin.classList.add("hidden");
+  }, 1700);
+}
+
 function showShellReveal() {
+
+  const spin = document.querySelector("#itemSpin");
+  if (spin && !gameData?.lastEvent?.reload) {
+    spin.classList.add("hidden");
+    spin.classList.remove("spinning");
+  }
 
   const shellElement =
     document.querySelector(".random-shell");
