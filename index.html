@@ -925,6 +925,162 @@ body {
 }
 
 /* =========================
+   PROFILE EDIT POPUP
+========================= */
+
+.profile-edit-popup {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 16px;
+  background: rgba(0, 0, 0, 0.72);
+  z-index: 101;
+}
+
+.profile-edit-box {
+  width: min(420px, 100%);
+  padding: 18px;
+  color: white;
+  background: #252525;
+  border: 1px solid #444;
+  border-radius: 8px;
+  box-shadow: 0 12px 35px rgba(0, 0, 0, 0.55);
+}
+
+.profile-edit-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+}
+
+.profile-edit-title {
+  font-size: 22px;
+  font-weight: bold;
+}
+
+.profile-edit-close {
+  display: flex;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  color: #aaa;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  align-items: center;
+  justify-content: center;
+}
+
+.profile-edit-close:hover {
+  color: white;
+}
+
+.profile-edit-preview {
+  display: flex;
+  width: 76px;
+  height: 76px;
+  margin: 0 auto 16px;
+  color: white;
+  background: coral;
+  border-radius: 50%;
+  overflow: hidden;
+  align-items: center;
+  justify-content: center;
+  font-size: 34px;
+  font-weight: bold;
+}
+
+.profile-edit-preview img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.profile-edit-label {
+  display: block;
+  margin: 10px 0 6px;
+  color: #bbb;
+  font-size: 15px;
+}
+
+.profile-edit-input {
+  width: 100%;
+  padding: 10px 11px;
+  color: white;
+  background: #1c1c1c;
+  border: 1px solid #444;
+  border-radius: 5px;
+  outline: none;
+}
+
+.profile-edit-input:focus {
+  border-color: #777;
+}
+
+.profile-edit-color-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.profile-edit-color {
+  width: 48px;
+  height: 40px;
+  padding: 2px;
+  background: #1c1c1c;
+  border: 1px solid #444;
+  border-radius: 5px;
+  cursor: pointer;
+}
+
+.profile-edit-color-row .profile-edit-input {
+  flex: 1;
+}
+
+.profile-edit-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 16px;
+}
+
+.profile-edit-actions button {
+  flex: 1;
+  padding: 10px;
+  border: none;
+  border-radius: 5px;
+  font-weight: bold;
+  cursor: pointer;
+}
+
+.profile-edit-cancel {
+  color: #ccc;
+  background: #3a3a3a;
+}
+
+.profile-edit-save {
+  color: white;
+  background: crimson;
+}
+
+.profile-edit-message {
+  min-height: 18px;
+  margin-top: 8px;
+  color: #ff7777;
+  font-size: 14px;
+}
+
+.header-profile {
+  cursor: pointer;
+}
+
+.header-profile:active {
+  transform: scale(.95);
+}
+
+/* =========================
    HIDDEN
 ========================= */
 
@@ -1051,6 +1207,65 @@ body {
 
 
   <div class="join-list"></div>
+
+</div>
+
+
+<!-- =========================
+     PROFILE EDIT POPUP
+========================= -->
+
+<div class="profile-edit-popup hidden" id="profileEditPopup">
+
+  <div class="profile-edit-box">
+
+    <div class="profile-edit-top">
+      <span class="profile-edit-title">Edit Profil</span>
+      <button class="profile-edit-close" id="profileEditClose" type="button">
+        <i data-lucide="x"></i>
+      </button>
+    </div>
+
+    <div class="profile-edit-preview" id="profileEditPreview">C</div>
+
+    <label class="profile-edit-label">Nama</label>
+    <input
+      type="text"
+      class="profile-edit-input"
+      id="profileEditName"
+      maxlength="30"
+      placeholder="Nama">
+
+    <label class="profile-edit-label">Foto / Profile URL <span style="color:#777;">(opsional)</span></label>
+    <input
+      type="url"
+      class="profile-edit-input"
+      id="profileEditProfile"
+      placeholder="https://...">
+
+    <label class="profile-edit-label">Warna background avatar</label>
+    <div class="profile-edit-color-row">
+      <input
+        type="color"
+        class="profile-edit-color"
+        id="profileEditColorPicker"
+        value="#ff7f50">
+      <input
+        type="text"
+        class="profile-edit-input"
+        id="profileEditColor"
+        maxlength="7"
+        placeholder="#ff7f50">
+    </div>
+
+    <div class="profile-edit-message" id="profileEditMessage"></div>
+
+    <div class="profile-edit-actions">
+      <button class="profile-edit-cancel" id="profileEditCancel" type="button">Batal</button>
+      <button class="profile-edit-save" id="profileEditSave" type="button">Simpan</button>
+    </div>
+
+  </div>
 
 </div>
 
@@ -1280,7 +1495,8 @@ import {
   get,
   onValue,
   remove,
-  runTransaction
+  runTransaction,
+  update
 } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-database.js";
 
 
@@ -1442,6 +1658,36 @@ const winnerTrophy =
 const winnerTrophyIcon =
   document.querySelector(".winner-trophy-icon");
 
+const profileEditPopup =
+  document.querySelector("#profileEditPopup");
+
+const profileEditClose =
+  document.querySelector("#profileEditClose");
+
+const profileEditCancel =
+  document.querySelector("#profileEditCancel");
+
+const profileEditSave =
+  document.querySelector("#profileEditSave");
+
+const profileEditName =
+  document.querySelector("#profileEditName");
+
+const profileEditProfile =
+  document.querySelector("#profileEditProfile");
+
+const profileEditColor =
+  document.querySelector("#profileEditColor");
+
+const profileEditColorPicker =
+  document.querySelector("#profileEditColorPicker");
+
+const profileEditPreview =
+  document.querySelector("#profileEditPreview");
+
+const profileEditMessage =
+  document.querySelector("#profileEditMessage");
+
 const shellContainer =
   document.querySelector(".shell");
 
@@ -1531,6 +1777,58 @@ function playGameSound(name, volume = 1, delay = 0) {
 
 let messageSequenceId = null;
 let messageTimers = [];
+
+
+/* =========================
+   PROFILE COLOR
+========================= */
+
+const avatarColors = [
+  "#e76f51",
+  "#f4a261",
+  "#e9c46a",
+  "#2a9d8f",
+  "#457b9d",
+  "#6d597a",
+  "#8d5a97",
+  "#c44536",
+  "#3a86ff",
+  "#8338ec",
+  "#ff006e",
+  "#588157"
+];
+
+function getRandomAvatarColor() {
+  return avatarColors[
+    Math.floor(Math.random() * avatarColors.length)
+  ];
+}
+
+function normalizeHexColor(value) {
+  const color = String(value || "").trim();
+
+  if (/^#[0-9a-fA-F]{6}$/.test(color)) {
+    return color.toLowerCase();
+  }
+
+  if (/^[0-9a-fA-F]{6}$/.test(color)) {
+    return "#" + color.toLowerCase();
+  }
+
+  return null;
+}
+
+function getPlayerAvatarColor(player) {
+  return normalizeHexColor(player?.profileColor) || "#ff7f50";
+}
+
+function applyAvatarStyle(element, player) {
+  if (!element) {
+    return;
+  }
+
+  element.style.background = getPlayerAvatarColor(player);
+}
 
 
 /* =========================
@@ -1665,6 +1963,18 @@ async function loadSavedPlayer() {
   currentPlayer =
     snapshot.val();
 
+  if (!currentPlayer.profileColor) {
+    currentPlayer.profileColor =
+      getRandomAvatarColor();
+
+    await update(
+      ref(db, "players/" + currentPlayerId),
+      {
+        profileColor: currentPlayer.profileColor
+      }
+    );
+  }
+
   return true;
 
 }
@@ -1748,6 +2058,8 @@ loginBtn.addEventListener(
         name: name,
 
         profile: profile,
+
+        profileColor: getRandomAvatarColor(),
 
         createdAt: Date.now()
 
@@ -1871,6 +2183,8 @@ function updateHeader() {
     )
     .forEach(element => {
 
+      applyAvatarStyle(element, currentPlayer);
+
       if (profile) {
 
         element.innerHTML = `
@@ -1891,6 +2205,178 @@ function updateHeader() {
     });
 
 }
+
+
+/* =========================
+   PROFILE EDIT POPUP
+========================= */
+
+function openProfileEdit() {
+  if (!currentPlayer || roomData?.status === "playing") {
+    return;
+  }
+
+  profileEditName.value = currentPlayer.name || "";
+  profileEditProfile.value = currentPlayer.profile || "";
+
+  const color = getPlayerAvatarColor(currentPlayer);
+  profileEditColor.value = color;
+  profileEditColorPicker.value = color;
+  profileEditMessage.textContent = "";
+
+  updateProfileEditPreview();
+  profileEditPopup.classList.remove("hidden");
+  lucide.createIcons();
+}
+
+function closeProfileEdit() {
+  profileEditPopup.classList.add("hidden");
+  profileEditMessage.textContent = "";
+}
+
+function updateProfileEditPreview() {
+  const name = profileEditName.value.trim() || "?";
+  const profile = profileEditProfile.value.trim();
+  const color =
+    normalizeHexColor(profileEditColor.value) ||
+    getPlayerAvatarColor(currentPlayer);
+
+  profileEditPreview.style.background = color;
+
+  if (profile) {
+    profileEditPreview.innerHTML = `
+      <img src="${profile}" alt="Profile">
+    `;
+  } else {
+    profileEditPreview.textContent =
+      name.charAt(0).toUpperCase();
+  }
+}
+
+profileEditColorPicker.addEventListener("input", () => {
+  profileEditColor.value =
+    profileEditColorPicker.value.toLowerCase();
+  updateProfileEditPreview();
+});
+
+profileEditColor.addEventListener("input", () => {
+  const color = normalizeHexColor(profileEditColor.value);
+
+  if (color) {
+    profileEditColorPicker.value = color;
+  }
+
+  updateProfileEditPreview();
+});
+
+profileEditName.addEventListener("input", updateProfileEditPreview);
+profileEditProfile.addEventListener("input", updateProfileEditPreview);
+
+profileEditClose.addEventListener("click", closeProfileEdit);
+profileEditCancel.addEventListener("click", closeProfileEdit);
+
+profileEditPopup.addEventListener("click", event => {
+  if (event.target === profileEditPopup) {
+    closeProfileEdit();
+  }
+});
+
+profileEditSave.addEventListener("click", async () => {
+  if (!currentPlayer || !currentPlayerId) {
+    return;
+  }
+
+  const name = profileEditName.value.trim();
+  const profile = profileEditProfile.value.trim();
+  const color = normalizeHexColor(profileEditColor.value);
+
+  profileEditMessage.textContent = "";
+
+  if (!name) {
+    profileEditMessage.textContent = "Nama wajib diisi.";
+    return;
+  }
+
+  if (name.length < 2) {
+    profileEditMessage.textContent = "Nama minimal 2 karakter.";
+    return;
+  }
+
+  if (profile && !/^https?:\/\//i.test(profile)) {
+    profileEditMessage.textContent = "URL foto harus diawali http:// atau https://.";
+    return;
+  }
+
+  if (!color) {
+    profileEditMessage.textContent = "Warna harus berupa kode HEX, contoh #ff7f50.";
+    return;
+  }
+
+  profileEditSave.disabled = true;
+  profileEditSave.textContent = "Menyimpan...";
+
+  try {
+    const nameChanged =
+      normalizeName(name) !== normalizeName(currentPlayer.name || "");
+
+    if (nameChanged) {
+      const exists = await nameExists(name);
+
+      if (exists) {
+        profileEditMessage.textContent =
+          "Nama tersebut sudah digunakan.";
+        return;
+      }
+
+      const reserved = await reserveName(name);
+
+      if (!reserved) {
+        profileEditMessage.textContent =
+          "Nama tersebut sudah digunakan.";
+        return;
+      }
+    }
+
+    const updatedPlayer = {
+      ...currentPlayer,
+      name,
+      profile,
+      profileColor: color
+    };
+
+    await update(
+      ref(db, "players/" + currentPlayerId),
+      {
+        name,
+        profile,
+        profileColor: color
+      }
+    );
+
+    currentPlayer = updatedPlayer;
+    updateHeader();
+    closeProfileEdit();
+
+    if (roomData && roomData.status !== "playing") {
+      await renderRoom();
+    }
+  } catch (error) {
+    console.error("Profile update error:", error);
+    profileEditMessage.textContent =
+      "Gagal menyimpan profil. Periksa koneksi Firebase.";
+  } finally {
+    profileEditSave.disabled = false;
+    profileEditSave.textContent = "Simpan";
+  }
+});
+
+document.querySelectorAll(".header-profile").forEach(element => {
+  element.addEventListener("click", () => {
+    if (element.closest(".lobby") && roomData?.status !== "playing") {
+      openProfileEdit();
+    }
+  });
+});
 
 
 /* =========================
@@ -2109,6 +2595,9 @@ async function renderLobbyPlayers(
     item.className =
       "pl-list";
 
+    const profileColor =
+      getPlayerAvatarColor(player);
+
     const profile =
       player.profile || "";
 
@@ -2122,7 +2611,7 @@ async function renderLobbyPlayers(
 
         ? `
 
-          <div class="profile">
+          <div class="profile" style="background:${profileColor};">
 
             <img
               src="${profile}"
@@ -2134,7 +2623,7 @@ async function renderLobbyPlayers(
 
         : `
 
-          <div class="profile">
+          <div class="profile" style="background:${profileColor};">
             ${firstLetter}
           </div>
 
@@ -2850,6 +3339,7 @@ async function loadGamePlayers() {
             id: playerId,
             name: player.name || "Unknown",
             profile: player.profile || "",
+            profileColor: player.profileColor || "",
             hp: Number(gamePlayer.hp ?? 3),
             turnOrder: Number(gamePlayer.turnOrder ?? 0)
           };
@@ -3047,6 +3537,7 @@ function renderGamePlayerList() {
         document.createElement("span");
 
       profile.className = "profile";
+      profile.style.background = getPlayerAvatarColor(player);
 
       if (player.profile) {
 
@@ -3257,7 +3748,7 @@ function showGameEvent(eventData) {
     );
 
     /* Death hanya diputar jika HP target benar-benar menjadi 0. */
-    if (Number(eventData.targetHp || 0) <= 0) {
+    if (Number(eventData.targetHp || 0) <= 0 && !eventData.finished) {
       playGameSound("death", 1, 220);
     }
   } else {
@@ -4505,7 +4996,7 @@ function renderPlayerPopup() {
 
         profileHTML = `
 
-          <span class="st-profile">
+          <span class="st-profile" style="background:${getPlayerAvatarColor(player)};">
 
             <img
               src="${player.profile}"
@@ -4519,7 +5010,7 @@ function renderPlayerPopup() {
 
         profileHTML = `
 
-          <span class="st-profile">
+          <span class="st-profile" style="background:${getPlayerAvatarColor(player)};">
             ${firstLetter}
           </span>
 
