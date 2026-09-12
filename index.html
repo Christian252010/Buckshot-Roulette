@@ -1679,6 +1679,7 @@ let shellRevealTimer = null;
 let lastRenderedShotId = null;
 let lastReloadEventId = null;
 let reloadShotTimer = null;
+let reloadShotHiddenUntil = 0;
 
 
 /* =========================
@@ -3112,8 +3113,8 @@ function renderMyItems() {
   }
 
   itemElements.forEach((item, domIndex) => {
-    // 4 slot pertama adalah baris atas. Item mengisi dari kanan ke kiri.
-    const logicalIndex = domIndex < 4 ? 3 - domIndex : -1;
+    // Item selalu mengisi dari kiri atas tanpa celah.
+    const logicalIndex = domIndex < items.length ? domIndex : -1;
     const type = logicalIndex >= 0 ? (items[logicalIndex] || "") : "";
     item.dataset.slot = String(logicalIndex);
     item.dataset.item = type;
@@ -5064,18 +5065,25 @@ function updateShotVisibility() {
   if (gameData.lastEvent?.reload && gameData.lastEvent.id) {
     if (lastReloadEventId !== gameData.lastEvent.id) {
       lastReloadEventId = gameData.lastEvent.id;
+      reloadShotHiddenUntil = Date.now() + 2500;
       clearTimeout(reloadShotTimer);
-      shot.classList.add("reload-hidden");
       reloadShotTimer = setTimeout(() => {
         if (gameData?.lastEvent?.id === lastReloadEventId) {
-          shot.classList.remove("reload-hidden");
+          reloadShotHiddenUntil = 0;
           updateShotVisibility();
         }
       }, 2500);
-    } else {
-      shot.classList.add("reload-hidden");
     }
+
+    shot.classList.toggle(
+      "reload-hidden",
+      Date.now() < reloadShotHiddenUntil
+    );
   } else {
+    clearTimeout(reloadShotTimer);
+    reloadShotTimer = null;
+    reloadShotHiddenUntil = 0;
+    lastReloadEventId = null;
     shot.classList.remove("reload-hidden");
   }
 
@@ -5875,6 +5883,8 @@ async function shoot(targetId) {
     }
   } finally {
     shootingLocked = false;
+    renderMyItems();
+    updateShotVisibility();
   }
 }
 
@@ -5889,11 +5899,13 @@ function enableShotButtons() {
     return;
   }
 
-  playerBtn.disabled =
-    false;
+  const canInteract =
+    gameData?.phase === "playing" &&
+    gameData?.turn?.current === currentPlayerId &&
+    (shotMode || itemMode);
 
-  selfBtn.disabled =
-    false;
+  playerBtn.disabled = !canInteract;
+  selfBtn.disabled = !canInteract;
 
   if (itemMode && selectedItemType) {
     playerBtn.textContent = "Use";
