@@ -1761,7 +1761,6 @@ body {
 </div>
 
 
-
 <div class="item-info-popup hidden" id="itemInfoPopup">
   <div class="item-info-card">
     <div class="item-info-top">
@@ -4412,7 +4411,6 @@ function showGameEvent(eventData) {
 
         return;
       }
-      }
       if (eventData.result === "blank" && eventData.isSelf) {
         appendGameMessage(
           "Giliran lanjut ke " + shooterName,
@@ -6183,7 +6181,9 @@ if (itemInfoPopup) {
 
 function updateHandcuffOverlay() {
   if (!handcuffOverlay) return;
-  const handcuffed = Number(gameData?.players?.[currentPlayerId]?.skipTurns ?? 0) > 0;
+  const handcuffed =
+    Number(gameData?.players?.[currentPlayerId]?.skipTurns ?? 0) > 0 ||
+    gameData?.players?.[currentPlayerId]?.handcuffed === true;
   handcuffOverlay.classList.toggle("hidden", !handcuffed);
   if (!handcuffOverlay.classList.contains("hidden")) lucide.createIcons();
 }
