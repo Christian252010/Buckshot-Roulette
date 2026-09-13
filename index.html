@@ -1106,6 +1106,15 @@ body {
   flex-shrink: 0;
 }
 
+.pl-shield {
+  width: 16px;
+  height: 16px;
+  flex: 0 0 16px;
+  margin-left: 4px;
+  color: #ddd;
+}
+
+
 .player-list .pl-list.current-turn .pl-lock {
   color: white;
 }
@@ -3454,6 +3463,30 @@ const ITEM_DEFINITIONS = {
     icon: "syringe",
     info: "Mencuri 1 item dari pemain lain dan menggunakannya sebelum menembak.",
     target: true
+  },
+  burner_phone: {
+    name: "Burner Phone",
+    icon: "phone",
+    info: "Memberi informasi acak tentang salah satu peluru yang akan datang.",
+    target: false
+  },
+  remote: {
+    name: "Remote",
+    icon: "smartphone",
+    info: "Membalik seluruh urutan giliran pemain.",
+    target: false
+  },
+  jammer: {
+    name: "Jammer",
+    icon: "turntable",
+    info: "Mengacak seluruh urutan giliran pemain.",
+    target: false
+  },
+  reflector_mirror: {
+    name: "Reflector Mirror",
+    icon: "mirror-rectangular",
+    info: "Memberikan Shield selama 1 round. Live yang mengenai Shield memantulkan damage kepada penembak, Blank menghancurkan Shield, dan Live saat menembak diri sendiri menjadi 2 damage.",
+    target: false
   }
 };
 
@@ -3627,6 +3660,7 @@ async function useSelectedItem(targetId = null) {
   let expiredResult = null;
   let beerDiscardedType = null;
   let inverterResult = null;
+  let burnerResult = null;
   let adrenalineStolenFromId = null;
 
   if (type === "magnifying_glass") {
@@ -3767,6 +3801,40 @@ async function useSelectedItem(targetId = null) {
         if (!shellType) return;
         inverterResult = shellType === "live" ? "blank" : "live";
         game.shells.sequence[shellIndex] = inverterResult;
+      } else if (type === "burner_phone") {
+        const shellIndex = Number(game.shells?.current ?? 0);
+        const total = Number(game.shells?.total ?? 0);
+        if (shellIndex >= total) return;
+        const futureIndex = shellIndex + Math.floor(Math.random() * (total - shellIndex));
+        const futureType = game.shells?.sequence?.[futureIndex];
+        if (!futureType) return;
+        burnerResult = {
+          offset: futureIndex - shellIndex + 1,
+          shellNumber: futureIndex + 1,
+          type: futureType
+        };
+      } else if (type === "remote") {
+        const orderedIds = Object.keys(game.players || {})
+          .filter(id => game.players[id])
+          .sort((a, b) => Number(game.players[a].turnOrder ?? 0) - Number(game.players[b].turnOrder ?? 0));
+        orderedIds.reverse().forEach((id, index) => {
+          game.players[id].turnOrder = index;
+        });
+        const newOrder = orderedIds;
+        game.turn.current = currentPlayerId;
+        game.turn.index = newOrder.indexOf(currentPlayerId);
+      } else if (type === "jammer") {
+        const shuffledIds = shuffleArray(
+          Object.keys(game.players || {}).filter(id => game.players[id])
+        );
+        shuffledIds.forEach((id, index) => {
+          game.players[id].turnOrder = index;
+        });
+        game.turn.current = currentPlayerId;
+        game.turn.index = shuffledIds.indexOf(currentPlayerId);
+      } else if (type === "reflector_mirror") {
+        player.shieldActive = true;
+        player.shieldActivatedTurn = Number(game.turn?.counter ?? 0);
       } else if (type === "expired_medicine") {
         expiredResult = Math.random() < 0.5 ? "+2hp" : "-1hp";
         game.itemPending = {
@@ -3831,6 +3899,20 @@ async function useSelectedItem(targetId = null) {
       itemInfoTitle.textContent = definition.name;
       itemInfoText.textContent = `Peluru saat ini: ${magnifyLabel}`;
       itemInfoText.style.color = magnifyLabel === "LIVE" ? "crimson" : magnifyLabel === "BLANK" ? "#999" : "#ddd";
+      itemInfoPopup.classList.remove("hidden");
+      lucide.createIcons();
+    }
+
+    if (type === "burner_phone" && burnerResult) {
+      const popupIcon = document.querySelector("#itemInfoIcon");
+      if (popupIcon) {
+        popupIcon.outerHTML = `<i id="itemInfoIcon" data-lucide="${definition.icon}"></i>`;
+        itemInfoIcon = document.querySelector("#itemInfoIcon");
+      }
+      const burnerLabel = burnerResult.type === "live" ? "LIVE" : "BLANK";
+      itemInfoTitle.textContent = definition.name;
+      itemInfoText.textContent = `#${burnerResult.offset} ${burnerLabel} • Shell ke-${burnerResult.shellNumber}`;
+      itemInfoText.style.color = burnerResult.type === "live" ? "crimson" : "#999";
       itemInfoPopup.classList.remove("hidden");
       lucide.createIcons();
     }
@@ -3958,7 +4040,9 @@ function createGameState(
         sawActive: false,
         skipTurns: 0,
         handcuffed: false,
-        shellItemUses: {}
+        shellItemUses: {},
+        shieldActive: false,
+        shieldActivatedTurn: null
 
       };
 
@@ -3987,7 +4071,8 @@ function createGameState(
       current:
         shuffledPlayers[0],
 
-      index: 0
+      index: 0,
+      counter: 0
 
     },
 
@@ -4328,6 +4413,14 @@ function renderGamePlayerList() {
     nameHealth.appendChild(name);
     nameHealth.appendChild(health);
 
+    if (gameData.players?.[player.id]?.shieldActive) {
+      const shield = document.createElement("i");
+      shield.setAttribute("data-lucide", "shield");
+      shield.className = "pl-shield";
+      shield.setAttribute("title", "Shield aktif");
+      nameHealth.appendChild(shield);
+    }
+
     if (gameData.players?.[player.id]?.handcuffed || Number(gameData.players?.[player.id]?.skipTurns ?? 0) > 0) {
       const lock = document.createElement("i");
       lock.setAttribute("data-lucide", "lock");
@@ -4527,7 +4620,11 @@ function showGameEvent(eventData) {
       beer: "beer",
       inverter: "inverter",
       expired_medicine: "expired-medicine",
-      adrenaline: "adrenaline"
+      adrenaline: "adrenaline",
+      burner_phone: "burner-phone",
+      remote: "remote",
+      jammer: "jammer",
+      reflector_mirror: "reflector-mirror"
     };
     playGameSound(soundMap[eventData.itemType] || "get-item");
 
@@ -4538,6 +4635,31 @@ function showGameEvent(eventData) {
         definition?.icon || "syringe",
         3600
       );
+      return;
+    }
+
+    if (eventData.itemType === "burner_phone") {
+      appendGameMessage(
+        `${userName} menggunakan Burner Phone.`,
+        "info",
+        definition?.icon || "phone",
+        3600
+      );
+      return;
+    }
+
+    if (eventData.itemType === "remote") {
+      appendGameMessage(`${userName} membalik urutan giliran pemain.`, "info", definition?.icon || "smartphone", 3600);
+      return;
+    }
+
+    if (eventData.itemType === "jammer") {
+      appendGameMessage(`${userName} mengacak urutan giliran pemain.`, "info", definition?.icon || "turntable", 3600);
+      return;
+    }
+
+    if (eventData.itemType === "reflector_mirror") {
+      appendGameMessage(`${userName} mengaktifkan Shield.`, "info", definition?.icon || "shield", 3600);
       return;
     }
 
@@ -4599,26 +4721,41 @@ function showGameEvent(eventData) {
 
   if (eventData.result === "live") {
     const damageText = Number(eventData.damage || 1);
-    const hpText =
-      Number(eventData.targetHp || 0) > 0
-        ? ` kehilangan ${damageText} nyawa`
-        : " kehilangan seluruh nyawa dan keluar dari permainan";
 
     /* Suara ledakan ditembakkan tepat bersamaan dengan teks hasil. */
     playGameSound("shot-alive");
-    appendGameMessage(
-      eventData.isSelf
-        ? shooterName + " menembak diri sendiri: Peluru Alive" + hpText
-        : "Peluru Alive " + targetName + hpText,
-      "live",
-      "test-tube",
-      3600
-    );
-    playGameSound("hit", 1, 140);
 
-    /* Death hanya diputar jika HP target benar-benar menjadi 0. */
-    if (Number(eventData.targetHp || 0) <= 0 && !eventData.finished) {
-      playGameSound("death", 1, 220);
+    if (eventData.reflected && !eventData.isSelf) {
+      appendGameMessage(
+        `${shooterName} terkena pantulan Shield dari ${targetName} dan kehilangan ${damageText} nyawa`,
+        "live",
+        "shield",
+        3600
+      );
+      playGameSound("hit", 1, 140);
+      if (Number(eventData.shooterHp || 0) <= 0 && !eventData.finished) {
+        playGameSound("death", 1, 220);
+      }
+    } else {
+      const hpText =
+        Number(eventData.targetHp || 0) > 0
+          ? ` kehilangan ${damageText} nyawa`
+          : " kehilangan seluruh nyawa dan keluar dari permainan";
+
+      appendGameMessage(
+        eventData.isSelf
+          ? shooterName + " menembak diri sendiri: Peluru Alive" + hpText
+          : "Peluru Alive " + targetName + hpText,
+        "live",
+        "test-tube",
+        3600
+      );
+      playGameSound("hit", 1, 140);
+
+      /* Death hanya diputar jika HP target benar-benar menjadi 0. */
+      if (Number(eventData.targetHp || 0) <= 0 && !eventData.finished) {
+        playGameSound("death", 1, 220);
+      }
     }
   } else {
     playGameSound("shot-blank");
@@ -6224,6 +6361,7 @@ async function shoot(targetId) {
     let shotResult = null;
     let isSelf = false;
     let skippedPlayerId = null;
+    let reflectedShot = false;
 
     const result = await runTransaction(gameRef, currentGame => {
       if (!currentGame || currentGame.phase !== "playing") {
@@ -6281,14 +6419,42 @@ async function shoot(targetId) {
       isSelf = targetId === currentPlayerId;
       let damage = 0;
 
+      const targetShielded = targetPlayer.shieldActive === true;
+
       if (currentShellType === "live") {
-        damage = Number(players[currentPlayerId]?.sawActive ?? 0) ? 2 : 1;
-        targetPlayer.hp = Math.max(0, Number(targetPlayer.hp ?? 0) - damage);
+        if (targetShielded) {
+          if (isSelf) {
+            damage = 2;
+            targetPlayer.hp = Math.max(0, Number(targetPlayer.hp ?? 0) - damage);
+          } else {
+            damage = 1;
+            players[currentPlayerId].hp = Math.max(0, Number(players[currentPlayerId].hp ?? 0) - damage);
+            reflectedShot = true;
+            currentGame.lastEvent = {
+              id: Date.now().toString(36) + Math.random().toString(36).slice(2, 8),
+              type: "shield_reflect",
+              playerId: currentPlayerId,
+              targetId,
+              result: "live",
+              damage,
+              at: Date.now()
+            };
+          }
+          targetPlayer.shieldActive = false;
+          targetPlayer.shieldActivatedTurn = null;
+        } else {
+          damage = Number(players[currentPlayerId]?.sawActive ?? 0) ? 2 : 1;
+          targetPlayer.hp = Math.max(0, Number(targetPlayer.hp ?? 0) - damage);
+        }
         players[currentPlayerId].sawActive = false;
         shotResult = "live";
       } else {
         // Hand Saw hanya berlaku untuk peluru live berikutnya.
         players[currentPlayerId].sawActive = false;
+        if (targetShielded) {
+          targetPlayer.shieldActive = false;
+          targetPlayer.shieldActivatedTurn = null;
+        }
         shotResult = "blank";
       }
 
@@ -6325,7 +6491,9 @@ async function shoot(targetId) {
           targetId,
           result: shotResult,
           damage: shotResult === "live" ? damage : 0,
+          reflected: reflectedShot,
           targetHp: Number(targetPlayer.hp ?? 0),
+          shooterHp: Number(players[currentPlayerId]?.hp ?? 0),
           isSelf,
           finished: true,
           winnerId: currentGame.winner || null,
@@ -6386,6 +6554,14 @@ async function shoot(targetId) {
 
         currentGame.turn.current = playerIds[nextIndex];
         currentGame.turn.index = nextIndex;
+        currentGame.turn.counter = Number(currentGame.turn.counter ?? 0) + 1;
+
+        const nextPlayerId = playerIds[nextIndex];
+        const nextPlayer = players[nextPlayerId];
+        if (nextPlayer?.shieldActive && Number(nextPlayer.shieldActivatedTurn ?? -1) < Number(currentGame.turn.counter ?? 0)) {
+          nextPlayer.shieldActive = false;
+          nextPlayer.shieldActivatedTurn = null;
+        }
       }
 
       currentGame.lastEvent = {
@@ -6395,7 +6571,9 @@ async function shoot(targetId) {
         targetId,
         result: shotResult,
         damage: shotResult === "live" ? damage : 0,
+        reflected: reflectedShot,
         targetHp: Number(targetPlayer.hp ?? 0),
+        shooterHp: Number(players[currentPlayerId]?.hp ?? 0),
         isSelf,
         finished: false,
         winnerId: null,
