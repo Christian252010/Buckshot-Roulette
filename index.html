@@ -494,7 +494,7 @@ body {
 
 .shell {
   display: flex;
-  justify-content: space-between;
+  justify-content: space-evenly;
 }
 
 .shell-info {
@@ -687,6 +687,7 @@ body {
 ========================= */
 
 .bottom {
+  position: relative;
   display: flex;
   width: 100%;
   flex-direction: column;
@@ -797,7 +798,7 @@ body {
   justify-content: center;
   gap: 8px;
   color: crimson;
-  background: #0005;
+  background: #0008;
   pointer-events: none;
 }
 
@@ -1033,9 +1034,49 @@ body {
 
 .player-list .pl-user {
   display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+  min-width: 0;
+  flex: 1;
+}
+
+.player-list .pl-user-top {
+  display: flex;
   align-items: center;
   gap: 8px;
   min-width: 0;
+}
+
+.player-list .pl-items {
+  display: flex;
+  width: 100%;
+  justify-content: space-evenly;
+  align-items: center;
+  gap: 4px;
+}
+
+.player-list .pl-item-box {
+  display: flex;
+  width: 28px;
+  height: 28px;
+  flex: 1 1 0;
+  max-width: 38px;
+  min-width: 18px;
+  align-items: center;
+  justify-content: center;
+  background: #444;
+  border-radius: 3px;
+  color: #fff;
+}
+
+.player-list .pl-item-box.empty {
+  background: #333;
+}
+
+.player-list .pl-item-box svg {
+  width: 17px;
+  height: 17px;
 }
 
 .player-list .pl-lock {
@@ -1652,6 +1693,8 @@ body {
             class="hp-off">
           </i>
 
+          <i data-lucide="zap-off" class="hp-off"></i>
+
           <i data-lucide="zap"></i>
 
           <i data-lucide="zap"></i>
@@ -1742,6 +1785,11 @@ body {
 
   <div class="bottom">
 
+    <div class="handcuff-overlay hidden" id="handcuffOverlay">
+      <i data-lucide="lock"></i>
+      <span>HANDCUFFED</span>
+    </div>
+
     <div class="shot-btn">
       <button class="other" disabled>Player</button>
       <button class="self" disabled>Self</button>
@@ -1776,10 +1824,6 @@ body {
   </div>
 </div>
 
-<div class="handcuff-overlay hidden" id="handcuffOverlay">
-  <i data-lucide="lock"></i>
-  <span>HANDCUFFED</span>
-</div>
 <div class="damage-flash hidden"></div>
 
 <!-- =========================
@@ -2499,6 +2543,8 @@ function showLogin() {
 ========================= */
 
 function showLobby() {
+
+  if (handcuffOverlay) handcuffOverlay.classList.add("hidden");
 
   loginScreen.classList.add(
     "hidden"
@@ -3323,7 +3369,7 @@ const ITEM_DEFINITIONS = {
   },
   beer: {
     name: "Beer",
-    icon: "soda-can",
+    icon: "can-soda",
     info: "Membuang peluru yang sedang berada di posisi sekarang tanpa menembaknya.",
     target: false
   },
@@ -3518,8 +3564,8 @@ async function useSelectedItem(targetId = null) {
       if (inventory[slotIndex] !== type) return;
 
       if (type === "cigarette") {
-        if (Number(player.hp) >= 3) return;
-        player.hp = Math.min(3, Number(player.hp) + 1);
+        if (Number(player.hp) >= 4) return;
+        player.hp = Math.min(4, Number(player.hp) + 1);
       } else if (type === "hand_saw") {
         player.sawActive = true;
       } else if (type === "handcuff") {
@@ -3534,6 +3580,11 @@ async function useSelectedItem(targetId = null) {
         if (!shellType) return;
         beerDiscardedType = shellType;
         game.shells.current = shellIndex + 1;
+        if (shellType === "live") {
+          game.shells.alive = Math.max(0, Number(game.shells.alive ?? 0) - 1);
+        } else {
+          game.shells.blank = Math.max(0, Number(game.shells.blank ?? 0) - 1);
+        }
         if (game.shells.current >= Number(game.shells.total || 0)) {
           game.shells = createShellSet(Object.keys(game.players || {}).length);
         }
@@ -3546,7 +3597,7 @@ async function useSelectedItem(targetId = null) {
       } else if (type === "expired_medicine") {
         expiredResult = Math.random() < 0.5 ? "+2hp" : "-1hp";
         if (expiredResult === "+2hp") {
-          player.hp = Math.min(3, Number(player.hp ?? 0) + 2);
+          player.hp = Math.min(4, Number(player.hp ?? 0) + 2);
         } else {
           player.hp = Math.max(0, Number(player.hp ?? 0) - 1);
         }
@@ -3742,7 +3793,7 @@ function createGameState(
 
       gamePlayersData[playerId] = {
 
-        hp: 3,
+        hp: 4,
 
         turnOrder: index,
         items: createPlayerItems(shuffledPlayers.length),
@@ -4067,7 +4118,7 @@ async function loadGamePlayers() {
             name: player.name || "Unknown",
             profile: player.profile || "",
             profileColor: player.profileColor || "",
-            hp: Number(gamePlayer.hp ?? 3),
+            hp: Number(gamePlayer.hp ?? 4),
             turnOrder: Number(gamePlayer.turnOrder ?? 0)
           };
 
@@ -4123,6 +4174,10 @@ function renderGamePlayerList() {
 
     user.className = "pl-user";
 
+    const userTop =
+      document.createElement("div");
+    userTop.className = "pl-user-top";
+
     const profile =
       document.createElement("span");
 
@@ -4155,15 +4210,15 @@ function renderGamePlayerList() {
     name.textContent =
       player.name || "Unknown";
 
-    user.appendChild(profile);
-    user.appendChild(name);
+    userTop.appendChild(profile);
+    userTop.appendChild(name);
 
     if (gameData.players?.[player.id]?.handcuffed || Number(gameData.players?.[player.id]?.skipTurns ?? 0) > 0) {
       const lock = document.createElement("i");
       lock.setAttribute("data-lucide", "lock");
       lock.className = "pl-lock";
       lock.setAttribute("title", "Handcuffed");
-      user.appendChild(lock);
+      userTop.appendChild(lock);
     }
 
     const health =
@@ -4173,10 +4228,10 @@ function renderGamePlayerList() {
 
     const hp = Math.max(
       0,
-      Math.min(3, Number(player.hp ?? 0))
+      Math.min(4, Number(player.hp ?? 0))
     );
 
-    for (let i = 0; i < 3; i++) {
+    for (let i = 0; i < 4; i++) {
 
       const icon =
         document.createElement("i");
@@ -4194,6 +4249,30 @@ function renderGamePlayerList() {
 
     }
 
+    const items = Array.isArray(gameData.players?.[player.id]?.items)
+      ? gameData.players[player.id].items
+      : [];
+
+    const itemSlots = document.createElement("div");
+    itemSlots.className = "pl-items";
+
+    for (let i = 0; i < 8; i++) {
+      const slot = document.createElement("div");
+      slot.className = "pl-item-box";
+      const type = items[i];
+      if (type && ITEM_DEFINITIONS[type]) {
+        slot.title = ITEM_DEFINITIONS[type].name;
+        const icon = document.createElement("i");
+        icon.setAttribute("data-lucide", ITEM_DEFINITIONS[type].icon);
+        slot.appendChild(icon);
+      } else {
+        slot.classList.add("empty");
+      }
+      itemSlots.appendChild(slot);
+    }
+
+    user.appendChild(userTop);
+    user.appendChild(itemSlots);
     row.appendChild(user);
     row.appendChild(health);
     playersListContainer.appendChild(row);
@@ -4611,8 +4690,11 @@ function handleGameFinished() {
     null;
 
   if (!winnerId) {
+    if (handcuffOverlay) handcuffOverlay.classList.add("hidden");
     return;
   }
+
+  if (handcuffOverlay) handcuffOverlay.classList.add("hidden");
 
   const gameStartedAt =
     gameData.startedAt || null;
@@ -4797,16 +4879,15 @@ function renderShellInfo() {
       ? gameData.shells.sequence
       : [];
 
-  const remaining =
-    sequence.slice(current);
+  const fallbackRemaining = sequence.slice(current);
 
-  const alive = remaining.filter(
-    type => type === "live"
-  ).length;
+  const alive = Number.isFinite(Number(gameData.shells?.alive))
+    ? Math.max(0, Number(gameData.shells.alive))
+    : fallbackRemaining.filter(type => type === "live").length;
 
-  const blank = remaining.filter(
-    type => type === "blank"
-  ).length;
+  const blank = Number.isFinite(Number(gameData.shells?.blank))
+    ? Math.max(0, Number(gameData.shells.blank))
+    : fallbackRemaining.filter(type => type === "blank").length;
 
   aliveCount.textContent =
     "Peluru Alive : " + alive;
@@ -5354,7 +5435,7 @@ function updateGameHealth() {
     Math.max(
       0,
       Math.min(
-        3,
+        4,
         Number(
           myPlayer.hp ?? 0
         )
@@ -5364,7 +5445,7 @@ function updateGameHealth() {
 
   for (
     let i = 0;
-    i < 3;
+    i < 4;
     i++
   ) {
 
@@ -5373,7 +5454,7 @@ function updateGameHealth() {
 
 
     if (
-      i < 3 - hp
+      i >= hp
     ) {
 
       icon.setAttribute(
@@ -6129,6 +6210,11 @@ async function shoot(targetId) {
       }
 
       currentGame.shells.current = currentShell + 1;
+      if (currentShellType === "live") {
+        currentGame.shells.alive = Math.max(0, Number(currentGame.shells.alive ?? 0) - 1);
+      } else {
+        currentGame.shells.blank = Math.max(0, Number(currentGame.shells.blank ?? 0) - 1);
+      }
       currentGame.shotPending = null;
 
       currentGame.lastShot = {
@@ -6302,11 +6388,28 @@ if (itemInfoPopup) {
 
 function updateHandcuffOverlay() {
   if (!handcuffOverlay) return;
-  const handcuffed =
-    Number(gameData?.players?.[currentPlayerId]?.skipTurns ?? 0) > 0 ||
-    gameData?.players?.[currentPlayerId]?.handcuffed === true;
-  handcuffOverlay.classList.toggle("hidden", !handcuffed);
-  if (!handcuffOverlay.classList.contains("hidden")) lucide.createIcons();
+
+  const myState = gameData?.players?.[currentPlayerId];
+  const isPlaying = gameData?.phase === "playing";
+  const isDead = Number(myState?.hp ?? 0) <= 0;
+  const isHandcuffed =
+    Number(myState?.skipTurns ?? 0) > 0 ||
+    myState?.handcuffed === true;
+
+  const showOverlay = isPlaying && (isDead || isHandcuffed);
+  handcuffOverlay.classList.toggle("hidden", !showOverlay);
+
+  if (!showOverlay) return;
+
+  const icon = handcuffOverlay.querySelector("svg, i");
+  const text = handcuffOverlay.querySelector("span");
+  if (icon) {
+    icon.outerHTML = `<i data-lucide="${isDead ? "skull" : "lock"}"></i>`;
+  }
+  if (text) {
+    text.textContent = isDead ? "DEAD" : "HANDCUFFED";
+  }
+  lucide.createIcons();
 }
 
 function enableShotButtons() {
