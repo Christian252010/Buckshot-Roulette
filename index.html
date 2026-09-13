@@ -1046,6 +1046,15 @@ body {
   align-items: center;
   gap: 8px;
   min-width: 0;
+  width: 100%;
+}
+
+.player-list .pl-name-health {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  flex: 1;
 }
 
 .player-list .pl-items {
@@ -1956,6 +1965,7 @@ let gameWatcherStarted = false;
 let roomWatcherStarted = false;
 
 let prepareTimer = null;
+let startCountdownTimer = null;
 
 let shootingLocked = false;
 let lastWinnerId = null;
@@ -2545,6 +2555,9 @@ function showLogin() {
 function showLobby() {
 
   if (handcuffOverlay) handcuffOverlay.classList.add("hidden");
+  if (startCountdownTimer) { clearTimeout(startCountdownTimer); startCountdownTimer = null; }
+  startBtn.textContent = "Mulai";
+  startBtn.disabled = false;
 
   loginScreen.classList.add(
     "hidden"
@@ -2871,10 +2884,43 @@ async function renderRoom() {
   }
 
 
-  if (
-    roomData.status ===
-    "playing"
-  ) {
+  if (roomData.status === "starting") {
+    const joined = !!roomData.players?.[currentPlayerId];
+    if (!joined) {
+      createBtn.classList.add("hidden");
+      joinBtn.classList.add("hidden");
+      startLeft.classList.add("hidden");
+      roomMessage.textContent = "Game akan segera dimulai.";
+      return;
+    }
+
+    createBtn.classList.add("hidden");
+    joinBtn.classList.add("hidden");
+    startLeft.classList.remove("hidden");
+    startBtn.disabled = false;
+
+    const updateCountdown = () => {
+      const remaining = Math.max(0, Number(roomData.startAt || 0) - Date.now());
+      const seconds = Math.ceil(remaining / 1000);
+      if (remaining <= 0) {
+        startBtn.textContent = "Batal";
+        if (startCountdownTimer) { clearTimeout(startCountdownTimer); startCountdownTimer = null; }
+        finishStartingGame();
+        return;
+      }
+      startBtn.textContent = `Batal ..${seconds}`;
+      clearTimeout(startCountdownTimer);
+      startCountdownTimer = setTimeout(updateCountdown, 150);
+    };
+    updateCountdown();
+    return;
+  }
+
+  if (roomData.status === "playing") {
+    if (startCountdownTimer) {
+      clearTimeout(startCountdownTimer);
+      startCountdownTimer = null;
+    }
 
     const joined =
       roomData.players &&
@@ -3459,7 +3505,10 @@ function renderMyItems() {
     }
 
     const definition = ITEM_DEFINITIONS[type];
-    item.classList.toggle("disabled", !canSelectItems);
+    const usedThisShell = ["magnifying_glass", "handcuff", "inverter"].includes(type) &&
+      !!gameData?.players?.[currentPlayerId]?.shellItemUses?.[type];
+    const expiredFull = type === "expired_medicine" && Number(gameData?.players?.[currentPlayerId]?.hp ?? 0) >= 4;
+    item.classList.toggle("disabled", !canSelectItems || usedThisShell || expiredFull);
     item.classList.toggle(
       "selected",
       itemMode && selectedItemSlot === logicalIndex
@@ -3480,6 +3529,8 @@ function setItemMode(type, slotIndex) {
 
   const items = gameData.players?.[currentPlayerId]?.items || [];
   if (items[slotIndex] !== type || !ITEM_DEFINITIONS[type]) return;
+  if (["magnifying_glass", "handcuff", "inverter"].includes(type) && gameData.players?.[currentPlayerId]?.shellItemUses?.[type]) return;
+  if (type === "expired_medicine" && Number(gameData.players?.[currentPlayerId]?.hp ?? 0) >= 4) return;
 
   selectedItemType = type;
   selectedItemSlot = slotIndex;
@@ -3563,6 +3614,11 @@ async function useSelectedItem(targetId = null) {
       const inventory = Array.isArray(player.items) ? [...player.items] : [];
       if (inventory[slotIndex] !== type) return;
 
+      if (type === "expired_medicine" && Number(player.hp ?? 0) >= 4) return;
+
+      const oncePerShell = ["magnifying_glass", "handcuff", "inverter"];
+      if (oncePerShell.includes(type) && player.shellItemUses?.[type]) return;
+
       if (type === "cigarette") {
         if (Number(player.hp) >= 4) return;
         player.hp = Math.min(4, Number(player.hp) + 1);
@@ -3587,6 +3643,9 @@ async function useSelectedItem(targetId = null) {
         }
         if (game.shells.current >= Number(game.shells.total || 0)) {
           game.shells = createShellSet(Object.keys(game.players || {}).length);
+          Object.values(game.players || {}).forEach(p => {
+            if (p) p.shellItemUses = {};
+          });
         }
       } else if (type === "inverter") {
         const shellIndex = Number(game.shells?.current ?? 0);
@@ -3601,6 +3660,13 @@ async function useSelectedItem(targetId = null) {
         } else {
           player.hp = Math.max(0, Number(player.hp ?? 0) - 1);
         }
+      }
+
+      if (["magnifying_glass", "handcuff", "inverter"].includes(type)) {
+        player.shellItemUses = {
+          ...(player.shellItemUses || {}),
+          [type]: true
+        };
       }
 
       inventory.splice(slotIndex, 1);
@@ -3695,76 +3761,17 @@ itemElements.forEach(item => {
 ========================= */
 
 function createShellSet(playerCount = 2) {
+  // Set baru: 5-8 shell, dengan minimal 3 Live dan 3 Blank.
+  const total = Math.floor(Math.random() * 3) + 6;
+  const alive = Math.floor(Math.random() * (total - 5)) + 3;
+  const blank = total - alive;
 
-  let totalMin;
-  let totalMax;
-  let aliveMin;
-  let aliveMax;
-
-  if (playerCount <= 2) {
-    totalMin = 4;
-    totalMax = 6;
-    aliveMin = 1;
-    aliveMax = 5;
-  } else if (playerCount === 3) {
-    totalMin = 5;
-    totalMax = 7;
-    aliveMin = 2;
-    aliveMax = 5;
-  } else {
-    totalMin = 6;
-    totalMax = 8;
-    aliveMin = 2;
-    aliveMax = 6;
-  }
-
-  const total =
-    Math.floor(
-      Math.random() *
-      (totalMax - totalMin + 1)
-    ) + totalMin;
-
-  aliveMax = Math.min(
-    aliveMax,
-    total - 1
-  );
-
-  const alive =
-    Math.floor(
-      Math.random() *
-      (aliveMax - aliveMin + 1)
-    ) + aliveMin;
-
-  const blank =
-    total - alive;
-
-  const shellData =
-    [];
-
-  for (
-    let i = 0;
-    i < alive;
-    i++
-  ) {
-    shellData.push(
-      "live"
-    );
-  }
-
-  for (
-    let i = 0;
-    i < blank;
-    i++
-  ) {
-    shellData.push(
-      "blank"
-    );
-  }
+  const shellData = [];
+  for (let i = 0; i < alive; i++) shellData.push("live");
+  for (let i = 0; i < blank; i++) shellData.push("blank");
 
   return {
-    setId:
-      Date.now().toString(36) +
-      Math.random().toString(36).slice(2, 8),
+    setId: Date.now().toString(36) + Math.random().toString(36).slice(2, 8),
     total,
     alive,
     blank,
@@ -3772,7 +3779,6 @@ function createShellSet(playerCount = 2) {
     sequence: shuffleArray(shellData)
   };
 }
-
 
 /* =========================
    CREATE GAME STATE
@@ -3799,7 +3805,8 @@ function createGameState(
         items: createPlayerItems(shuffledPlayers.length),
         sawActive: false,
         skipTurns: 0,
-        handcuffed: false
+        handcuffed: false,
+        shellItemUses: {}
 
       };
 
@@ -3858,129 +3865,60 @@ function createGameState(
 startBtn.addEventListener(
   "click",
   async () => {
+    if (!currentPlayerId || !roomData) return;
 
-    if (!currentPlayerId) {
+    if (roomData.status === "starting") {
+      try {
+        await runTransaction(ref(db, "room"), room => {
+          if (!room || room.status !== "starting") return;
+          return { ...room, status: "lobby", startAt: null };
+        });
+      } catch (error) {
+        console.error("Cancel start error:", error);
+      }
       return;
     }
 
     startBtn.disabled = true;
-
     try {
+      const result = await runTransaction(ref(db, "room"), room => {
+        if (!room || room.status !== "lobby") return;
+        const players = room.players || {};
+        const playerIds = Object.keys(players);
+        if (playerIds.length < 2 || !players[currentPlayerId]) return;
+        return { ...room, status: "starting", startAt: Date.now() + 3000 };
+      });
 
-      const roomRef =
-        ref(db, "room");
-
-      const result =
-        await runTransaction(
-          roomRef,
-          room => {
-
-            if (!room) {
-              return;
-            }
-
-            if (
-              room.status ===
-              "playing"
-            ) {
-
-              return;
-
-            }
-
-            const players =
-              room.players || {};
-
-            const playerIds =
-              Object.keys(players);
-
-            if (
-              playerIds.length < 2
-            ) {
-
-              return;
-
-            }
-
-            if (
-              !players[
-                currentPlayerId
-              ]
-            ) {
-
-              return;
-
-            }
-
-            const gameState =
-              createGameState(
-                playerIds
-              );
-
-            return {
-
-              ...room,
-
-              status:
-                "playing",
-
-              game:
-                gameState
-
-            };
-
-          }
-        );
-
-
-      if (
-        !result.committed
-      ) {
-
-        const snapshot =
-          await get(
-            ref(db, "room")
-          );
-
-        if (
-          snapshot.exists() &&
-          snapshot.val().status ===
-          "lobby"
-        ) {
-
-          const players =
-            snapshot.val().players ||
-            {};
-
-          if (
-            Object.keys(players).length <
-            2
-          ) {
-
-            roomMessage.textContent =
-              "Minimal 2 pemain untuk memulai.";
-
-          }
-
+      if (!result.committed) {
+        const snapshot = await get(ref(db, "room"));
+        if (snapshot.exists() && Object.keys(snapshot.val().players || {}).length < 2) {
+          roomMessage.textContent = "Minimal 2 pemain untuk memulai.";
         }
-
       }
-
     } catch (error) {
-
       console.error(error);
-
-      roomMessage.textContent =
-        "Gagal memulai game.";
-
+      roomMessage.textContent = "Gagal memulai game.";
     } finally {
-
       startBtn.disabled = false;
-
     }
-
   }
 );
+
+async function finishStartingGame() {
+  if (!roomData || roomData.status !== "starting") return;
+  const roomRef = ref(db, "room");
+  try {
+    await runTransaction(roomRef, room => {
+      if (!room || room.status !== "starting") return;
+      if (Date.now() < Number(room.startAt || 0)) return;
+      const playerIds = Object.keys(room.players || {});
+      if (playerIds.length < 2) return { ...room, status: "lobby", startAt: null };
+      return { ...room, status: "playing", startAt: null, game: createGameState(playerIds) };
+    });
+  } catch (error) {
+    console.error("Finish starting game error:", error);
+  }
+}
 
 
 /* =========================
@@ -4211,15 +4149,6 @@ function renderGamePlayerList() {
       player.name || "Unknown";
 
     userTop.appendChild(profile);
-    userTop.appendChild(name);
-
-    if (gameData.players?.[player.id]?.handcuffed || Number(gameData.players?.[player.id]?.skipTurns ?? 0) > 0) {
-      const lock = document.createElement("i");
-      lock.setAttribute("data-lucide", "lock");
-      lock.className = "pl-lock";
-      lock.setAttribute("title", "Handcuffed");
-      userTop.appendChild(lock);
-    }
 
     const health =
       document.createElement("div");
@@ -4231,23 +4160,29 @@ function renderGamePlayerList() {
       Math.min(4, Number(player.hp ?? 0))
     );
 
+    const offCount = 4 - hp;
     for (let i = 0; i < 4; i++) {
-
-      const icon =
-        document.createElement("i");
-
-      icon.setAttribute(
-        "data-lucide",
-        i < hp ? "zap" : "zap-off"
-      );
-
-      if (i >= hp) {
-        icon.classList.add("heart-off");
-      }
-
+      const icon = document.createElement("i");
+      const isOff = i < offCount;
+      icon.setAttribute("data-lucide", isOff ? "zap-off" : "zap");
+      if (isOff) icon.classList.add("heart-off");
       health.appendChild(icon);
-
     }
+
+    const nameHealth = document.createElement("div");
+    nameHealth.className = "pl-name-health";
+    nameHealth.appendChild(name);
+    nameHealth.appendChild(health);
+
+    if (gameData.players?.[player.id]?.handcuffed || Number(gameData.players?.[player.id]?.skipTurns ?? 0) > 0) {
+      const lock = document.createElement("i");
+      lock.setAttribute("data-lucide", "lock");
+      lock.className = "pl-lock";
+      lock.setAttribute("title", "Handcuffed");
+      nameHealth.appendChild(lock);
+    }
+
+    userTop.replaceChildren(profile, nameHealth);
 
     const items = Array.isArray(gameData.players?.[player.id]?.items)
       ? gameData.players[player.id].items
@@ -4274,7 +4209,6 @@ function renderGamePlayerList() {
     user.appendChild(userTop);
     user.appendChild(itemSlots);
     row.appendChild(user);
-    row.appendChild(health);
     playersListContainer.appendChild(row);
 
   });
@@ -4438,14 +4372,14 @@ function showGameEvent(eventData) {
       cigarette: "cigeratte",
       beer: "beer",
       inverter: "inverter",
-      expired_medicine: "expired-medicane"
+      expired_medicine: "expired-medicine"
     };
     playGameSound(soundMap[eventData.itemType] || "get-item");
     appendGameMessage(
       `${userName} menggunakan ${itemName}${eventData.targetId ? " pada " + getPlayerNameById(eventData.targetId) : ""}.`,
       "info",
       definition?.icon || "package",
-      eventData.itemType === "expired_medicine" ? 1800 : 3600
+      eventData.itemType === "expired_medicine" ? 2600 : 3600
     );
 
     if (eventData.itemType === "beer" && eventData.beerDiscardedType) {
@@ -4463,13 +4397,13 @@ function showGameEvent(eventData) {
       messageTimers.push(setTimeout(() => {
         appendGameMessage(
           eventData.expiredResult === "+2hp"
-            ? `${userName} mendapatkan +2 HP`
-            : `${userName} kehilangan -1 HP`,
+            ? `${userName} +2hp`
+            : `${userName} -1hp`,
           eventData.expiredResult === "+2hp" ? "info" : "live",
           eventData.expiredResult === "+2hp" ? "heart" : "heart-crack",
           3600
         );
-      }, 1200));
+      }, 1400));
     }
     return;
   }
@@ -5443,43 +5377,22 @@ function updateGameHealth() {
     );
 
 
-  for (
-    let i = 0;
-    i < 4;
-    i++
-  ) {
+  const offCount = 4 - hp;
 
-    const icon =
-      document.createElement("i");
+  for (let i = 0; i < 4; i++) {
+    const icon = document.createElement("i");
+    const isOff = i < offCount;
 
-
-    if (
-      i >= hp
-    ) {
-
-      icon.setAttribute(
-        "data-lucide",
-        "zap-off"
-      );
-
-      icon.classList.add(
-        "hp-off"
-      );
-
-    } else {
-
-      icon.setAttribute(
-        "data-lucide",
-        "zap"
-      );
-
-    }
-
-
-    healthContainer.appendChild(
-      icon
+    icon.setAttribute(
+      "data-lucide",
+      isOff ? "zap-off" : "zap"
     );
 
+    if (isOff) {
+      icon.classList.add("hp-off");
+    }
+
+    healthContainer.appendChild(icon);
   }
 
 
@@ -6265,6 +6178,7 @@ async function shoot(targetId) {
             players[id].items = result.inventory;
             itemRewards[id] = result.added;
             players[id].sawActive = false;
+            players[id].shellItemUses = {};
           }
         });
         shellReloaded = true;
