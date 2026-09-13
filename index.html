@@ -221,7 +221,11 @@ body {
 }
 
 .left {
-  background: #666 !important;
+  background: #555 !important;
+}
+
+.shot-btn button.use-mode {
+  background: #228b22 !important;
 }
 
 .join {
@@ -1053,6 +1057,7 @@ body {
   display: flex;
   align-items: center;
   gap: 8px;
+  justify-content: space-between;
   min-width: 0;
   flex: 1;
 }
@@ -1060,27 +1065,28 @@ body {
 .player-list .pl-items {
   display: flex;
   width: 100%;
-  justify-content: space-evenly;
+  justify-content: space-between;
   align-items: center;
   gap: 4px;
 }
 
 .player-list .pl-item-box {
   display: flex;
-  width: 28px;
-  height: 28px;
-  flex: 1 1 0;
-  max-width: 38px;
-  min-width: 18px;
+  width: 34px;
+  height: 34px;
+  flex: 0 1 34px;
+  max-width: 34px;
+  min-width: 28px;
   align-items: center;
   justify-content: center;
-  background: #444;
+  background: #484848;
   border-radius: 3px;
   color: #fff;
+  aspect-ratio: 1 / 1;
 }
 
 .player-list .pl-item-box.empty {
-  background: #333;
+  background: #383838;
 }
 
 .player-list .pl-item-box svg {
@@ -1959,6 +1965,9 @@ let shotMode = false;
 let selectedTarget = null;
 let selectedItemType = null;
 let selectedItemSlot = null;
+let selectedItemSourceId = null;
+let adrenalineTargetId = null;
+let adrenalineActive = false;
 let itemMode = false;
 
 let gameWatcherStarted = false;
@@ -3430,6 +3439,12 @@ const ITEM_DEFINITIONS = {
     icon: "pill",
     info: "Gambling 50%: mendapatkan +2 HP atau kehilangan 1 HP.",
     target: false
+  },
+  adrenaline: {
+    name: "Adrenaline",
+    icon: "syringe",
+    info: "Mencuri 1 item dari pemain lain dan menggunakannya sebelum menembak.",
+    target: true
   }
 };
 
@@ -3465,23 +3480,28 @@ function addItemRewards(existingItems, rewards, maxItems = 8) {
 function resetItemSelection() {
   selectedItemType = null;
   selectedItemSlot = null;
+  selectedItemSourceId = null;
+  adrenalineTargetId = null;
+  adrenalineActive = false;
   itemMode = false;
   itemElements.forEach(item => item.classList.remove("selected"));
   playerBtn.textContent = "Player";
   selfBtn.textContent = "Self";
+  playerBtn.classList.remove("use-mode");
 }
 
 function renderMyItems() {
-  const items = Array.isArray(gameData?.players?.[currentPlayerId]?.items)
-    ? gameData.players[currentPlayerId].items
+  const sourceId = adrenalineActive && adrenalineTargetId
+    ? adrenalineTargetId
+    : currentPlayerId;
+  const items = Array.isArray(gameData?.players?.[sourceId]?.items)
+    ? gameData.players[sourceId].items
     : [];
 
   const canSelectItems =
     gameData?.phase === "playing" &&
-    !shootingLocked;
-
-  const canUseItems =
-    canSelectItems &&
+    !gameData?.itemPending &&
+    !shootingLocked &&
     gameData?.turn?.current === currentPlayerId;
 
   const visibleItems = [...items];
@@ -3491,7 +3511,6 @@ function renderMyItems() {
   }
 
   itemElements.forEach((item, domIndex) => {
-    // Item selalu mengisi dari kiri atas tanpa celah.
     const logicalIndex = domIndex < visibleItems.length ? domIndex : -1;
     const type = logicalIndex >= 0 ? (visibleItems[logicalIndex] || "") : "";
     item.dataset.slot = String(logicalIndex);
@@ -3508,7 +3527,8 @@ function renderMyItems() {
     const usedThisShell = ["magnifying_glass", "handcuff", "inverter"].includes(type) &&
       !!gameData?.players?.[currentPlayerId]?.shellItemUses?.[type];
     const expiredFull = type === "expired_medicine" && Number(gameData?.players?.[currentPlayerId]?.hp ?? 0) >= 4;
-    item.classList.toggle("disabled", !canSelectItems || usedThisShell || expiredFull);
+    const recursiveAdrenaline = type === "adrenaline";
+    item.classList.toggle("disabled", !canSelectItems || usedThisShell || expiredFull || recursiveAdrenaline);
     item.classList.toggle(
       "selected",
       itemMode && selectedItemSlot === logicalIndex
@@ -3526,14 +3546,20 @@ function renderMyItems() {
 function setItemMode(type, slotIndex) {
   if (!gameData || gameData.phase !== "playing") return;
   if (shootingLocked) return;
+  if (gameData.turn?.current !== currentPlayerId) return;
 
-  const items = gameData.players?.[currentPlayerId]?.items || [];
+  const sourceId = adrenalineActive && adrenalineTargetId
+    ? adrenalineTargetId
+    : currentPlayerId;
+  const items = gameData.players?.[sourceId]?.items || [];
   if (items[slotIndex] !== type || !ITEM_DEFINITIONS[type]) return;
+  if (type === "adrenaline") return;
   if (["magnifying_glass", "handcuff", "inverter"].includes(type) && gameData.players?.[currentPlayerId]?.shellItemUses?.[type]) return;
   if (type === "expired_medicine" && Number(gameData.players?.[currentPlayerId]?.hp ?? 0) >= 4) return;
 
   selectedItemType = type;
   selectedItemSlot = slotIndex;
+  selectedItemSourceId = sourceId;
   itemMode = true;
 
   itemElements.forEach(item => {
@@ -3545,6 +3571,7 @@ function setItemMode(type, slotIndex) {
 
   playerBtn.textContent = "Use";
   selfBtn.textContent = "Info";
+  playerBtn.classList.add("use-mode");
   enableShotButtons();
 }
 
@@ -3581,6 +3608,8 @@ async function useSelectedItem(targetId = null) {
 
   const type = selectedItemType;
   const slotIndex = selectedItemSlot;
+  const sourceId = selectedItemSourceId || currentPlayerId;
+  const isBorrowed = adrenalineActive && sourceId !== currentPlayerId;
   const definition = ITEM_DEFINITIONS[type];
   if (!definition) return;
 
@@ -3588,11 +3617,23 @@ async function useSelectedItem(targetId = null) {
   let expiredResult = null;
   let beerDiscardedType = null;
   let inverterResult = null;
+  let adrenalineStolenFromId = null;
+
   if (type === "magnifying_glass") {
     const index = Number(gameData.shells?.current || 0);
     const shellType = gameData.shells?.sequence?.[index];
     magnifyLabel = shellType === "live" ? "LIVE" : shellType === "blank" ? "BLANK" : "tidak diketahui";
   }
+
+  /* Adrenaline: pilih pemain terlebih dahulu, lalu pinjam 1 item dari inventory-nya. */
+  if (type === "adrenaline" && !targetId) {
+    renderPlayerPopup();
+    popup.classList.remove("hidden");
+    overlay.classList.remove("hidden");
+    return;
+  }
+
+  if (type === "adrenaline" && targetId === currentPlayerId) return;
 
   if (definition.target && !targetId) {
     renderPlayerPopup();
@@ -3604,20 +3645,83 @@ async function useSelectedItem(targetId = null) {
   shootingLocked = true;
   try {
     const gameRef = ref(db, "room/game");
+
+    /* Adrenaline sendiri hanya mengambil item. Item hasil curian baru digunakan setelahnya. */
+    if (type === "adrenaline") {
+      const result = await runTransaction(gameRef, game => {
+        if (!game || game.phase !== "playing") return;
+        if (game.turn?.current !== currentPlayerId || game.itemPending) return;
+
+        const player = game.players?.[currentPlayerId];
+        const target = game.players?.[targetId];
+        if (!player || Number(player.hp ?? 0) <= 0) return;
+        if (!target || Number(target.hp ?? 0) <= 0) return;
+
+        const inventory = Array.isArray(player.items) ? [...player.items] : [];
+        const adrenalineIndex = inventory.indexOf("adrenaline");
+        if (adrenalineIndex < 0) return;
+
+        const targetInventory = Array.isArray(target.items) ? target.items : [];
+        if (!targetInventory.length) return;
+
+        inventory.splice(adrenalineIndex, 1);
+        player.items = inventory;
+
+        game.lastEvent = {
+          id: Date.now().toString(36) + Math.random().toString(36).slice(2, 8),
+          type: "item",
+          itemType: "adrenaline",
+          playerId: currentPlayerId,
+          targetId,
+          at: Date.now()
+        };
+
+        return game;
+      });
+
+      if (!result.committed) {
+        const snapshot = await get(gameRef);
+        if (snapshot.exists()) {
+          gameData = snapshot.val();
+          await renderGameState();
+        }
+        return;
+      }
+
+      closeShotPopup();
+      if (itemInfoPopup) itemInfoPopup.classList.add("hidden");
+
+      selectedItemType = null;
+      selectedItemSlot = null;
+      selectedItemSourceId = null;
+      itemMode = false;
+      adrenalineTargetId = targetId;
+      adrenalineActive = true;
+      itemElements.forEach(item => item.classList.remove("selected"));
+
+      const snapshot = await get(gameRef);
+      if (snapshot.exists()) {
+        gameData = snapshot.val();
+        await renderGameState();
+      }
+      renderMyItems();
+      return;
+    }
+
     const result = await runTransaction(gameRef, game => {
       if (!game || game.phase !== "playing") return;
-      if (game.turn?.current !== currentPlayerId) return;
+      if (game.turn?.current !== currentPlayerId || game.itemPending) return;
 
       const player = game.players?.[currentPlayerId];
+      const sourcePlayer = game.players?.[sourceId];
       if (!player || Number(player.hp ?? 0) <= 0) return;
+      if (!sourcePlayer || Number(sourcePlayer.hp ?? 0) <= 0) return;
 
-      const inventory = Array.isArray(player.items) ? [...player.items] : [];
+      const inventory = Array.isArray(sourcePlayer.items) ? [...sourcePlayer.items] : [];
       if (inventory[slotIndex] !== type) return;
 
+      if (["magnifying_glass", "handcuff", "inverter"].includes(type) && player.shellItemUses?.[type]) return;
       if (type === "expired_medicine" && Number(player.hp ?? 0) >= 4) return;
-
-      const oncePerShell = ["magnifying_glass", "handcuff", "inverter"];
-      if (oncePerShell.includes(type) && player.shellItemUses?.[type]) return;
 
       if (type === "cigarette") {
         if (Number(player.hp) >= 4) return;
@@ -3655,11 +3759,12 @@ async function useSelectedItem(targetId = null) {
         game.shells.sequence[shellIndex] = inverterResult;
       } else if (type === "expired_medicine") {
         expiredResult = Math.random() < 0.5 ? "+2hp" : "-1hp";
-        if (expiredResult === "+2hp") {
-          player.hp = Math.min(4, Number(player.hp ?? 0) + 2);
-        } else {
-          player.hp = Math.max(0, Number(player.hp ?? 0) - 1);
-        }
+        game.itemPending = {
+          type: "expired_medicine",
+          playerId: currentPlayerId,
+          sourceId,
+          result: expiredResult
+        };
       }
 
       if (["magnifying_glass", "handcuff", "inverter"].includes(type)) {
@@ -3670,17 +3775,7 @@ async function useSelectedItem(targetId = null) {
       }
 
       inventory.splice(slotIndex, 1);
-      player.items = inventory;
-
-      if (type === "expired_medicine" && Number(player.hp ?? 0) <= 0) {
-        const living = Object.keys(game.players || {}).filter(id => Number(game.players[id]?.hp ?? 0) > 0);
-        if (living.length <= 1) {
-          game.phase = "finished";
-          game.winner = living[0] || null;
-          game.turn.current = living[0] || currentPlayerId;
-          game.turn.index = living[0] ? Number(game.players[living[0]]?.turnOrder ?? 0) : 0;
-        }
-      }
+      sourcePlayer.items = inventory;
 
       game.lastEvent = {
         id: Date.now().toString(36) + Math.random().toString(36).slice(2, 8),
@@ -3691,6 +3786,7 @@ async function useSelectedItem(targetId = null) {
         beerDiscardedType,
         inverterResult,
         expiredResult,
+        adrenalineStolenFromId: isBorrowed ? sourceId : null,
         at: Date.now()
       };
 
@@ -3708,7 +3804,13 @@ async function useSelectedItem(targetId = null) {
 
     closeShotPopup();
     if (itemInfoPopup) itemInfoPopup.classList.add("hidden");
+    const wasBorrowed = isBorrowed;
     resetItemSelection();
+
+    if (wasBorrowed) {
+      adrenalineTargetId = null;
+      adrenalineActive = false;
+    }
 
     if (type === "magnifying_glass" && magnifyLabel) {
       const popupIcon = document.querySelector("#itemInfoIcon");
@@ -3727,6 +3829,46 @@ async function useSelectedItem(targetId = null) {
     if (snapshot.exists()) {
       gameData = snapshot.val();
       await renderGameState();
+    }
+
+    /* Efek Expired Medicine baru diterapkan setelah 1,5 detik. */
+    if (type === "expired_medicine" && expiredResult) {
+      await wait(1500);
+      const delayedResult = await runTransaction(gameRef, game => {
+        if (!game || game.phase !== "playing") return;
+        const pending = game.itemPending;
+        if (!pending || pending.type !== "expired_medicine" || pending.playerId !== currentPlayerId || pending.result !== expiredResult) return;
+
+        const player = game.players?.[currentPlayerId];
+        if (!player) return;
+
+        if (expiredResult === "+2hp") {
+          player.hp = Math.min(4, Number(player.hp ?? 0) + 2);
+        } else {
+          player.hp = Math.max(0, Number(player.hp ?? 0) - 1);
+        }
+
+        if (Number(player.hp ?? 0) <= 0) {
+          const living = Object.keys(game.players || {}).filter(id => Number(game.players[id]?.hp ?? 0) > 0);
+          if (living.length <= 1) {
+            game.phase = "finished";
+            game.winner = living[0] || null;
+            game.turn.current = living[0] || currentPlayerId;
+            game.turn.index = living[0] ? Number(game.players[living[0]]?.turnOrder ?? 0) : 0;
+          }
+        }
+
+        game.itemPending = null;
+        return game;
+      });
+
+      if (delayedResult.committed) {
+        const delayedSnapshot = await get(gameRef);
+        if (delayedSnapshot.exists()) {
+          gameData = delayedSnapshot.val();
+          await renderGameState();
+        }
+      }
     }
   } catch (error) {
     console.error("Use item error:", error);
@@ -3840,6 +3982,8 @@ function createGameState(
     },
 
     shells,
+
+    itemPending: null,
 
     lastEvent: {
       id:
@@ -4372,11 +4516,26 @@ function showGameEvent(eventData) {
       cigarette: "cigeratte",
       beer: "beer",
       inverter: "inverter",
-      expired_medicine: "expired-medicine"
+      expired_medicine: "expired-medicine",
+      adrenaline: "adrenaline"
     };
     playGameSound(soundMap[eventData.itemType] || "get-item");
+
+    if (eventData.itemType === "adrenaline") {
+      appendGameMessage(
+        `${userName} Menggunakan Adrenaline kepada ${getPlayerNameById(eventData.targetId)}.`,
+        "info",
+        definition?.icon || "syringe",
+        3600
+      );
+      return;
+    }
+
+    const borrowedFrom = eventData.adrenalineStolenFromId
+      ? ` dari ${getPlayerNameById(eventData.adrenalineStolenFromId)}`
+      : "";
     appendGameMessage(
-      `${userName} menggunakan ${itemName}${eventData.targetId ? " pada " + getPlayerNameById(eventData.targetId) : ""}.`,
+      `${userName} menggunakan ${itemName}${borrowedFrom}${eventData.targetId ? " pada " + getPlayerNameById(eventData.targetId) : ""}.`,
       "info",
       definition?.icon || "package",
       eventData.itemType === "expired_medicine" ? 2600 : 3600
@@ -5864,9 +6023,10 @@ function renderPlayerPopup() {
         <button
           class="st-player-btn"
           data-id="${player.id}"
-          ${itemMode && selectedItemType === "handcuff" && gameData?.turn?.current !== currentPlayerId ? "disabled" : ""}>
+          ${itemMode && ["handcuff", "adrenaline"].includes(selectedItemType) && gameData?.turn?.current !== currentPlayerId ? "disabled" : ""}
+          ${itemMode && selectedItemType === "adrenaline" && !(Array.isArray(gameData?.players?.[player.id]?.items) && gameData.players[player.id].items.length) ? "disabled" : ""}>
 
-          ${itemMode && selectedItemType === "handcuff" ? "Lock" : "Shot"}
+          ${itemMode && selectedItemType === "handcuff" ? "Lock" : itemMode && selectedItemType === "adrenaline" ? "Steal" : "Shot"}
 
         </button>
 
@@ -5950,7 +6110,7 @@ playerContainer.addEventListener(
     selectedTarget =
       target;
 
-    if (itemMode && selectedItemType === "handcuff") {
+    if (itemMode && ["handcuff", "adrenaline"].includes(selectedItemType)) {
       useSelectedItem(targetId);
       return;
     }
@@ -6009,7 +6169,7 @@ async function shoot(targetId) {
         return;
       }
 
-      if (currentGame.shotPending) {
+      if (currentGame.shotPending || currentGame.itemPending) {
         return;
       }
 
@@ -6335,13 +6495,23 @@ function enableShotButtons() {
   const playing =
     gameData?.phase === "playing";
   const myTurn =
-    playing && gameData?.turn?.current === currentPlayerId;
+    playing &&
+    !gameData?.itemPending &&
+    gameData?.turn?.current === currentPlayerId;
 
-  if (itemMode && selectedItemType) {
-    /* Saat bukan giliran sendiri: item tetap bisa dipilih dan Info tetap aktif,
-       tetapi Use harus disabled. */
+  if (adrenalineActive && !itemMode) {
     playerBtn.textContent = "Use";
     selfBtn.textContent = "Info";
+    playerBtn.classList.add("use-mode");
+    playerBtn.disabled = true;
+    selfBtn.disabled = true;
+    return;
+  }
+
+  if (itemMode && selectedItemType) {
+    playerBtn.textContent = "Use";
+    selfBtn.textContent = "Info";
+    playerBtn.classList.add("use-mode");
     playerBtn.disabled = !myTurn;
     selfBtn.disabled = false;
     return;
