@@ -221,7 +221,11 @@ body {
 }
 
 .left {
-  background: #555 !important;
+  background: #3f3f3f !important;
+}
+
+.start.cancel-mode {
+  background: #3f3f3f !important;
 }
 
 .shot-btn button.use-mode {
@@ -847,8 +851,8 @@ body {
 }
 
 .item.selected {
-  background: crimson !important;
-  box-shadow: 0 0 0 2px #fff2;
+  background: #228b22 !important;
+  box-shadow: 0 0 0 2px #8fd69455;
   color: white;
 }
 
@@ -1029,7 +1033,8 @@ body {
 }
 
 .player-list .pl-list.current-turn {
-  background: crimson;
+  background: #3a3a3a;
+  box-shadow: inset 3px 0 0 #666;
   padding-left: 8px;
   padding-right: 8px;
   margin-left: -8px;
@@ -2878,6 +2883,7 @@ async function renderRoom() {
     startLeft.classList.add(
       "hidden"
     );
+    startBtn.classList.remove("cancel-mode");
 
     roomMessage.textContent =
       "Belum ada room.";
@@ -2907,12 +2913,14 @@ async function renderRoom() {
     joinBtn.classList.add("hidden");
     startLeft.classList.remove("hidden");
     startBtn.disabled = false;
+    startBtn.classList.add("cancel-mode");
 
     const updateCountdown = () => {
       const remaining = Math.max(0, Number(roomData.startAt || 0) - Date.now());
       const seconds = Math.ceil(remaining / 1000);
       if (remaining <= 0) {
         startBtn.textContent = "Batal";
+        startBtn.classList.add("cancel-mode");
         if (startCountdownTimer) { clearTimeout(startCountdownTimer); startCountdownTimer = null; }
         finishStartingGame();
         return;
@@ -2926,6 +2934,7 @@ async function renderRoom() {
   }
 
   if (roomData.status === "playing") {
+    startBtn.classList.remove("cancel-mode");
     if (startCountdownTimer) {
       clearTimeout(startCountdownTimer);
       startCountdownTimer = null;
@@ -3527,8 +3536,9 @@ function renderMyItems() {
     const usedThisShell = ["magnifying_glass", "handcuff", "inverter"].includes(type) &&
       !!gameData?.players?.[currentPlayerId]?.shellItemUses?.[type];
     const expiredFull = type === "expired_medicine" && Number(gameData?.players?.[currentPlayerId]?.hp ?? 0) >= 4;
-    const recursiveAdrenaline = type === "adrenaline";
-    item.classList.toggle("disabled", !canSelectItems || usedThisShell || expiredFull || recursiveAdrenaline);
+    const borrowedAdrenaline = adrenalineActive && sourceId !== currentPlayerId && type === "adrenaline";
+    item.classList.toggle("adrenaline-item", type === "adrenaline");
+    item.classList.toggle("disabled", !canSelectItems || usedThisShell || expiredFull || borrowedAdrenaline);
     item.classList.toggle(
       "selected",
       itemMode && selectedItemSlot === logicalIndex
@@ -3553,7 +3563,7 @@ function setItemMode(type, slotIndex) {
     : currentPlayerId;
   const items = gameData.players?.[sourceId]?.items || [];
   if (items[slotIndex] !== type || !ITEM_DEFINITIONS[type]) return;
-  if (type === "adrenaline") return;
+  if (adrenalineActive && sourceId !== currentPlayerId && type === "adrenaline") return;
   if (["magnifying_glass", "handcuff", "inverter"].includes(type) && gameData.players?.[currentPlayerId]?.shellItemUses?.[type]) return;
   if (type === "expired_medicine" && Number(gameData.players?.[currentPlayerId]?.hp ?? 0) >= 4) return;
 
