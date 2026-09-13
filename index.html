@@ -445,6 +445,7 @@ body {
 
 .game-message .message-line.info {
   color: #aaa;
+  font-size: 14px;
 }
 
 .game-message .message-line.win {
@@ -979,7 +980,7 @@ body {
 
 .player-list {
   display: none;
-  width: 80%;
+  width: 88%;
   max-height: 80dvh;
   overflow-y: auto;
   position: absolute;
@@ -2086,7 +2087,7 @@ const itemElements =
   document.querySelectorAll(".items-have .item");
 
 const itemInfoPopup = document.querySelector("#itemInfoPopup");
-const itemInfoIcon = document.querySelector("#itemInfoIcon");
+let itemInfoIcon = document.querySelector("#itemInfoIcon");
 const itemInfoTitle = document.querySelector("#itemInfoTitle");
 const itemInfoText = document.querySelector("#itemInfoText");
 const itemInfoClose = document.querySelector("#itemInfoClose");
@@ -3364,14 +3365,17 @@ function renderMyItems() {
     ? gameData.players[currentPlayerId].items
     : [];
 
-  const canUseItems =
+  const canSelectItems =
     gameData?.phase === "playing" &&
-    gameData?.turn?.current === currentPlayerId &&
     !shootingLocked;
+
+  const canUseItems =
+    canSelectItems &&
+    gameData?.turn?.current === currentPlayerId;
 
   const visibleItems = [...items];
 
-  if (!canUseItems && itemMode) {
+  if (!canSelectItems && itemMode) {
     resetItemSelection();
   }
 
@@ -3390,7 +3394,7 @@ function renderMyItems() {
     }
 
     const definition = ITEM_DEFINITIONS[type];
-    item.classList.toggle("disabled", !canUseItems);
+    item.classList.toggle("disabled", !canSelectItems);
     item.classList.toggle(
       "selected",
       itemMode && selectedItemSlot === logicalIndex
@@ -3407,7 +3411,6 @@ function renderMyItems() {
 
 function setItemMode(type, slotIndex) {
   if (!gameData || gameData.phase !== "playing") return;
-  if (gameData.turn?.current !== currentPlayerId) return;
   if (shootingLocked) return;
 
   const items = gameData.players?.[currentPlayerId]?.items || [];
@@ -3444,7 +3447,8 @@ async function showSelectedItemInfo() {
     text = `Peluru saat ini: ${label}`;
   }
 
-  itemInfoIcon.setAttribute("data-lucide", definition.icon);
+  itemInfoIcon.outerHTML = `<i id="itemInfoIcon" data-lucide="${definition.icon}"></i>`;
+  itemInfoIcon = document.querySelector("#itemInfoIcon");
   itemInfoTitle.textContent = definition.name;
   itemInfoText.textContent = text;
   itemInfoPopup.classList.remove("hidden");
@@ -3531,9 +3535,14 @@ async function useSelectedItem(targetId = null) {
     resetItemSelection();
 
     if (type === "magnifying_glass" && magnifyLabel) {
-      itemInfoIcon.setAttribute("data-lucide", definition.icon);
+      const popupIcon = document.querySelector("#itemInfoIcon");
+      if (popupIcon) {
+        popupIcon.outerHTML = `<i id="itemInfoIcon" data-lucide="${definition.icon}"></i>`;
+        itemInfoIcon = document.querySelector("#itemInfoIcon");
+      }
       itemInfoTitle.textContent = definition.name;
       itemInfoText.textContent = `Peluru saat ini: ${magnifyLabel}`;
+      itemInfoText.style.color = magnifyLabel === "LIVE" ? "crimson" : magnifyLabel === "BLANK" ? "#999" : "#ddd";
       itemInfoPopup.classList.remove("hidden");
       lucide.createIcons();
     }
@@ -3557,7 +3566,7 @@ itemElements.forEach(item => {
       return;
     }
 
-    if (!gameData || gameData.phase !== "playing" || gameData.turn?.current !== currentPlayerId) {
+    if (!gameData || gameData.phase !== "playing") {
       return;
     }
 
@@ -5529,6 +5538,7 @@ playerBtn.addEventListener(
     }
 
     if (itemMode && selectedItemType) {
+      if (gameData?.turn?.current !== currentPlayerId) return;
       useSelectedItem();
       return;
     }
@@ -6169,13 +6179,16 @@ function closeItemInfoPopup() {
   if (itemInfoPopup) itemInfoPopup.classList.add("hidden");
 }
 
-if (itemInfoClose) {
-  itemInfoClose.addEventListener("click", closeItemInfoPopup);
-}
-
+/* Lucide mengganti <i> menjadi <svg>, jadi gunakan event delegation. */
 if (itemInfoPopup) {
   itemInfoPopup.addEventListener("click", event => {
-    if (event.target === itemInfoPopup) closeItemInfoPopup();
+    if (event.target.closest("#itemInfoClose")) {
+      closeItemInfoPopup();
+      return;
+    }
+    if (event.target === itemInfoPopup) {
+      closeItemInfoPopup();
+    }
   });
 }
 
@@ -6194,21 +6207,26 @@ function enableShotButtons() {
     return;
   }
 
-  const canInteract =
-    gameData?.phase === "playing" &&
-    gameData?.turn?.current === currentPlayerId &&
-    (shotMode || itemMode);
-
-  playerBtn.disabled = !canInteract;
-  selfBtn.disabled = !canInteract;
+  const playing =
+    gameData?.phase === "playing";
+  const myTurn =
+    playing && gameData?.turn?.current === currentPlayerId;
 
   if (itemMode && selectedItemType) {
+    /* Saat bukan giliran sendiri: item tetap bisa dipilih dan Info tetap aktif,
+       tetapi Use harus disabled. */
     playerBtn.textContent = "Use";
     selfBtn.textContent = "Info";
-  } else {
-    playerBtn.textContent = "Player";
-    selfBtn.textContent = "Self";
+    playerBtn.disabled = !myTurn;
+    selfBtn.disabled = false;
+    return;
   }
+
+  const canShootInteract = myTurn && (shotMode || itemMode);
+  playerBtn.disabled = !canShootInteract;
+  selfBtn.disabled = !canShootInteract;
+  playerBtn.textContent = "Player";
+  selfBtn.textContent = "Self";
 
 }
 
