@@ -783,6 +783,7 @@ body {
   padding: 14px 12px;
   color: #ddd;
   font-weight: bold;
+  font-size: 14px;
   line-height: 1.45;
 }
 
@@ -980,7 +981,7 @@ body {
 
 .player-list {
   display: none;
-  width: 88%;
+  width: 92%;
   max-height: 80dvh;
   overflow-y: auto;
   position: absolute;
@@ -3319,6 +3320,24 @@ const ITEM_DEFINITIONS = {
     icon: "lock-keyhole-open",
     info: "Membuat pemain yang terkena dilewati 1 giliran.",
     target: true
+  },
+  beer: {
+    name: "Beer",
+    icon: "soda-can",
+    info: "Membuang peluru yang sedang berada di posisi sekarang tanpa menembaknya.",
+    target: false
+  },
+  inverter: {
+    name: "Inverter",
+    icon: "camera",
+    info: "Menukar jenis peluru saat ini: Live menjadi Blank atau Blank menjadi Live.",
+    target: false
+  },
+  expired_medicine: {
+    name: "Expired Medicine",
+    icon: "pill",
+    info: "Gambling 50%: mendapatkan +2 HP atau kehilangan 1 HP.",
+    target: false
   }
 };
 
@@ -3451,6 +3470,7 @@ async function showSelectedItemInfo() {
   itemInfoIcon = document.querySelector("#itemInfoIcon");
   itemInfoTitle.textContent = definition.name;
   itemInfoText.textContent = text;
+  itemInfoText.style.color = "#ddd";
   itemInfoPopup.classList.remove("hidden");
   lucide.createIcons();
 }
@@ -3468,6 +3488,9 @@ async function useSelectedItem(targetId = null) {
   if (!definition) return;
 
   let magnifyLabel = null;
+  let expiredResult = null;
+  let beerDiscardedType = null;
+  let inverterResult = null;
   if (type === "magnifying_glass") {
     const index = Number(gameData.shells?.current || 0);
     const shellType = gameData.shells?.sequence?.[index];
@@ -3505,16 +3528,52 @@ async function useSelectedItem(targetId = null) {
         if (!target || Number(target.hp ?? 0) <= 0) return;
         target.skipTurns = Number(target.skipTurns ?? 0) + 1;
         target.handcuffed = true;
+      } else if (type === "beer") {
+        const shellIndex = Number(game.shells?.current ?? 0);
+        const shellType = game.shells?.sequence?.[shellIndex];
+        if (!shellType) return;
+        beerDiscardedType = shellType;
+        game.shells.current = shellIndex + 1;
+        if (game.shells.current >= Number(game.shells.total || 0)) {
+          game.shells = createShellSet(Object.keys(game.players || {}).length);
+        }
+      } else if (type === "inverter") {
+        const shellIndex = Number(game.shells?.current ?? 0);
+        const shellType = game.shells?.sequence?.[shellIndex];
+        if (!shellType) return;
+        inverterResult = shellType === "live" ? "blank" : "live";
+        game.shells.sequence[shellIndex] = inverterResult;
+      } else if (type === "expired_medicine") {
+        expiredResult = Math.random() < 0.5 ? "+2hp" : "-1hp";
+        if (expiredResult === "+2hp") {
+          player.hp = Math.min(3, Number(player.hp ?? 0) + 2);
+        } else {
+          player.hp = Math.max(0, Number(player.hp ?? 0) - 1);
+        }
       }
 
       inventory.splice(slotIndex, 1);
       player.items = inventory;
+
+      if (type === "expired_medicine" && Number(player.hp ?? 0) <= 0) {
+        const living = Object.keys(game.players || {}).filter(id => Number(game.players[id]?.hp ?? 0) > 0);
+        if (living.length <= 1) {
+          game.phase = "finished";
+          game.winner = living[0] || null;
+          game.turn.current = living[0] || currentPlayerId;
+          game.turn.index = living[0] ? Number(game.players[living[0]]?.turnOrder ?? 0) : 0;
+        }
+      }
+
       game.lastEvent = {
         id: Date.now().toString(36) + Math.random().toString(36).slice(2, 8),
         type: "item",
         itemType: type,
         playerId: currentPlayerId,
         targetId: targetId || null,
+        beerDiscardedType,
+        inverterResult,
+        expiredResult,
         at: Date.now()
       };
 
@@ -3562,7 +3621,7 @@ async function useSelectedItem(targetId = null) {
 
 itemElements.forEach(item => {
   item.addEventListener("click", event => {
-    if (shootingLocked || item.classList.contains("empty") || item.classList.contains("disabled")) {
+    if (shootingLocked || item.classList.contains("empty")) {
       return;
     }
 
@@ -4297,15 +4356,42 @@ function showGameEvent(eventData) {
       magnifying_glass: "magnify-glass",
       handcuff: "handcuff",
       hand_saw: "hand-saw",
-      cigarette: "cigeratte"
+      cigarette: "cigeratte",
+      beer: "beer",
+      inverter: "inverter",
+      expired_medicine: "expired-medicane"
     };
     playGameSound(soundMap[eventData.itemType] || "get-item");
     appendGameMessage(
       `${userName} menggunakan ${itemName}${eventData.targetId ? " pada " + getPlayerNameById(eventData.targetId) : ""}.`,
       "info",
       definition?.icon || "package",
-      3600
+      eventData.itemType === "expired_medicine" ? 1800 : 3600
     );
+
+    if (eventData.itemType === "beer" && eventData.beerDiscardedType) {
+      messageTimers.push(setTimeout(() => {
+        appendGameMessage(
+          `${userName} Membuang peluru ${eventData.beerDiscardedType === "live" ? "Live" : "Blank"}`,
+          eventData.beerDiscardedType === "live" ? "live" : "blank",
+          "test-tube",
+          3200
+        );
+      }, 650));
+    }
+
+    if (eventData.itemType === "expired_medicine" && eventData.expiredResult) {
+      messageTimers.push(setTimeout(() => {
+        appendGameMessage(
+          eventData.expiredResult === "+2hp"
+            ? `${userName} mendapatkan +2 HP`
+            : `${userName} kehilangan -1 HP`,
+          eventData.expiredResult === "+2hp" ? "info" : "live",
+          eventData.expiredResult === "+2hp" ? "heart" : "heart-crack",
+          3600
+        );
+      }, 1200));
+    }
     return;
   }
 
@@ -4314,7 +4400,9 @@ function showGameEvent(eventData) {
     playGameSound("charge-shot");
 
     appendGameMessage(
-      shooterName + " menembak " + targetName + "...",
+      eventData.targetId === eventData.playerId
+        ? shooterName + " menembak diri sendiri..."
+        : shooterName + " menembak " + targetName + "...",
       "info",
       null,
       3600
@@ -4337,7 +4425,9 @@ function showGameEvent(eventData) {
     /* Suara ledakan ditembakkan tepat bersamaan dengan teks hasil. */
     playGameSound("shot-alive");
     appendGameMessage(
-      "Peluru Alive " + targetName + hpText,
+      eventData.isSelf
+        ? shooterName + " menembak diri sendiri: Peluru Alive" + hpText
+        : "Peluru Alive " + targetName + hpText,
       "live",
       "test-tube",
       3600
@@ -4351,11 +4441,25 @@ function showGameEvent(eventData) {
   } else {
     playGameSound("shot-blank");
     appendGameMessage(
-      "Peluru blank",
+      eventData.isSelf
+        ? shooterName + " menembak diri sendiri: Peluru blank"
+        : "Peluru blank",
       "blank",
       "test-tube",
       3600
     );
+  }
+
+  if (eventData.skippedPlayerId) {
+    const skippedName = getPlayerNameById(eventData.skippedPlayerId);
+    messageTimers.push(setTimeout(() => {
+      appendGameMessage(
+        `${skippedName} sedang di handcuff, lanjut ke ${getPlayerNameById(eventData.nextId)}`,
+        "info",
+        "lock",
+        3600
+      );
+    }, 450));
   }
 
   messageTimers.push(
@@ -5765,9 +5869,10 @@ function renderPlayerPopup() {
 
         <button
           class="st-player-btn"
-          data-id="${player.id}">
+          data-id="${player.id}"
+          ${itemMode && selectedItemType === "handcuff" && gameData?.turn?.current !== currentPlayerId ? "disabled" : ""}>
 
-          Shot
+          ${itemMode && selectedItemType === "handcuff" ? "Lock" : "Shot"}
 
         </button>
 
@@ -5954,6 +6059,7 @@ async function shoot(targetId) {
 
     let shotResult = null;
     let isSelf = false;
+    let skippedPlayerId = null;
 
     const result = await runTransaction(gameRef, currentGame => {
       if (!currentGame || currentGame.phase !== "playing") {
@@ -6095,6 +6201,7 @@ async function shoot(targetId) {
           const candidateId = playerIds[nextIndex];
           if (Number(players[candidateId]?.hp ?? 0) > 0) {
             if (Number(players[candidateId]?.skipTurns ?? 0) > 0) {
+              skippedPlayerId = candidateId;
               players[candidateId].skipTurns = Number(players[candidateId].skipTurns) - 1;
               players[candidateId].handcuffed = false;
               nextIndex = (nextIndex + 1) % playerIds.length;
@@ -6123,6 +6230,7 @@ async function shoot(targetId) {
         finished: false,
         winnerId: null,
         nextId: currentGame.turn.current || null,
+        skippedPlayerId,
         reload: shellReloaded,
         itemRewards: shellReloaded ? itemRewards : {},
         at: Date.now()
