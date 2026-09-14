@@ -519,6 +519,15 @@ body {
   color: crimson;
 }
 
+.shell-info .shell-number {
+  color: #aaa;
+}
+
+.i-shell-number {
+  color: #aaa;
+  font-weight: bold;
+}
+
 .random-shell svg {
   width: 36px !important;
   height: 36px !important;
@@ -1343,7 +1352,7 @@ body {
 
 .lobby-settings-btn,
 .lobby-items-btn {
-  background: #3f3f3f !important;
+  background: mediumpurple !important;
 }
 
 /* =========================
@@ -2086,6 +2095,14 @@ body {
       </label>
     </div>
 
+    <div class="settings-row">
+      <span class="settings-label">Tampilkan nomor shell</span>
+      <label class="settings-toggle">
+        <input id="settingShowShellNumber" type="checkbox" checked>
+        <span class="settings-slider"></span>
+      </label>
+    </div>
+
     <div class="settings-section-title">Item</div>
     <div class="settings-item-grid" id="settingsItemGrid"></div>
 
@@ -2239,6 +2256,9 @@ body {
           <i data-lucide="test-tube"></i>
           <span class="game-blank-count">0</span>
         </div>
+        <div class="i-shell-number">
+          <span class="game-shell-number">Shell 1</span>
+        </div>
       </div>
     </div>
 
@@ -2262,6 +2282,10 @@ body {
 
       <span class="blank-count">
         Peluru Blank : 0
+      </span>
+
+      <span class="shell-number">
+        Shell : 1
       </span>
 
     </div>
@@ -2668,6 +2692,7 @@ const settingMinShell = document.querySelector("#settingMinShell");
 const settingMaxShell = document.querySelector("#settingMaxShell");
 const settingMinEach = document.querySelector("#settingMinEach");
 const settingRealtimeShell = document.querySelector("#settingRealtimeShell");
+const settingShowShellNumber = document.querySelector("#settingShowShellNumber");
 const itemListPopup = document.querySelector("#itemListPopup");
 const itemListClose = document.querySelector("#itemListClose");
 const itemListItems = document.querySelector("#itemListItems");
@@ -3659,6 +3684,20 @@ async function renderLobbyPlayers(
 
 
 /* =========================
+   PERSISTENT GAME SETTINGS
+========================= */
+
+async function loadPersistentSettings() {
+  try {
+    const snapshot = await get(ref(db, "gameSettings"));
+    return snapshot.exists() ? getGameSettings(snapshot.val()) : buildDefaultSettings();
+  } catch (error) {
+    console.error("Load persistent settings error:", error);
+    return buildDefaultSettings();
+  }
+}
+
+/* =========================
    CREATE ROOM
 ========================= */
 
@@ -3688,6 +3727,8 @@ createBtn.addEventListener(
 
       }
 
+      const persistentSettings = await loadPersistentSettings();
+
       await set(
         ref(db, "room"),
         {
@@ -3698,7 +3739,7 @@ createBtn.addEventListener(
 
           createdAt: Date.now(),
 
-          settings: buildDefaultSettings(),
+          settings: persistentSettings,
 
           players: {
 
@@ -3960,6 +4001,7 @@ const DEFAULT_GAME_SETTINGS = {
   maxShell: 8,
   minEach: 3,
   realtimeShellInfo: true,
+  showShellNumber: true,
   enabledItems: {}
 };
 
@@ -3976,6 +4018,7 @@ function getGameSettings(source = roomData?.settings) {
     maxShell: Math.max(1, Number(source?.maxShell ?? DEFAULT_GAME_SETTINGS.maxShell)),
     minEach: Math.max(1, Number(source?.minEach ?? DEFAULT_GAME_SETTINGS.minEach)),
     realtimeShellInfo: source?.realtimeShellInfo !== false,
+    showShellNumber: source?.showShellNumber !== false,
     enabledItems
   };
 }
@@ -3996,6 +4039,7 @@ function populateSettingsUI(settings = getGameSettings()) {
   settingMaxShell.value = settings.maxShell;
   settingMinEach.value = settings.minEach;
   settingRealtimeShell.checked = settings.realtimeShellInfo;
+  settingShowShellNumber.checked = settings.showShellNumber;
   settingsMessage.textContent = "";
   settingsItemGrid.innerHTML = "";
 
@@ -4077,6 +4121,7 @@ async function saveSettings() {
     maxShell,
     minEach,
     realtimeShellInfo: settingRealtimeShell.checked,
+    showShellNumber: settingShowShellNumber.checked,
     enabledItems
   };
 
@@ -4092,6 +4137,8 @@ async function saveSettings() {
       settingsMessage.textContent = "Gagal menyimpan settings.";
       return;
     }
+
+    await set(ref(db, "gameSettings"), settings);
     closeSettings();
   } catch (error) {
     console.error("Save settings error:", error);
@@ -4205,7 +4252,13 @@ const ITEM_DEFINITIONS = {
   coin_flip: {
     name: "Coin Flip",
     icon: "circle-euro",
-    info: "Chance 50%: Handcuff semua pemain atau Handcuff diri sendiri.",
+    info: "Chance 50%: Handcuff semua pemain kecuali diri sendiri atau Handcuff diri sendiri dan kehilangan 1 giliran.",
+    target: false
+  },
+  megazine: {
+    name: "Megazine",
+    icon: "package-2",
+    info: "Reload shell dan memulai set shell baru.",
     target: false
   }
 };
@@ -4510,10 +4563,11 @@ async function useSelectedItem(targetId = null) {
       } else if (type === "beer") {
         const shellIndex = Number(game.shells?.current ?? 0);
         const shellType = game.shells?.sequence?.[shellIndex];
+        const originalShellType = game.shells?.originalSequence?.[shellIndex] || shellType;
         if (!shellType) return;
         beerDiscardedType = shellType;
         game.shells.current = shellIndex + 1;
-        if (shellType === "live") {
+        if (originalShellType === "live") {
           game.shells.alive = Math.max(0, Number(game.shells.alive ?? 0) - 1);
         } else {
           game.shells.blank = Math.max(0, Number(game.shells.blank ?? 0) - 1);
@@ -4587,6 +4641,11 @@ async function useSelectedItem(targetId = null) {
         });
       } else if (type === "rewind_film") {
         if (!game.shells?.sequence?.length) return;
+        const originalSequence = Array.isArray(game.shells.originalSequence)
+          ? game.shells.originalSequence
+          : game.shells.sequence;
+        game.shells.sequence = [...originalSequence];
+        game.shells.originalSequence = [...originalSequence];
         game.shells.current = 0;
         game.shells.alive = Number(game.shells.initialAlive ?? game.shells.alive ?? 0);
         game.shells.blank = Number(game.shells.initialBlank ?? game.shells.blank ?? 0);
@@ -4598,15 +4657,34 @@ async function useSelectedItem(targetId = null) {
       } else if (type === "coin_flip") {
         coinFlipResult = Math.random() < 0.5 ? "all" : "self";
         if (coinFlipResult === "all") {
+          /* Semua pemain lain terkena Handcuff. Diri sendiri tetap mendapat giliran. */
           Object.entries(game.players || {}).forEach(([id, target]) => {
-            if (!target || Number(target.hp ?? 0) <= 0) return;
+            if (id === currentPlayerId || !target || Number(target.hp ?? 0) <= 0) return;
             target.skipTurns = Number(target.skipTurns ?? 0) + 1;
             target.handcuffed = true;
           });
+          game.turn.current = currentPlayerId;
+          game.turn.index = Number(player.turnOrder ?? 0);
         } else {
+          /* Diri sendiri kehilangan 1 giliran, jadi giliran langsung diberikan ke pemain berikutnya. */
           player.skipTurns = Number(player.skipTurns ?? 0) + 1;
           player.handcuffed = true;
+          const ids = Object.keys(game.players || {})
+            .filter(id => game.players[id] && Number(game.players[id].hp ?? 0) > 0)
+            .sort((a, b) => Number(game.players[a].turnOrder ?? 0) - Number(game.players[b].turnOrder ?? 0));
+          const currentIndex = ids.indexOf(currentPlayerId);
+          if (ids.length > 1 && currentIndex >= 0) {
+            const nextId = ids[(currentIndex + 1) % ids.length];
+            game.turn.current = nextId;
+            game.turn.index = Number(game.players[nextId]?.turnOrder ?? 0);
+            game.turn.counter = Number(game.turn.counter ?? 0) + 1;
+          }
         }
+      } else if (type === "megazine") {
+        game.shells = createShellSet(Object.keys(game.players || {}).length, game.settings || getGameSettings());
+        Object.values(game.players || {}).forEach(p => {
+          if (p) p.shellItemUses = {};
+        });
       } else if (type === "expired_medicine") {
         expiredResult = Math.random() < 0.5 ? "+2hp" : "-1hp";
         game.itemPending = {
@@ -4800,6 +4878,8 @@ function createShellSet(playerCount = 2, settings = getGameSettings()) {
   for (let i = 0; i < alive; i++) shellData.push("live");
   for (let i = 0; i < blank; i++) shellData.push("blank");
 
+  const sequence = shuffleArray(shellData);
+
   return {
     setId: Date.now().toString(36) + Math.random().toString(36).slice(2, 8),
     total,
@@ -4808,7 +4888,8 @@ function createShellSet(playerCount = 2, settings = getGameSettings()) {
     initialAlive: alive,
     initialBlank: blank,
     current: 0,
-    sequence: shuffleArray(shellData)
+    sequence,
+    originalSequence: [...sequence]
   };
 }
 
@@ -5439,7 +5520,8 @@ function showGameEvent(eventData) {
       dynamite: "dynamite",
       dice: "dice",
       rewind_film: "rewind-film",
-      coin_flip: "coin-flip"
+      coin_flip: "coin-flip",
+      megazine: "megazine"
     };
     playGameSound(soundMap[eventData.itemType] || "get-item");
 
@@ -5479,7 +5561,12 @@ function showGameEvent(eventData) {
     }
 
     if (eventData.itemType === "dynamite") {
-      appendGameMessage(`${userName} Memasangkan Dynamite pada ${getPlayerNameById(eventData.targetId)}.`, "info", definition?.icon || "bomb", 3600);
+      appendGameMessage(`${userName} memasangkan Dynamite.`, "info", definition?.icon || "bomb", 3600);
+      return;
+    }
+
+    if (eventData.itemType === "megazine") {
+      appendGameMessage(`${userName} menggunakan Megazine dan melakukan reload shell.`, "info", definition?.icon || "package-2", 3600);
       return;
     }
 
@@ -5496,8 +5583,8 @@ function showGameEvent(eventData) {
     if (eventData.itemType === "coin_flip") {
       appendGameMessage(
         eventData.coinFlipResult === "all"
-          ? `${userName} mendapatkan Coin Flip: semua pemain terkena Handcuff.`
-          : `${userName} mendapatkan Coin Flip: dirinya sendiri terkena Handcuff.`,
+          ? `${userName} mendapatkan Coin Flip: semua pemain lain terkena Handcuff.`
+          : `${userName} mendapatkan Coin Flip: dirinya sendiri kehilangan 1 giliran.`,
         "info",
         definition?.icon || "circle-euro",
         3600
@@ -5621,6 +5708,16 @@ function showGameEvent(eventData) {
       "test-tube",
       3600
     );
+    if (eventData.dynamiteRemoved) {
+      messageTimers.push(setTimeout(() => {
+        appendGameMessage(
+          `${targetName} Dynamite menghilang karena terkena Blank`,
+          "info",
+          "bomb",
+          3600
+        );
+      }, 450));
+    }
   }
 
   if (eventData.skippedPlayerId) {
@@ -5976,6 +6073,7 @@ function renderShellInfo() {
   const fallbackRemaining = sequence.slice(current);
 
   const realtime = gameData?.settings?.realtimeShellInfo !== false;
+  const showShellNumber = gameData?.settings?.showShellNumber !== false;
   const initialAlive = Number.isFinite(Number(gameData.shells?.initialAlive))
     ? Math.max(0, Number(gameData.shells.initialAlive))
     : fallbackRemaining.filter(type => type === "live").length;
@@ -6002,6 +6100,19 @@ function renderShellInfo() {
 
   if (gameBlankCount) {
     gameBlankCount.textContent = blank;
+  }
+
+  const shellNumber = Math.min(total, current + 1);
+  const shellNumberText = total > 0 ? `Shell ${shellNumber} / ${total}` : "Shell -";
+  const gameShellNumber = document.querySelector(".game-shell-number");
+  const randomShellNumber = document.querySelector(".shell-number");
+  if (gameShellNumber) {
+    gameShellNumber.textContent = showShellNumber ? shellNumberText : "";
+    gameShellNumber.parentElement?.classList.toggle("hidden", !showShellNumber);
+  }
+  if (randomShellNumber) {
+    randomShellNumber.textContent = showShellNumber ? shellNumberText : "";
+    randomShellNumber.classList.toggle("hidden", !showShellNumber);
   }
 
 
@@ -7391,6 +7502,7 @@ async function shoot(targetId) {
       let shooterDamage = 0;
       let reflectedShot = false;
       let dynamiteTriggered = false;
+      let dynamiteRemoved = false;
 
       const targetShielded = targetPlayer.shieldActive === true;
       const targetTrapped = targetPlayer.dynamiteTrapped === true;
@@ -7430,11 +7542,17 @@ async function shoot(targetId) {
           targetPlayer.shieldActive = false;
           targetPlayer.shieldActivatedTurn = null;
         }
+        if (targetTrapped) {
+          targetPlayer.dynamiteTrapped = false;
+          targetPlayer.dynamiteTrappedById = null;
+          dynamiteRemoved = true;
+        }
         shotResult = "blank";
       }
 
+      const originalShellType = currentGame.shells?.originalSequence?.[currentShell] || currentShellType;
       currentGame.shells.current = currentShell + 1;
-      if (currentShellType === "live") {
+      if (originalShellType === "live") {
         currentGame.shells.alive = Math.max(0, Number(currentGame.shells.alive ?? 0) - 1);
       } else {
         currentGame.shells.blank = Math.max(0, Number(currentGame.shells.blank ?? 0) - 1);
@@ -7473,6 +7591,7 @@ async function shoot(targetId) {
           damage: shotResult === "live" ? damage : 0,
           shooterDamage,
           dynamiteTriggered,
+          dynamiteRemoved,
           reflected: reflectedShot,
           targetHp: Number(targetPlayer.hp ?? 0),
           shooterHp: Number(players[currentPlayerId]?.hp ?? 0),
@@ -7555,6 +7674,7 @@ async function shoot(targetId) {
         damage: shotResult === "live" ? damage : 0,
         shooterDamage,
         dynamiteTriggered,
+        dynamiteRemoved,
         reflected: reflectedShot,
         targetHp: Number(targetPlayer.hp ?? 0),
         shooterHp: Number(players[currentPlayerId]?.hp ?? 0),
