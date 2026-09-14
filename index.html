@@ -1674,6 +1674,11 @@ body {
   line-height: 1.3;
 }
 
+.game-profile-item.not-owned {
+  opacity: .45;
+}
+
+
 .game-profile-leave {
   width: 100%;
   margin-top: 14px;
@@ -1881,7 +1886,7 @@ body {
       type="text"
       class="login-input login-name"
       placeholder="Masukkan nama"
-      maxlength="30">
+      maxlength="16">
 
     <label class="login-label">
 
@@ -2015,7 +2020,7 @@ body {
       type="text"
       class="profile-edit-input"
       id="profileEditName"
-      maxlength="30"
+      maxlength="16"
       placeholder="Nama">
 
     <label class="profile-edit-label">Foto / Profile URL <span style="color:#777;">(opsional)</span></label>
@@ -2085,6 +2090,11 @@ body {
     <div class="settings-row">
       <span class="settings-label">Minimal Live / Blank</span>
       <input class="settings-input" id="settingMinEach" type="number" min="1" max="10" value="3">
+    </div>
+
+    <div class="settings-row">
+      <span class="settings-label">Item setiap reload shell</span>
+      <input class="settings-input" id="settingItemReward" type="number" min="0" max="8" value="2">
     </div>
 
     <div class="settings-row">
@@ -2691,6 +2701,7 @@ const settingMaxHealth = document.querySelector("#settingMaxHealth");
 const settingMinShell = document.querySelector("#settingMinShell");
 const settingMaxShell = document.querySelector("#settingMaxShell");
 const settingMinEach = document.querySelector("#settingMinEach");
+const settingItemReward = document.querySelector("#settingItemReward");
 const settingRealtimeShell = document.querySelector("#settingRealtimeShell");
 const settingShowShellNumber = document.querySelector("#settingShowShellNumber");
 const itemListPopup = document.querySelector("#itemListPopup");
@@ -4000,6 +4011,7 @@ const DEFAULT_GAME_SETTINGS = {
   minShell: 5,
   maxShell: 8,
   minEach: 3,
+  itemRewardCount: 2,
   realtimeShellInfo: true,
   showShellNumber: true,
   enabledItems: {}
@@ -4017,6 +4029,7 @@ function getGameSettings(source = roomData?.settings) {
     minShell: Math.max(1, Number(source?.minShell ?? DEFAULT_GAME_SETTINGS.minShell)),
     maxShell: Math.max(1, Number(source?.maxShell ?? DEFAULT_GAME_SETTINGS.maxShell)),
     minEach: Math.max(1, Number(source?.minEach ?? DEFAULT_GAME_SETTINGS.minEach)),
+    itemRewardCount: Math.max(0, Math.min(8, Number(source?.itemRewardCount ?? DEFAULT_GAME_SETTINGS.itemRewardCount))),
     realtimeShellInfo: source?.realtimeShellInfo !== false,
     showShellNumber: source?.showShellNumber !== false,
     enabledItems
@@ -4038,6 +4051,7 @@ function populateSettingsUI(settings = getGameSettings()) {
   settingMinShell.value = settings.minShell;
   settingMaxShell.value = settings.maxShell;
   settingMinEach.value = settings.minEach;
+  settingItemReward.value = settings.itemRewardCount;
   settingRealtimeShell.checked = settings.realtimeShellInfo;
   settingShowShellNumber.checked = settings.showShellNumber;
   settingsMessage.textContent = "";
@@ -4100,6 +4114,7 @@ async function saveSettings() {
   const minShell = Math.max(1, Math.min(20, Number(settingMinShell.value || 5)));
   const maxShell = Math.max(1, Math.min(20, Number(settingMaxShell.value || 8)));
   const minEach = Math.max(1, Math.min(10, Number(settingMinEach.value || 3)));
+  const itemRewardCount = Math.max(0, Math.min(8, Number(settingItemReward.value || 0)));
 
   if (maxShell < minShell) {
     settingsMessage.textContent = "Jumlah shell maksimum tidak boleh lebih kecil dari minimum.";
@@ -4120,6 +4135,7 @@ async function saveSettings() {
     minShell,
     maxShell,
     minEach,
+    itemRewardCount,
     realtimeShellInfo: settingRealtimeShell.checked,
     showShellNumber: settingShowShellNumber.checked,
     enabledItems
@@ -4918,7 +4934,7 @@ function createGameState(
         hp: settings.maxHealth,
 
         turnOrder: index,
-        items: createItemRewards(2, settings),
+        items: createItemRewards(settings.itemRewardCount, settings),
         sawActive: false,
         skipTurns: 0,
         handcuffed: false,
@@ -6178,7 +6194,7 @@ function showItemSpin() {
   clearTimeout(itemSpinHideTimer);
 
   const rewards = Array.isArray(gameData?.lastEvent?.itemRewards?.[currentPlayerId])
-    ? gameData.lastEvent.itemRewards[currentPlayerId].slice(0, 2)
+    ? gameData.lastEvent.itemRewards[currentPlayerId].slice(0, Number(gameData.settings?.itemRewardCount ?? 2))
     : [];
 
   if (!rewards.length) {
@@ -6819,25 +6835,20 @@ function openGameProfile() {
   gameProfileHp.textContent = `HP : ${Number(me.hp ?? 0)} / ${Number(gameData.settings?.maxHealth ?? 4)}`;
 
   gameProfileItems.innerHTML = "";
-  const items = Array.isArray(me.items) ? me.items : [];
-  if (!items.length) {
-    gameProfileItems.innerHTML = `<div style="padding:8px 0;color:#777;font-size:13px;">Tidak memiliki item.</div>`;
-  } else {
-    items.forEach(type => {
-      const definition = ITEM_DEFINITIONS[type];
-      if (!definition) return;
-      const row = document.createElement("div");
-      row.className = "game-profile-item";
-      row.innerHTML = `
-        <i data-lucide="${definition.icon}"></i>
-        <div>
-          <div class="game-profile-item-name">${definition.name}</div>
-          <div class="game-profile-item-info">${definition.info}</div>
-        </div>
-      `;
-      gameProfileItems.appendChild(row);
-    });
-  }
+  const ownedItems = Array.isArray(me.items) ? me.items : [];
+  Object.entries(ITEM_DEFINITIONS).forEach(([type, definition]) => {
+    const ownedCount = ownedItems.filter(item => item === type).length;
+    const row = document.createElement("div");
+    row.className = `game-profile-item${ownedCount ? " owned" : " not-owned"}`;
+    row.innerHTML = `
+      <i data-lucide="${definition.icon}"></i>
+      <div>
+        <div class="game-profile-item-name">${definition.name}${ownedCount ? ` ×${ownedCount}` : ""}</div>
+        <div class="game-profile-item-info">${definition.info}</div>
+      </div>
+    `;
+    gameProfileItems.appendChild(row);
+  });
 
   gameProfilePopup.classList.remove("hidden");
   lucide.createIcons();
@@ -7612,7 +7623,7 @@ async function shoot(targetId) {
         currentGame.shells = createShellSet(playerIds.length, currentGame.settings || getGameSettings());
         playerIds.forEach(id => {
           if (players[id]) {
-            const rewards = createItemRewards(2, currentGame.settings || getGameSettings());
+            const rewards = createItemRewards(Number(currentGame.settings?.itemRewardCount ?? 2), currentGame.settings || getGameSettings());
             const result = addItemRewards(players[id].items, rewards, 8);
             players[id].items = result.inventory;
             itemRewards[id] = result.added;
