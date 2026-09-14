@@ -789,10 +789,10 @@ body {
 }
 
 .item-info-body {
-  padding: 14px 12px;
+  padding: 12px 12px;
   color: #ddd;
   font-weight: bold;
-  font-size: 14px;
+  font-size: 12px;
   line-height: 1.45;
 }
 
@@ -1328,6 +1328,363 @@ body {
 }
 
 /* =========================
+   LOBBY EXTRA BUTTONS
+========================= */
+
+.lobby-extra-buttons {
+  display: flex;
+  width: 100%;
+  gap: 6px;
+}
+
+.lobby-extra-buttons button {
+  flex: 1;
+}
+
+.lobby-settings-btn,
+.lobby-items-btn {
+  background: #3f3f3f !important;
+}
+
+/* =========================
+   GAME SETTINGS / ITEM LIST
+========================= */
+
+.settings-popup,
+.item-list-popup,
+.game-profile-popup {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 16px;
+  background: rgba(0, 0, 0, .72);
+  z-index: 102;
+}
+
+.settings-box,
+.item-list-box,
+.game-profile-box {
+  width: min(430px, 100%);
+  max-height: 88dvh;
+  overflow-y: auto;
+  padding: 16px;
+  color: white;
+  background: #252525;
+  border: 1px solid #444;
+  border-radius: 8px;
+  box-shadow: 0 12px 35px rgba(0, 0, 0, .55);
+}
+
+.settings-top,
+.item-list-top,
+.game-profile-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.settings-title,
+.item-list-title,
+.game-profile-title {
+  font-size: 20px;
+  font-weight: bold;
+}
+
+.settings-close,
+.item-list-close,
+.game-profile-close {
+  display: flex;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  color: #aaa;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  align-items: center;
+  justify-content: center;
+}
+
+.settings-section-title {
+  margin: 12px 0 6px;
+  color: #aaa;
+  font-size: 13px;
+  font-weight: bold;
+  text-transform: uppercase;
+}
+
+.settings-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 42px;
+  padding: 7px 0;
+  border-bottom: 1px solid #3d3d3d;
+}
+
+.settings-row:last-child {
+  border-bottom: none;
+}
+
+.settings-label {
+  color: #ddd;
+  font-size: 14px;
+}
+
+.settings-input {
+  width: 86px;
+  padding: 7px 8px;
+  color: white;
+  background: #1c1c1c;
+  border: 1px solid #444;
+  border-radius: 5px;
+  outline: none;
+  text-align: center;
+}
+
+.settings-toggle {
+  position: relative;
+  width: 44px;
+  height: 24px;
+  flex-shrink: 0;
+}
+
+.settings-toggle input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.settings-slider {
+  position: absolute;
+  inset: 0;
+  background: #555;
+  border-radius: 20px;
+  cursor: pointer;
+  transition: .2s;
+}
+
+.settings-slider::before {
+  content: "";
+  position: absolute;
+  width: 18px;
+  height: 18px;
+  left: 3px;
+  top: 3px;
+  background: #ddd;
+  border-radius: 50%;
+  transition: .2s;
+}
+
+.settings-toggle input:checked + .settings-slider {
+  background: crimson;
+}
+
+.settings-toggle input:checked + .settings-slider::before {
+  transform: translateX(20px);
+}
+
+.settings-item-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 6px;
+}
+
+.settings-item-toggle {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 8px;
+  background: #333;
+  border-radius: 5px;
+  color: #ddd;
+  font-size: 12px;
+}
+
+.settings-item-toggle .settings-toggle {
+  transform: scale(.82);
+  transform-origin: right center;
+  margin-left: auto;
+}
+
+.settings-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 14px;
+}
+
+.settings-actions button {
+  flex: 1;
+  padding: 10px;
+  border: none;
+  border-radius: 5px;
+  font-weight: bold;
+  cursor: pointer;
+}
+
+.settings-cancel {
+  color: #ccc;
+  background: #3a3a3a;
+}
+
+.settings-save {
+  color: white;
+  background: crimson;
+}
+
+.settings-message {
+  min-height: 18px;
+  margin-top: 8px;
+  color: #ff7777;
+  font-size: 13px;
+}
+
+.item-list-items {
+  display: flex;
+  flex-direction: column;
+}
+
+.item-list-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 10px 0;
+  border-bottom: 1px solid #444;
+}
+
+.item-list-row:last-child {
+  border-bottom: none;
+}
+
+.item-list-icon {
+  display: flex;
+  width: 36px;
+  height: 36px;
+  flex: 0 0 36px;
+  align-items: center;
+  justify-content: center;
+  background: #333;
+  border-radius: 4px;
+}
+
+.item-list-icon svg {
+  width: 20px;
+  height: 20px;
+}
+
+.item-list-name {
+  color: white;
+  font-size: 14px;
+  font-weight: bold;
+}
+
+.item-list-info {
+  margin-top: 3px;
+  color: #aaa;
+  font-size: 12px;
+  line-height: 1.35;
+}
+
+.game-profile-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 12px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid #444;
+}
+
+.game-profile-avatar {
+  display: flex;
+  width: 48px;
+  height: 48px;
+  flex: 0 0 48px;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  border-radius: 50%;
+  color: white;
+  font-size: 22px;
+  font-weight: bold;
+}
+
+.game-profile-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.game-profile-name {
+  color: white;
+  font-size: 18px;
+  font-weight: bold;
+}
+
+.game-profile-hp {
+  margin-top: 3px;
+  color: #aaa;
+  font-size: 13px;
+}
+
+.game-profile-items-title {
+  margin-bottom: 6px;
+  color: #aaa;
+  font-size: 13px;
+  font-weight: bold;
+}
+
+.game-profile-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 0;
+  border-bottom: 1px solid #3d3d3d;
+}
+
+.game-profile-item svg {
+  width: 18px;
+  height: 18px;
+  color: #ddd;
+}
+
+.game-profile-item-name {
+  color: #ddd;
+  font-size: 13px;
+  font-weight: bold;
+}
+
+.game-profile-item-info {
+  margin-top: 2px;
+  color: #888;
+  font-size: 11px;
+  line-height: 1.3;
+}
+
+.game-profile-leave {
+  width: 100%;
+  margin-top: 14px;
+  padding: 10px;
+  border: none;
+  border-radius: 5px;
+  background: crimson;
+  color: white;
+  font-size: 15px;
+  font-weight: bold;
+  cursor: pointer;
+}
+
+@media (max-width: 360px) {
+  .settings-item-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* =========================
    PROFILE EDIT POPUP
 ========================= */
 
@@ -1475,7 +1832,8 @@ body {
   font-size: 14px;
 }
 
-.header-profile {
+.header-profile,
+.game-profile {
   cursor: pointer;
 }
 
@@ -1603,6 +1961,18 @@ body {
 
     </div>
 
+    <div class="lobby-extra-buttons hidden" id="lobbyExtraButtons">
+      <button class="lobby-settings-btn" id="openSettingsBtn">
+        <i data-lucide="settings"></i>
+        Settings
+      </button>
+
+      <button class="lobby-items-btn" id="openItemListBtn">
+        <i data-lucide="package"></i>
+        List item
+      </button>
+    </div>
+
   </div>
 
 
@@ -1672,6 +2042,102 @@ body {
 
 </div>
 
+
+<!-- =========================
+     GAME SETTINGS POPUP
+========================= -->
+
+<div class="settings-popup hidden" id="settingsPopup">
+  <div class="settings-box">
+    <div class="settings-top">
+      <span class="settings-title">Settings</span>
+      <button class="settings-close" id="settingsClose" type="button">
+        <i data-lucide="x"></i>
+      </button>
+    </div>
+
+    <div class="settings-section-title">Game</div>
+
+    <div class="settings-row">
+      <span class="settings-label">Max Health</span>
+      <input class="settings-input" id="settingMaxHealth" type="number" min="1" max="10" value="4">
+    </div>
+
+    <div class="settings-row">
+      <span class="settings-label">Jumlah Shell Minimum</span>
+      <input class="settings-input" id="settingMinShell" type="number" min="1" max="20" value="5">
+    </div>
+
+    <div class="settings-row">
+      <span class="settings-label">Jumlah Shell Maksimum</span>
+      <input class="settings-input" id="settingMaxShell" type="number" min="1" max="20" value="8">
+    </div>
+
+    <div class="settings-row">
+      <span class="settings-label">Minimal Live / Blank</span>
+      <input class="settings-input" id="settingMinEach" type="number" min="1" max="10" value="3">
+    </div>
+
+    <div class="settings-row">
+      <span class="settings-label">Info shell realtime</span>
+      <label class="settings-toggle">
+        <input id="settingRealtimeShell" type="checkbox" checked>
+        <span class="settings-slider"></span>
+      </label>
+    </div>
+
+    <div class="settings-section-title">Item</div>
+    <div class="settings-item-grid" id="settingsItemGrid"></div>
+
+    <div class="settings-message" id="settingsMessage"></div>
+
+    <div class="settings-actions">
+      <button class="settings-cancel" id="settingsCancel" type="button">Batal</button>
+      <button class="settings-save" id="settingsSave" type="button">Simpan</button>
+    </div>
+  </div>
+</div>
+
+<!-- =========================
+     ITEM LIST POPUP
+========================= -->
+
+<div class="item-list-popup hidden" id="itemListPopup">
+  <div class="item-list-box">
+    <div class="item-list-top">
+      <span class="item-list-title">List Item</span>
+      <button class="item-list-close" id="itemListClose" type="button">
+        <i data-lucide="x"></i>
+      </button>
+    </div>
+    <div class="item-list-items" id="itemListItems"></div>
+  </div>
+</div>
+
+<!-- =========================
+     GAME PROFILE POPUP
+========================= -->
+
+<div class="game-profile-popup hidden" id="gameProfilePopup">
+  <div class="game-profile-box">
+    <div class="game-profile-top">
+      <span class="game-profile-title">Profile</span>
+      <button class="game-profile-close" id="gameProfileClose" type="button">
+        <i data-lucide="x"></i>
+      </button>
+    </div>
+    <div class="game-profile-head">
+      <div class="game-profile-avatar" id="gameProfileAvatar">C</div>
+      <div>
+        <div class="game-profile-name" id="gameProfileName">Christian</div>
+        <div class="game-profile-hp" id="gameProfileHp">HP : 4</div>
+      </div>
+    </div>
+    <div class="game-profile-items-title">Item yang dimiliki</div>
+    <div id="gameProfileItems"></div>
+    <button class="game-profile-leave" id="gameProfileLeave" type="button">Leave Game</button>
+  </div>
+</div>
 
 <!-- =========================
      GAME
@@ -2188,6 +2654,31 @@ const itemInfoText = document.querySelector("#itemInfoText");
 const itemInfoClose = document.querySelector("#itemInfoClose");
 const handcuffOverlay = document.querySelector("#handcuffOverlay");
 
+const lobbyExtraButtons = document.querySelector("#lobbyExtraButtons");
+const openSettingsBtn = document.querySelector("#openSettingsBtn");
+const openItemListBtn = document.querySelector("#openItemListBtn");
+const settingsPopup = document.querySelector("#settingsPopup");
+const settingsClose = document.querySelector("#settingsClose");
+const settingsCancel = document.querySelector("#settingsCancel");
+const settingsSave = document.querySelector("#settingsSave");
+const settingsMessage = document.querySelector("#settingsMessage");
+const settingsItemGrid = document.querySelector("#settingsItemGrid");
+const settingMaxHealth = document.querySelector("#settingMaxHealth");
+const settingMinShell = document.querySelector("#settingMinShell");
+const settingMaxShell = document.querySelector("#settingMaxShell");
+const settingMinEach = document.querySelector("#settingMinEach");
+const settingRealtimeShell = document.querySelector("#settingRealtimeShell");
+const itemListPopup = document.querySelector("#itemListPopup");
+const itemListClose = document.querySelector("#itemListClose");
+const itemListItems = document.querySelector("#itemListItems");
+const gameProfilePopup = document.querySelector("#gameProfilePopup");
+const gameProfileClose = document.querySelector("#gameProfileClose");
+const gameProfileLeave = document.querySelector("#gameProfileLeave");
+const gameProfileAvatar = document.querySelector("#gameProfileAvatar");
+const gameProfileName = document.querySelector("#gameProfileName");
+const gameProfileHp = document.querySelector("#gameProfileHp");
+const gameProfileItems = document.querySelector("#gameProfileItems");
+
 /* =========================
    GAME SOUNDS
 ========================= */
@@ -2612,6 +3103,9 @@ function showLobby() {
   );
 
   closeShotPopup();
+  closeSettings();
+  closeItemList();
+  closeGameProfile();
 
   resetShot();
 
@@ -2845,8 +3339,12 @@ profileEditSave.addEventListener("click", async () => {
   }
 });
 
-document.querySelectorAll(".header-profile").forEach(element => {
+document.querySelectorAll(".header-profile, .game-profile").forEach(element => {
   element.addEventListener("click", () => {
+    if (element.closest(".game")) {
+      openGameProfile();
+      return;
+    }
     if (element.closest(".lobby") && roomData?.status !== "playing") {
       openProfileEdit();
     }
@@ -2888,6 +3386,8 @@ function watchRoom() {
 ========================= */
 
 async function renderRoom() {
+
+  renderLobbySettingsButton();
 
   if (!roomData) {
 
@@ -3198,6 +3698,8 @@ createBtn.addEventListener(
 
           createdAt: Date.now(),
 
+          settings: buildDefaultSettings(),
+
           players: {
 
             [currentPlayerId]: true
@@ -3394,6 +3896,26 @@ leftBtn.addEventListener(
 
 
 /* =========================
+   LOBBY SETTINGS / ITEM LIST
+========================= */
+
+openSettingsBtn.addEventListener("click", openSettings);
+settingsClose.addEventListener("click", closeSettings);
+settingsCancel.addEventListener("click", closeSettings);
+settingsSave.addEventListener("click", saveSettings);
+
+settingsPopup.addEventListener("click", event => {
+  if (event.target === settingsPopup) closeSettings();
+});
+
+openItemListBtn.addEventListener("click", openItemList);
+itemListClose.addEventListener("click", closeItemList);
+
+itemListPopup.addEventListener("click", event => {
+  if (event.target === itemListPopup) closeItemList();
+});
+
+/* =========================
    SHUFFLE ARRAY
 ========================= */
 
@@ -3427,6 +3949,163 @@ function shuffleArray(array) {
 
 }
 
+
+/* =========================
+   GAME SETTINGS
+========================= */
+
+const DEFAULT_GAME_SETTINGS = {
+  maxHealth: 4,
+  minShell: 5,
+  maxShell: 8,
+  minEach: 3,
+  realtimeShellInfo: true,
+  enabledItems: {}
+};
+
+function getGameSettings(source = roomData?.settings) {
+  const sourceItems = source?.enabledItems || {};
+  const enabledItems = {};
+  Object.keys(ITEM_DEFINITIONS).forEach(type => {
+    enabledItems[type] = sourceItems[type] !== false;
+  });
+
+  return {
+    maxHealth: Math.max(1, Number(source?.maxHealth ?? DEFAULT_GAME_SETTINGS.maxHealth)),
+    minShell: Math.max(1, Number(source?.minShell ?? DEFAULT_GAME_SETTINGS.minShell)),
+    maxShell: Math.max(1, Number(source?.maxShell ?? DEFAULT_GAME_SETTINGS.maxShell)),
+    minEach: Math.max(1, Number(source?.minEach ?? DEFAULT_GAME_SETTINGS.minEach)),
+    realtimeShellInfo: source?.realtimeShellInfo !== false,
+    enabledItems
+  };
+}
+
+function getEnabledItemTypes(settings = getGameSettings()) {
+  return Object.keys(ITEM_DEFINITIONS).filter(type => settings.enabledItems[type] !== false);
+}
+
+function buildDefaultSettings() {
+  const enabledItems = {};
+  Object.keys(ITEM_DEFINITIONS).forEach(type => enabledItems[type] = true);
+  return { ...DEFAULT_GAME_SETTINGS, enabledItems };
+}
+
+function populateSettingsUI(settings = getGameSettings()) {
+  settingMaxHealth.value = settings.maxHealth;
+  settingMinShell.value = settings.minShell;
+  settingMaxShell.value = settings.maxShell;
+  settingMinEach.value = settings.minEach;
+  settingRealtimeShell.checked = settings.realtimeShellInfo;
+  settingsMessage.textContent = "";
+  settingsItemGrid.innerHTML = "";
+
+  Object.entries(ITEM_DEFINITIONS).forEach(([type, definition]) => {
+    const row = document.createElement("div");
+    row.className = "settings-item-toggle";
+    row.innerHTML = `
+      <i data-lucide="${definition.icon}"></i>
+      <span>${definition.name}</span>
+      <label class="settings-toggle">
+        <input type="checkbox" data-setting-item="${type}" ${settings.enabledItems[type] !== false ? "checked" : ""}>
+        <span class="settings-slider"></span>
+      </label>
+    `;
+    settingsItemGrid.appendChild(row);
+  });
+  lucide.createIcons();
+}
+
+function openSettings() {
+  if (!roomData || roomData.status !== "lobby" || !roomData.players?.[currentPlayerId]) return;
+  populateSettingsUI(getGameSettings());
+  settingsPopup.classList.remove("hidden");
+  lucide.createIcons();
+}
+
+function closeSettings() {
+  settingsPopup.classList.add("hidden");
+  settingsMessage.textContent = "";
+}
+
+function openItemList() {
+  itemListItems.innerHTML = "";
+  Object.entries(ITEM_DEFINITIONS).forEach(([type, definition]) => {
+    const row = document.createElement("div");
+    row.className = "item-list-row";
+    row.innerHTML = `
+      <div class="item-list-icon"><i data-lucide="${definition.icon}"></i></div>
+      <div>
+        <div class="item-list-name">${definition.name}</div>
+        <div class="item-list-info">${definition.info}</div>
+      </div>
+    `;
+    itemListItems.appendChild(row);
+  });
+  itemListPopup.classList.remove("hidden");
+  lucide.createIcons();
+}
+
+function closeItemList() {
+  itemListPopup.classList.add("hidden");
+}
+
+async function saveSettings() {
+  if (!roomData || roomData.status !== "lobby" || !roomData.players?.[currentPlayerId]) return;
+
+  const maxHealth = Math.max(1, Math.min(10, Number(settingMaxHealth.value || 4)));
+  const minShell = Math.max(1, Math.min(20, Number(settingMinShell.value || 5)));
+  const maxShell = Math.max(1, Math.min(20, Number(settingMaxShell.value || 8)));
+  const minEach = Math.max(1, Math.min(10, Number(settingMinEach.value || 3)));
+
+  if (maxShell < minShell) {
+    settingsMessage.textContent = "Jumlah shell maksimum tidak boleh lebih kecil dari minimum.";
+    return;
+  }
+  if (maxShell < minEach * 2) {
+    settingsMessage.textContent = `Maksimum shell minimal ${minEach * 2} agar Live dan Blank masing-masing bisa memenuhi batas minimum.`;
+    return;
+  }
+
+  const enabledItems = {};
+  settingsItemGrid.querySelectorAll("[data-setting-item]").forEach(input => {
+    enabledItems[input.dataset.settingItem] = input.checked;
+  });
+
+  const settings = {
+    maxHealth,
+    minShell,
+    maxShell,
+    minEach,
+    realtimeShellInfo: settingRealtimeShell.checked,
+    enabledItems
+  };
+
+  settingsSave.disabled = true;
+  settingsSave.textContent = "Menyimpan...";
+
+  try {
+    const result = await runTransaction(ref(db, "room"), room => {
+      if (!room || room.status !== "lobby" || !room.players?.[currentPlayerId]) return;
+      return { ...room, settings };
+    });
+    if (!result.committed) {
+      settingsMessage.textContent = "Gagal menyimpan settings.";
+      return;
+    }
+    closeSettings();
+  } catch (error) {
+    console.error("Save settings error:", error);
+    settingsMessage.textContent = "Gagal menyimpan settings.";
+  } finally {
+    settingsSave.disabled = false;
+    settingsSave.textContent = "Simpan";
+  }
+}
+
+function renderLobbySettingsButton() {
+  const joined = !!roomData?.players?.[currentPlayerId] && roomData?.status === "lobby";
+  lobbyExtraButtons.classList.toggle("hidden", !joined);
+}
 
 /* =========================
    ITEMS
@@ -3532,12 +4211,13 @@ const ITEM_DEFINITIONS = {
 };
 
 function createPlayerItems(playerCount) {
-  return createItemRewards(2);
+  return createItemRewards(2, getGameSettings());
 }
 
-function createItemRewards(count = 2) {
-  const types = Object.keys(ITEM_DEFINITIONS);
+function createItemRewards(count = 2, settings = getGameSettings()) {
+  const types = getEnabledItemTypes(settings);
   const rewards = [];
+  if (!types.length) return rewards;
 
   for (let i = 0; i < count; i++) {
     rewards.push(types[Math.floor(Math.random() * types.length)]);
@@ -3609,10 +4289,11 @@ function renderMyItems() {
     const definition = ITEM_DEFINITIONS[type];
     const usedThisShell = ["magnifying_glass", "handcuff", "inverter"].includes(type) &&
       !!gameData?.players?.[currentPlayerId]?.shellItemUses?.[type];
-    const expiredFull = type === "expired_medicine" && Number(gameData?.players?.[currentPlayerId]?.hp ?? 0) >= 4;
+    const expiredFull = type === "expired_medicine" && Number(gameData?.players?.[currentPlayerId]?.hp ?? 0) >= Number(gameData?.settings?.maxHealth ?? 4);
     const borrowedAdrenaline = adrenalineActive && sourceId !== currentPlayerId && type === "adrenaline";
+    const itemDisabledBySettings = gameData?.settings?.enabledItems?.[type] === false;
     item.classList.toggle("adrenaline-item", type === "adrenaline");
-    item.classList.toggle("disabled", !canSelectItems || usedThisShell || expiredFull || borrowedAdrenaline);
+    item.classList.toggle("disabled", !canSelectItems || usedThisShell || expiredFull || borrowedAdrenaline || itemDisabledBySettings);
     item.classList.toggle(
       "selected",
       itemMode && selectedItemSlot === logicalIndex
@@ -3639,7 +4320,7 @@ function setItemMode(type, slotIndex) {
   if (items[slotIndex] !== type || !ITEM_DEFINITIONS[type]) return;
   if (adrenalineActive && sourceId !== currentPlayerId && type === "adrenaline") return;
   if (["magnifying_glass", "handcuff", "inverter"].includes(type) && gameData.players?.[currentPlayerId]?.shellItemUses?.[type]) return;
-  if (type === "expired_medicine" && Number(gameData.players?.[currentPlayerId]?.hp ?? 0) >= 4) return;
+  if (type === "expired_medicine" && Number(gameData.players?.[currentPlayerId]?.hp ?? 0) >= Number(gameData.settings?.maxHealth ?? 4)) return;
 
   selectedItemType = type;
   selectedItemSlot = slotIndex;
@@ -3696,12 +4377,17 @@ async function useSelectedItem(targetId = null) {
   const isBorrowed = adrenalineActive && sourceId !== currentPlayerId;
   const definition = ITEM_DEFINITIONS[type];
   if (!definition) return;
+  if (gameData?.settings?.enabledItems?.[type] === false) {
+    resetItemSelection();
+    return;
+  }
 
   let magnifyLabel = null;
   let expiredResult = null;
   let beerDiscardedType = null;
   let inverterResult = null;
   let burnerResult = null;
+  let rewindResult = null;
   let coinFlipResult = null;
   let adrenalineStolenFromId = null;
   let inventoryHandled = false;
@@ -3808,11 +4494,11 @@ async function useSelectedItem(targetId = null) {
       if (inventory[slotIndex] !== type) return;
 
       if (["magnifying_glass", "handcuff", "inverter"].includes(type) && player.shellItemUses?.[type]) return;
-      if (type === "expired_medicine" && Number(player.hp ?? 0) >= 4) return;
+      if (type === "expired_medicine" && Number(player.hp ?? 0) >= Number(game.settings?.maxHealth ?? 4)) return;
 
       if (type === "cigarette") {
-        if (Number(player.hp) >= 4) return;
-        player.hp = Math.min(4, Number(player.hp) + 1);
+        if (Number(player.hp) >= Number(game.settings?.maxHealth ?? 4)) return;
+        player.hp = Math.min(Number(game.settings?.maxHealth ?? 4), Number(player.hp) + 1);
       } else if (type === "hand_saw") {
         player.sawActive = true;
       } else if (type === "handcuff") {
@@ -3833,7 +4519,7 @@ async function useSelectedItem(targetId = null) {
           game.shells.blank = Math.max(0, Number(game.shells.blank ?? 0) - 1);
         }
         if (game.shells.current >= Number(game.shells.total || 0)) {
-          game.shells = createShellSet(Object.keys(game.players || {}).length);
+          game.shells = createShellSet(Object.keys(game.players || {}).length, game.settings || getGameSettings());
           Object.values(game.players || {}).forEach(p => {
             if (p) p.shellItemUses = {};
           });
@@ -3902,6 +4588,13 @@ async function useSelectedItem(targetId = null) {
       } else if (type === "rewind_film") {
         if (!game.shells?.sequence?.length) return;
         game.shells.current = 0;
+        game.shells.alive = Number(game.shells.initialAlive ?? game.shells.alive ?? 0);
+        game.shells.blank = Number(game.shells.initialBlank ?? game.shells.blank ?? 0);
+        rewindResult = {
+          total: Number(game.shells.total ?? game.shells.sequence?.length ?? 0),
+          alive: Number(game.shells.alive ?? 0),
+          blank: Number(game.shells.blank ?? 0)
+        };
       } else if (type === "coin_flip") {
         coinFlipResult = Math.random() < 0.5 ? "all" : "self";
         if (coinFlipResult === "all") {
@@ -3945,6 +4638,7 @@ async function useSelectedItem(targetId = null) {
         beerDiscardedType,
         inverterResult,
         expiredResult,
+        rewindResult,
         coinFlipResult,
         adrenalineStolenFromId: isBorrowed ? sourceId : null,
         at: Date.now()
@@ -3993,8 +4687,21 @@ async function useSelectedItem(targetId = null) {
       }
       const burnerLabel = burnerResult.type === "live" ? "LIVE" : "BLANK";
       itemInfoTitle.textContent = definition.name;
-      itemInfoText.textContent = `#${burnerResult.offset} ${burnerLabel} • Shell ke-${burnerResult.shellNumber}`;
+      itemInfoText.textContent = `#${burnerResult.offset} ${burnerLabel}`;
       itemInfoText.style.color = burnerResult.type === "live" ? "crimson" : "#999";
+      itemInfoPopup.classList.remove("hidden");
+      lucide.createIcons();
+    }
+
+    if (type === "rewind_film" && rewindResult) {
+      const popupIcon = document.querySelector("#itemInfoIcon");
+      if (popupIcon) {
+        popupIcon.outerHTML = `<i id="itemInfoIcon" data-lucide="${definition.icon}"></i>`;
+        itemInfoIcon = document.querySelector("#itemInfoIcon");
+      }
+      itemInfoTitle.textContent = definition.name;
+      itemInfoText.textContent = `Kembali ke Shell 1 • Total ${rewindResult.total} • Alive ${rewindResult.alive} • Blank ${rewindResult.blank}`;
+      itemInfoText.style.color = "#ddd";
       itemInfoPopup.classList.remove("hidden");
       lucide.createIcons();
     }
@@ -4017,7 +4724,7 @@ async function useSelectedItem(targetId = null) {
         if (!player) return;
 
         if (expiredResult === "+2hp") {
-          player.hp = Math.min(4, Number(player.hp ?? 0) + 2);
+          player.hp = Math.min(Number(game.settings?.maxHealth ?? 4), Number(player.hp ?? 0) + 2);
         } else {
           player.hp = Math.max(0, Number(player.hp ?? 0) - 1);
         }
@@ -4076,10 +4783,17 @@ itemElements.forEach(item => {
    CREATE GAME STATE
 ========================= */
 
-function createShellSet(playerCount = 2) {
-  // Set baru: 5-8 shell, dengan minimal 3 Live dan 3 Blank.
-  const total = Math.floor(Math.random() * 3) + 6;
-  const alive = Math.floor(Math.random() * (total - 5)) + 3;
+function createShellSet(playerCount = 2, settings = getGameSettings()) {
+  const minShell = Math.max(1, Number(settings.minShell ?? 5));
+  const maxShell = Math.max(minShell, Number(settings.maxShell ?? 8));
+  const minEach = Math.max(1, Number(settings.minEach ?? 3));
+  const effectiveMinTotal = minEach * 2;
+  const effectiveMinShell = Math.max(minShell, effectiveMinTotal);
+  const effectiveMaxShell = Math.max(maxShell, effectiveMinShell);
+  const total = effectiveMinShell + Math.floor(Math.random() * (effectiveMaxShell - effectiveMinShell + 1));
+  const minAlive = minEach;
+  const maxAlive = total - minEach;
+  const alive = minAlive + Math.floor(Math.random() * (maxAlive - minAlive + 1));
   const blank = total - alive;
 
   const shellData = [];
@@ -4091,6 +4805,8 @@ function createShellSet(playerCount = 2) {
     total,
     alive,
     blank,
+    initialAlive: alive,
+    initialBlank: blank,
     current: 0,
     sequence: shuffleArray(shellData)
   };
@@ -4101,8 +4817,11 @@ function createShellSet(playerCount = 2) {
 ========================= */
 
 function createGameState(
-  playerIds
+  playerIds,
+  roomSettings = roomData?.settings
 ) {
+
+  const settings = getGameSettings(roomSettings);
 
   const shuffledPlayers =
     shuffleArray(playerIds);
@@ -4115,10 +4834,10 @@ function createGameState(
 
       gamePlayersData[playerId] = {
 
-        hp: 4,
+        hp: settings.maxHealth,
 
         turnOrder: index,
-        items: createPlayerItems(shuffledPlayers.length),
+        items: createItemRewards(2, settings),
         sawActive: false,
         skipTurns: 0,
         handcuffed: false,
@@ -4134,7 +4853,7 @@ function createGameState(
   );
 
   const shells =
-    createShellSet(shuffledPlayers.length);
+    createShellSet(shuffledPlayers.length, settings);
 
   const now =
     Date.now();
@@ -4161,6 +4880,8 @@ function createGameState(
     },
 
     shells,
+
+    settings,
 
     itemPending: null,
 
@@ -4236,7 +4957,7 @@ async function finishStartingGame() {
       if (Date.now() < Number(room.startAt || 0)) return;
       const playerIds = Object.keys(room.players || {});
       if (playerIds.length < 2) return { ...room, status: "lobby", startAt: null };
-      return { ...room, status: "playing", startAt: null, game: createGameState(playerIds) };
+      return { ...room, status: "playing", startAt: null, game: createGameState(playerIds, room.settings) };
     });
   } catch (error) {
     console.error("Finish starting game error:", error);
@@ -4380,7 +5101,7 @@ async function loadGamePlayers() {
             name: player.name || "Unknown",
             profile: player.profile || "",
             profileColor: player.profileColor || "",
-            hp: Number(gamePlayer.hp ?? 4),
+            hp: Number(gamePlayer.hp ?? gameData?.settings?.maxHealth ?? 4),
             turnOrder: Number(gamePlayer.turnOrder ?? 0)
           };
 
@@ -4479,13 +5200,14 @@ function renderGamePlayerList() {
 
     health.className = "pl-healt";
 
+    const maxHealth = Number(gameData?.settings?.maxHealth ?? 4);
     const hp = Math.max(
       0,
-      Math.min(4, Number(player.hp ?? 0))
+      Math.min(maxHealth, Number(player.hp ?? 0))
     );
 
-    const offCount = 4 - hp;
-    for (let i = 0; i < 4; i++) {
+    const offCount = maxHealth - hp;
+    for (let i = 0; i < maxHealth; i++) {
       const icon = document.createElement("i");
       const isOff = i < offCount;
       icon.setAttribute("data-lucide", isOff ? "zap-off" : "zap");
@@ -5253,13 +5975,20 @@ function renderShellInfo() {
 
   const fallbackRemaining = sequence.slice(current);
 
-  const alive = Number.isFinite(Number(gameData.shells?.alive))
-    ? Math.max(0, Number(gameData.shells.alive))
+  const realtime = gameData?.settings?.realtimeShellInfo !== false;
+  const initialAlive = Number.isFinite(Number(gameData.shells?.initialAlive))
+    ? Math.max(0, Number(gameData.shells.initialAlive))
     : fallbackRemaining.filter(type => type === "live").length;
-
-  const blank = Number.isFinite(Number(gameData.shells?.blank))
-    ? Math.max(0, Number(gameData.shells.blank))
+  const initialBlank = Number.isFinite(Number(gameData.shells?.initialBlank))
+    ? Math.max(0, Number(gameData.shells.initialBlank))
     : fallbackRemaining.filter(type => type === "blank").length;
+
+  const alive = realtime
+    ? (Number.isFinite(Number(gameData.shells?.alive)) ? Math.max(0, Number(gameData.shells.alive)) : initialAlive)
+    : initialAlive;
+  const blank = realtime
+    ? (Number.isFinite(Number(gameData.shells?.blank)) ? Math.max(0, Number(gameData.shells.blank)) : initialBlank)
+    : initialBlank;
 
   aliveCount.textContent =
     "Peluru Alive : " + alive;
@@ -5804,11 +6533,12 @@ function updateGameHealth() {
   }
 
 
+  const maxHealth = Number(gameData?.settings?.maxHealth ?? 4);
   const hp =
     Math.max(
       0,
       Math.min(
-        4,
+        maxHealth,
         Number(
           myPlayer.hp ?? 0
         )
@@ -5816,9 +6546,9 @@ function updateGameHealth() {
     );
 
 
-  const offCount = 4 - hp;
+  const offCount = maxHealth - hp;
 
-  for (let i = 0; i < 4; i++) {
+  for (let i = 0; i < maxHealth; i++) {
     const icon = document.createElement("i");
     const isOff = i < offCount;
 
@@ -5959,6 +6689,112 @@ function updateShotVisibility() {
 
 }
 
+
+/* =========================
+   GAME PROFILE POPUP
+========================= */
+
+function openGameProfile() {
+  if (!gameData || gameData.phase !== "playing") return;
+
+  const me = gameData.players?.[currentPlayerId];
+  if (!me || !currentPlayer) return;
+
+  applyAvatarStyle(gameProfileAvatar, currentPlayer);
+  gameProfileAvatar.innerHTML = currentPlayer.profile
+    ? `<img src="${currentPlayer.profile}" alt="Profile">`
+    : (currentPlayer.name || "?").charAt(0).toUpperCase();
+  gameProfileName.textContent = currentPlayer.name || "Unknown";
+  gameProfileHp.textContent = `HP : ${Number(me.hp ?? 0)} / ${Number(gameData.settings?.maxHealth ?? 4)}`;
+
+  gameProfileItems.innerHTML = "";
+  const items = Array.isArray(me.items) ? me.items : [];
+  if (!items.length) {
+    gameProfileItems.innerHTML = `<div style="padding:8px 0;color:#777;font-size:13px;">Tidak memiliki item.</div>`;
+  } else {
+    items.forEach(type => {
+      const definition = ITEM_DEFINITIONS[type];
+      if (!definition) return;
+      const row = document.createElement("div");
+      row.className = "game-profile-item";
+      row.innerHTML = `
+        <i data-lucide="${definition.icon}"></i>
+        <div>
+          <div class="game-profile-item-name">${definition.name}</div>
+          <div class="game-profile-item-info">${definition.info}</div>
+        </div>
+      `;
+      gameProfileItems.appendChild(row);
+    });
+  }
+
+  gameProfilePopup.classList.remove("hidden");
+  lucide.createIcons();
+}
+
+function closeGameProfile() {
+  gameProfilePopup.classList.add("hidden");
+}
+
+async function leaveGame() {
+  if (!currentPlayerId || !roomData || roomData.status !== "playing") return;
+  if (!confirm("Leave Game? Kamu akan keluar dari permainan ini.")) return;
+
+  gameProfileLeave.disabled = true;
+  gameProfileLeave.textContent = "Leaving...";
+
+  try {
+    const roomRef = ref(db, "room");
+    const result = await runTransaction(roomRef, room => {
+      if (!room || room.status !== "playing") return;
+
+      const players = { ...(room.players || {}) };
+      delete players[currentPlayerId];
+
+      const game = room.game ? { ...room.game } : null;
+      if (game?.players) {
+        const gamePlayers = { ...game.players };
+        delete gamePlayers[currentPlayerId];
+        game.players = gamePlayers;
+      }
+
+      const ids = Object.keys(game?.players || {}).filter(id => game.players[id]);
+      if (!ids.length) return null;
+
+      if (ids.length === 1) {
+        game.phase = "finished";
+        game.winner = ids[0];
+        game.turn = { ...(game.turn || {}), current: ids[0], index: 0 };
+      } else if (game.turn?.current === currentPlayerId) {
+        const ordered = ids.sort((a,b) => Number(game.players[a].turnOrder ?? 0) - Number(game.players[b].turnOrder ?? 0));
+        const nextId = ordered.find(id => Number(game.players[id].hp ?? 0) > 0) || ordered[0];
+        game.turn.current = nextId;
+        game.turn.index = ordered.indexOf(nextId);
+        game.turn.counter = Number(game.turn.counter ?? 0) + 1;
+      }
+
+      return { ...room, players, game };
+    });
+
+    if (!result.committed) return;
+
+    closeGameProfile();
+    gameData = null;
+    showLobby();
+  } catch (error) {
+    console.error("Leave game error:", error);
+    alert("Gagal keluar dari game.");
+  } finally {
+    gameProfileLeave.disabled = false;
+    gameProfileLeave.textContent = "Leave Game";
+  }
+}
+
+gameProfileClose.addEventListener("click", closeGameProfile);
+gameProfileLeave.addEventListener("click", leaveGame);
+gameProfilePopup.addEventListener("click", event => {
+  if (event.target === gameProfilePopup) closeGameProfile();
+});
 
 /* =========================
    GAME PLAYER LIST BUTTON
@@ -6526,13 +7362,13 @@ async function shoot(targetId) {
       let currentShell = Number(shells?.current ?? 0);
 
       if (!shells || !shells.sequence) {
-        shells = createShellSet(Object.keys(players).length);
+        shells = createShellSet(Object.keys(players).length, currentGame.settings || getGameSettings());
         currentGame.shells = shells;
         currentShell = 0;
       }
 
       if (currentShell >= Number(shells.total || 0)) {
-        shells = createShellSet(Object.keys(players).length);
+        shells = createShellSet(Object.keys(players).length, currentGame.settings || getGameSettings());
         currentGame.shells = shells;
         currentShell = 0;
       }
@@ -6654,10 +7490,10 @@ async function shoot(targetId) {
       let shellReloaded = false;
       let itemRewards = {};
       if (currentGame.shells.current >= Number(currentGame.shells.total || 0)) {
-        currentGame.shells = createShellSet(playerIds.length);
+        currentGame.shells = createShellSet(playerIds.length, currentGame.settings || getGameSettings());
         playerIds.forEach(id => {
           if (players[id]) {
-            const rewards = createItemRewards(2);
+            const rewards = createItemRewards(2, currentGame.settings || getGameSettings());
             const result = addItemRewards(players[id].items, rewards, 8);
             players[id].items = result.inventory;
             itemRewards[id] = result.added;
