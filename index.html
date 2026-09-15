@@ -1594,7 +1594,7 @@ body {
 
 .item-list-info {
   margin-top: 3px;
-  color: #aaa;
+  color: #888;
   font-size: 12px;
   line-height: 1.35;
 }
@@ -1649,9 +1649,9 @@ body {
 
 .game-profile-item {
   display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 7px 0;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 10px 0;
   border-bottom: 1px solid #3d3d3d;
 }
 
@@ -1662,16 +1662,16 @@ body {
 }
 
 .game-profile-item-name {
-  color: #ddd;
-  font-size: 13px;
+  color: #fff;
+  font-size: 14px;
   font-weight: bold;
 }
 
 .game-profile-item-info {
-  margin-top: 2px;
-  color: #888;
-  font-size: 11px;
-  line-height: 1.3;
+  margin-top: 4px;
+  color: #aaa;
+  font-size: 12px;
+  line-height: 1.45;
 }
 
 .game-profile-item.not-owned {
@@ -4271,6 +4271,12 @@ const ITEM_DEFINITIONS = {
     info: "Chance 50%: Handcuff semua pemain kecuali diri sendiri atau Handcuff diri sendiri dan kehilangan 1 giliran.",
     target: false
   },
+  life_steal: {
+    name: "Life Steal",
+    icon: "sword",
+    info: "Tembakan Live berikutnya memberikan 1 HP kepada penembak, baik menembak pemain lain maupun diri sendiri.",
+    target: false
+  },
   megazine: {
     name: "Megazine",
     icon: "package-2",
@@ -4356,8 +4362,7 @@ function renderMyItems() {
     }
 
     const definition = ITEM_DEFINITIONS[type];
-    const usedThisShell = ["magnifying_glass", "handcuff", "inverter"].includes(type) &&
-      !!gameData?.players?.[currentPlayerId]?.shellItemUses?.[type];
+    const usedThisShell = false;
     const expiredFull = type === "expired_medicine" && Number(gameData?.players?.[currentPlayerId]?.hp ?? 0) >= Number(gameData?.settings?.maxHealth ?? 4);
     const borrowedAdrenaline = adrenalineActive && sourceId !== currentPlayerId && type === "adrenaline";
     const itemDisabledBySettings = gameData?.settings?.enabledItems?.[type] === false;
@@ -4388,7 +4393,6 @@ function setItemMode(type, slotIndex) {
   const items = gameData.players?.[sourceId]?.items || [];
   if (items[slotIndex] !== type || !ITEM_DEFINITIONS[type]) return;
   if (adrenalineActive && sourceId !== currentPlayerId && type === "adrenaline") return;
-  if (["magnifying_glass", "handcuff", "inverter"].includes(type) && gameData.players?.[currentPlayerId]?.shellItemUses?.[type]) return;
   if (type === "expired_medicine" && Number(gameData.players?.[currentPlayerId]?.hp ?? 0) >= Number(gameData.settings?.maxHealth ?? 4)) return;
 
   selectedItemType = type;
@@ -4562,7 +4566,6 @@ async function useSelectedItem(targetId = null) {
       const inventory = Array.isArray(sourcePlayer.items) ? [...sourcePlayer.items] : [];
       if (inventory[slotIndex] !== type) return;
 
-      if (["magnifying_glass", "handcuff", "inverter"].includes(type) && player.shellItemUses?.[type]) return;
       if (type === "expired_medicine" && Number(player.hp ?? 0) >= Number(game.settings?.maxHealth ?? 4)) return;
 
       if (type === "cigarette") {
@@ -4570,6 +4573,8 @@ async function useSelectedItem(targetId = null) {
         player.hp = Math.min(Number(game.settings?.maxHealth ?? 4), Number(player.hp) + 1);
       } else if (type === "hand_saw") {
         player.sawActive = true;
+      } else if (type === "life_steal") {
+        player.lifeStealActive = true;
       } else if (type === "handcuff") {
         if (!targetId || targetId === currentPlayerId) return;
         const target = game.players?.[targetId];
@@ -4614,7 +4619,7 @@ async function useSelectedItem(targetId = null) {
         };
       } else if (type === "remote") {
         const orderedIds = Object.keys(game.players || {})
-          .filter(id => game.players[id])
+          .filter(id => game.players[id] && Number(game.players[id].hp ?? 0) > 0)
           .sort((a, b) => Number(game.players[a].turnOrder ?? 0) - Number(game.players[b].turnOrder ?? 0));
         orderedIds.reverse().forEach((id, index) => {
           game.players[id].turnOrder = index;
@@ -4624,7 +4629,7 @@ async function useSelectedItem(targetId = null) {
         game.turn.index = newOrder.indexOf(currentPlayerId);
       } else if (type === "jammer") {
         const shuffledIds = shuffleArray(
-          Object.keys(game.players || {}).filter(id => game.players[id])
+          Object.keys(game.players || {}).filter(id => game.players[id] && Number(game.players[id].hp ?? 0) > 0)
         );
         shuffledIds.forEach((id, index) => {
           game.players[id].turnOrder = index;
@@ -4641,7 +4646,7 @@ async function useSelectedItem(targetId = null) {
         target.dynamiteTrapped = true;
         target.dynamiteTrappedById = currentPlayerId;
       } else if (type === "dice") {
-        const ids = Object.keys(game.players || {}).filter(id => game.players[id]);
+        const ids = Object.keys(game.players || {}).filter(id => game.players[id] && Number(game.players[id].hp ?? 0) > 0);
         if (ids.length < 2) return;
         inventory.splice(slotIndex, 1);
         sourcePlayer.items = inventory;
@@ -4708,13 +4713,6 @@ async function useSelectedItem(targetId = null) {
           playerId: currentPlayerId,
           sourceId,
           result: expiredResult
-        };
-      }
-
-      if (["magnifying_glass", "handcuff", "inverter"].includes(type)) {
-        player.shellItemUses = {
-          ...(player.shellItemUses || {}),
-          [type]: true
         };
       }
 
@@ -5168,7 +5166,7 @@ async function loadGamePlayers() {
   const sortedPlayers =
     Object.entries(
       gameData.players
-    ).sort(
+    ).filter(([, gamePlayer]) => Number(gamePlayer?.hp ?? 0) > 0).sort(
       ([, a], [, b]) =>
         Number(a.turnOrder ?? 0) -
         Number(b.turnOrder ?? 0)
@@ -5224,7 +5222,7 @@ function renderGamePlayerList() {
   }
 
   const players =
-    [...gamePlayers].sort(
+    [...gamePlayers].filter(player => Number(player.hp ?? 0) > 0).sort(
       (a, b) =>
         Number(a.turnOrder ?? 0) -
         Number(b.turnOrder ?? 0)
@@ -7511,6 +7509,7 @@ async function shoot(targetId) {
       isSelf = targetId === currentPlayerId;
       let damage = 0;
       let shooterDamage = 0;
+      let lifeStealHeal = 0;
       let reflectedShot = false;
       let dynamiteTriggered = false;
       let dynamiteRemoved = false;
@@ -7545,10 +7544,19 @@ async function shoot(targetId) {
           players[currentPlayerId].hp = Math.max(0, Number(players[currentPlayerId].hp ?? 0) - shooterDamage);
         }
 
+        if (players[currentPlayerId].lifeStealActive) {
+          const maxHealth = Number(currentGame.settings?.maxHealth ?? 4);
+          const beforeHp = Number(players[currentPlayerId].hp ?? 0);
+          players[currentPlayerId].hp = Math.min(maxHealth, beforeHp + 1);
+          lifeStealHeal = players[currentPlayerId].hp - beforeHp;
+        }
+
         players[currentPlayerId].sawActive = false;
+        players[currentPlayerId].lifeStealActive = false;
         shotResult = "live";
       } else {
         players[currentPlayerId].sawActive = false;
+        players[currentPlayerId].lifeStealActive = false;
         if (targetShielded) {
           targetPlayer.shieldActive = false;
           targetPlayer.shieldActivatedTurn = null;
@@ -7578,6 +7586,7 @@ async function shoot(targetId) {
         shellType: currentShellType,
         damage: shotResult === "live" ? damage : 0,
         shooterDamage,
+        lifeStealHeal,
         reflected: reflectedShot,
         dynamiteTriggered,
         at: Date.now()
