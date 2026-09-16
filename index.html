@@ -5,8 +5,6 @@
 
   <meta charset="UTF-8">
 
-  <meta name="theme-color" content="#1a1a1a">
-
   <meta
     name="viewport"
     content="width=device-width, initial-scale=1.0">
@@ -224,12 +222,8 @@ renderLoginColorSwatches();
   gap: 6px;
 }
 
-.start {
-  background: green !important;
-}
-
 .left {
-  background: crimson !important;
+  background: #3f3f3f !important;
 }
 
 .start.cancel-mode {
@@ -751,7 +745,7 @@ renderLoginColorSwatches();
 
 .shot-btn button.self.info-mode {
   background: #d4af37 !important;
-  color: white !important;
+  color: #1a1a1a !important;
 }
 
 .shot-btn button:disabled {
@@ -1383,8 +1377,8 @@ renderLoginColorSwatches();
 }
 
 .lobby-items-btn {
-  background: dodgerblue !important;
-  color: white !important;
+  background: #d4af37 !important;
+  color: #1a1a1a !important;
 }
 
 /* =========================
@@ -2141,14 +2135,14 @@ renderLoginColorSwatches();
     </div>
 
     <div class="lobby-extra-buttons hidden" id="lobbyExtraButtons">
-      <button class="lobby-items-btn" id="openItemListBtn">
-        <i data-lucide="package"></i>
-        List item
-      </button>
-      
       <button class="lobby-settings-btn" id="openSettingsBtn">
         <i data-lucide="settings"></i>
         Settings
+      </button>
+
+      <button class="lobby-items-btn" id="openItemListBtn">
+        <i data-lucide="package"></i>
+        List item
       </button>
     </div>
 
@@ -3732,10 +3726,32 @@ function watchRoom() {
     ref(db, "room"),
     async snapshot => {
 
+      const previousSettings = roomData?.settings;
+
       roomData =
         snapshot.exists()
           ? snapshot.val()
           : null;
+
+      /*
+         Settings diambil dari /room secara realtime. Jika popup Settings
+         sedang terbuka, perubahan dari pemain lain langsung masuk ke UI
+         tanpa perlu menutup atau membuka popup lagi.
+      */
+      const nextSettings = roomData?.settings;
+      if (
+        settingsPopup &&
+        !settingsPopup.classList.contains("hidden") &&
+        JSON.stringify(previousSettings || null) !== JSON.stringify(nextSettings || null)
+      ) {
+        populateSettingsUI(getGameSettings(nextSettings));
+        settingsMessage.textContent = "Settings diperbarui dari pemain lain.";
+        setTimeout(() => {
+          if (settingsPopup && !settingsPopup.classList.contains("hidden")) {
+            settingsMessage.textContent = "";
+          }
+        }, 1200);
+      }
 
       await renderRoom();
 
@@ -4288,6 +4304,34 @@ openSettingsBtn.addEventListener("click", openSettings);
 settingsClose.addEventListener("click", closeSettings);
 settingsCancel.addEventListener("click", closeSettings);
 settingsSave.addEventListener("click", saveSettings);
+
+/*
+   Semua kontrol Settings disimpan otomatis saat berubah. Jadi pemain lain
+   yang sedang membuka Settings akan menerima perubahan melalui onValue(room).
+*/
+[
+  settingMaxHealth, settingMinShell, settingMaxShell, settingMinEach,
+  settingStartingItems, settingItemReward, settingRarity,
+  settingRealtimeShell, settingShowShellNumber
+].forEach(input => {
+  input.addEventListener("change", queueRealtimeSettingsSave);
+  if (input.type === "number") {
+    input.addEventListener("input", queueRealtimeSettingsSave);
+  }
+});
+
+settingsItemGrid.addEventListener("change", event => {
+  if (event.target.matches("[data-setting-item]")) {
+    queueRealtimeSettingsSave();
+  }
+});
+
+settingsRarityGrid.addEventListener("change", event => {
+  if (event.target.matches("[data-setting-rarity]")) {
+    queueRealtimeSettingsSave();
+  }
+});
+
 let raritySettingsExpanded = false;
 
 function updateRarityPanelVisibility() {
@@ -4430,7 +4474,7 @@ function renderRaritySettings(settings = getGameSettings()) {
 }
 
 function populateSettingsUI(settings = getGameSettings()) {
-  raritySettingsExpanded = false;
+  const keepRarityExpanded = raritySettingsExpanded === true;
   settingMaxHealth.value = settings.maxHealth;
   settingMinShell.value = settings.minShell;
   settingMaxShell.value = settings.maxShell;
@@ -4439,6 +4483,8 @@ function populateSettingsUI(settings = getGameSettings()) {
   settingItemReward.value = settings.itemRewardCount;
   settingRarity.checked = settings.rarityEnabled;
   renderRaritySettings(settings);
+  raritySettingsExpanded = keepRarityExpanded;
+  updateRarityPanelVisibility();
   settingRealtimeShell.checked = settings.realtimeShellInfo;
   settingShowShellNumber.checked = settings.showShellNumber;
   settingsMessage.textContent = "";
@@ -4494,9 +4540,7 @@ function closeItemList() {
   itemListPopup.classList.add("hidden");
 }
 
-async function saveSettings() {
-  if (!roomData || roomData.status !== "lobby" || !roomData.players?.[currentPlayerId]) return;
-
+function collectSettingsFromUI() {
   const maxHealth = Math.max(1, Math.min(10, Number(settingMaxHealth.value || 4)));
   const minShell = Math.max(1, Math.min(20, Number(settingMinShell.value || 5)));
   const maxShell = Math.max(1, Math.min(20, Number(settingMaxShell.value || 8)));
@@ -4505,12 +4549,10 @@ async function saveSettings() {
   const itemRewardCount = Math.max(0, Math.min(8, Number(settingItemReward.value || 0)));
 
   if (maxShell < minShell) {
-    settingsMessage.textContent = "Jumlah shell maksimum tidak boleh lebih kecil dari minimum.";
-    return;
+    return { error: "Jumlah shell maksimum tidak boleh lebih kecil dari minimum." };
   }
   if (maxShell < minEach * 2) {
-    settingsMessage.textContent = `Maksimum shell minimal ${minEach * 2} agar Live dan Blank masing-masing bisa memenuhi batas minimum.`;
-    return;
+    return { error: `Maksimum shell minimal ${minEach * 2} agar Live dan Blank masing-masing bisa memenuhi batas minimum.` };
   }
 
   const enabledItems = {};
@@ -4523,34 +4565,84 @@ async function saveSettings() {
     itemRarities[select.dataset.settingRarity] = RARITY_DEFINITIONS[select.value] ? select.value : "common";
   });
 
-  const settings = {
-    maxHealth, minShell, maxShell, minEach, startingItemCount, itemRewardCount,
-    rarityEnabled: settingRarity.checked, itemRarities,
-    realtimeShellInfo: settingRealtimeShell.checked, showShellNumber: settingShowShellNumber.checked, enabledItems
+  return {
+    settings: {
+      maxHealth, minShell, maxShell, minEach, startingItemCount, itemRewardCount,
+      rarityEnabled: settingRarity.checked, itemRarities,
+      realtimeShellInfo: settingRealtimeShell.checked,
+      showShellNumber: settingShowShellNumber.checked,
+      enabledItems
+    }
   };
+}
 
-  settingsSave.disabled = true;
-  settingsSave.textContent = "Menyimpan...";
+let settingsAutoSaveTimer = null;
+let settingsAutoSaveRunning = false;
+
+async function persistSettings(settings, closeAfter = false) {
+  if (!roomData || roomData.status !== "lobby" || !roomData.players?.[currentPlayerId]) return false;
+
+  if (settingsAutoSaveRunning) return false;
+  settingsAutoSaveRunning = true;
+  settingsMessage.textContent = "Menyimpan...";
 
   try {
     const result = await runTransaction(ref(db, "room"), room => {
       if (!room || room.status !== "lobby" || !room.players?.[currentPlayerId]) return;
       return { ...room, settings };
     });
+
     if (!result.committed) {
       settingsMessage.textContent = "Gagal menyimpan settings.";
-      return;
+      return false;
     }
 
+    /* Tetap simpan sebagai default untuk room berikutnya. */
     await set(ref(db, "gameSettings"), settings);
-    closeSettings();
+
+    if (closeAfter) {
+      closeSettings();
+    } else {
+      settingsMessage.textContent = "Tersimpan realtime.";
+      setTimeout(() => {
+        if (settingsPopup && !settingsPopup.classList.contains("hidden")) {
+          settingsMessage.textContent = "";
+        }
+      }, 700);
+    }
+    return true;
   } catch (error) {
     console.error("Save settings error:", error);
     settingsMessage.textContent = "Gagal menyimpan settings.";
+    return false;
   } finally {
-    settingsSave.disabled = false;
-    settingsSave.textContent = "Simpan";
+    settingsAutoSaveRunning = false;
   }
+}
+
+function queueRealtimeSettingsSave() {
+  clearTimeout(settingsAutoSaveTimer);
+
+  settingsAutoSaveTimer = setTimeout(async () => {
+    if (!roomData || roomData.status !== "lobby" || !roomData.players?.[currentPlayerId]) return;
+
+    const result = collectSettingsFromUI();
+    if (result.error) {
+      settingsMessage.textContent = result.error;
+      return;
+    }
+
+    await persistSettings(result.settings, false);
+  }, 120);
+}
+
+async function saveSettings() {
+  const result = collectSettingsFromUI();
+  if (result.error) {
+    settingsMessage.textContent = result.error;
+    return;
+  }
+  await persistSettings(result.settings, true);
 }
 
 function renderLobbySettingsButton() {
