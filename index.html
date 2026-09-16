@@ -2031,19 +2031,7 @@ body {
       placeholder="https://...">
 
     <label class="profile-edit-label">Warna background avatar</label>
-    <div class="profile-edit-color-row">
-      <input
-        type="color"
-        class="profile-edit-color"
-        id="profileEditColorPicker"
-        value="#ff7f50">
-      <input
-        type="text"
-        class="profile-edit-input"
-        id="profileEditColor"
-        maxlength="7"
-        placeholder="#ff7f50">
-    </div>
+    <div class="profile-edit-color-swatches" id="profileEditColorSwatches"></div>
 
     <div class="profile-edit-message" id="profileEditMessage"></div>
 
@@ -2093,8 +2081,26 @@ body {
     </div>
 
     <div class="settings-row">
+      <span class="settings-label">Item awal</span>
+      <input class="settings-input" id="settingStartingItems" type="number" min="0" max="8" value="2">
+    </div>
+
+    <div class="settings-row">
       <span class="settings-label">Item setiap reload shell</span>
       <input class="settings-input" id="settingItemReward" type="number" min="0" max="8" value="2">
+    </div>
+
+    <div class="settings-row settings-rarity-row">
+      <span class="settings-label">Rarity</span>
+      <label class="settings-toggle">
+        <input id="settingRarity" type="checkbox">
+        <span class="settings-slider"></span>
+      </label>
+    </div>
+
+    <div class="settings-rarity-panel hidden" id="settingsRarityPanel">
+      <div class="settings-rarity-note">Atur rarity setiap item. Rarity aktif akan memengaruhi peluang item muncul.</div>
+      <div class="settings-rarity-grid" id="settingsRarityGrid"></div>
     </div>
 
     <div class="settings-row">
@@ -2160,7 +2166,7 @@ body {
         <div class="game-profile-hp" id="gameProfileHp">HP : 4</div>
       </div>
     </div>
-    <div class="game-profile-items-title">Item yang dimiliki</div>
+    <div class="game-profile-items-title">List Item</div>
     <div id="gameProfileItems"></div>
     <button class="game-profile-leave" id="gameProfileLeave" type="button">Leave Game</button>
   </div>
@@ -2636,11 +2642,8 @@ const profileEditName =
 const profileEditProfile =
   document.querySelector("#profileEditProfile");
 
-const profileEditColor =
-  document.querySelector("#profileEditColor");
-
-const profileEditColorPicker =
-  document.querySelector("#profileEditColorPicker");
+const profileEditColorSwatches =
+  document.querySelector("#profileEditColorSwatches");
 
 const profileEditPreview =
   document.querySelector("#profileEditPreview");
@@ -2701,7 +2704,11 @@ const settingMaxHealth = document.querySelector("#settingMaxHealth");
 const settingMinShell = document.querySelector("#settingMinShell");
 const settingMaxShell = document.querySelector("#settingMaxShell");
 const settingMinEach = document.querySelector("#settingMinEach");
+const settingStartingItems = document.querySelector("#settingStartingItems");
 const settingItemReward = document.querySelector("#settingItemReward");
+const settingRarity = document.querySelector("#settingRarity");
+const settingsRarityPanel = document.querySelector("#settingsRarityPanel");
+const settingsRarityGrid = document.querySelector("#settingsRarityGrid");
 const settingRealtimeShell = document.querySelector("#settingRealtimeShell");
 const settingShowShellNumber = document.querySelector("#settingShowShellNumber");
 const itemListPopup = document.querySelector("#itemListPopup");
@@ -2781,18 +2788,11 @@ let messageTimers = [];
 ========================= */
 
 const avatarColors = [
-  "#e76f51",
-  "#f4a261",
-  "#e9c46a",
-  "#2a9d8f",
-  "#457b9d",
-  "#6d597a",
-  "#8d5a97",
-  "#c44536",
-  "#3a86ff",
-  "#8338ec",
-  "#ff006e",
-  "#588157"
+  "#e76f51", "#f4a261", "#e9c46a", "#2a9d8f", "#457b9d",
+  "#6d597a", "#8d5a97", "#c44536", "#3a86ff", "#8338ec",
+  "#ff006e", "#588157", "#ef476f", "#06d6a0", "#118ab2",
+  "#ffd166", "#7b2cbf", "#f72585", "#00b4d8", "#90be6d",
+  "#f9844a", "#577590", "#43aa8b", "#bc6c25", "#6a994e", "#386641"
 ];
 
 function getRandomAvatarColor() {
@@ -2802,17 +2802,8 @@ function getRandomAvatarColor() {
 }
 
 function normalizeHexColor(value) {
-  const color = String(value || "").trim();
-
-  if (/^#[0-9a-fA-F]{6}$/.test(color)) {
-    return color.toLowerCase();
-  }
-
-  if (/^[0-9a-fA-F]{6}$/.test(color)) {
-    return "#" + color.toLowerCase();
-  }
-
-  return null;
+  const color = String(value || "").trim().toLowerCase();
+  return avatarColors.includes(color) ? color : null;
 }
 
 function getPlayerAvatarColor(player) {
@@ -2833,12 +2824,11 @@ function applyAvatarStyle(element, player) {
 ========================= */
 
 function normalizeName(name) {
+  return String(name || "").trim().toLowerCase();
+}
 
-  return name
-    .trim()
-    .toLowerCase()
-    .replace(/\s+/g, " ");
-
+function isValidPlayerName(name) {
+  return /^[A-Za-z0-9_-]{2,16}$/.test(String(name || "").trim());
 }
 
 
@@ -3002,13 +2992,10 @@ loginBtn.addEventListener(
 
     }
 
-    if (name.length < 2) {
-
+    if (!isValidPlayerName(name)) {
       loginMessage.textContent =
-        "Nama minimal 2 karakter.";
-
+        "Nama hanya boleh berisi huruf, angka, _ dan - (2-16 karakter).";
       return;
-
     }
 
     loginBtn.disabled = true;
@@ -3225,8 +3212,7 @@ function openProfileEdit() {
   profileEditProfile.value = currentPlayer.profile || "";
 
   const color = getPlayerAvatarColor(currentPlayer);
-  profileEditColor.value = color;
-  profileEditColorPicker.value = color;
+  renderProfileColorSwatches(color);
   profileEditMessage.textContent = "";
 
   updateProfileEditPreview();
@@ -3239,12 +3225,34 @@ function closeProfileEdit() {
   profileEditMessage.textContent = "";
 }
 
+function renderProfileColorSwatches(selectedColor = getPlayerAvatarColor(currentPlayer)) {
+  if (!profileEditColorSwatches) return;
+  profileEditColorSwatches.innerHTML = "";
+  avatarColors.forEach(color => {
+    const swatch = document.createElement("button");
+    swatch.type = "button";
+    swatch.className = "profile-color-swatch" + (color === selectedColor ? " selected" : "");
+    swatch.dataset.color = color;
+    swatch.style.background = color;
+    swatch.title = color;
+    swatch.addEventListener("click", () => {
+      profileEditColorSwatches.querySelectorAll(".profile-color-swatch").forEach(el => el.classList.remove("selected"));
+      swatch.classList.add("selected");
+      updateProfileEditPreview();
+    });
+    profileEditColorSwatches.appendChild(swatch);
+  });
+}
+
+function getSelectedProfileColor() {
+  const selected = profileEditColorSwatches?.querySelector(".profile-color-swatch.selected");
+  return normalizeHexColor(selected?.dataset.color) || getPlayerAvatarColor(currentPlayer);
+}
+
 function updateProfileEditPreview() {
   const name = profileEditName.value.trim() || "?";
   const profile = profileEditProfile.value.trim();
-  const color =
-    normalizeHexColor(profileEditColor.value) ||
-    getPlayerAvatarColor(currentPlayer);
+  const color = getSelectedProfileColor();
 
   profileEditPreview.style.background = color;
 
@@ -3258,24 +3266,15 @@ function updateProfileEditPreview() {
   }
 }
 
-profileEditColorPicker.addEventListener("input", () => {
-  profileEditColor.value =
-    profileEditColorPicker.value.toLowerCase();
+profileEditName.addEventListener("input", () => {
+  profileEditName.value = profileEditName.value.replace(/[^A-Za-z0-9_-]/g, "").slice(0, 16);
   updateProfileEditPreview();
 });
-
-profileEditColor.addEventListener("input", () => {
-  const color = normalizeHexColor(profileEditColor.value);
-
-  if (color) {
-    profileEditColorPicker.value = color;
-  }
-
-  updateProfileEditPreview();
-});
-
-profileEditName.addEventListener("input", updateProfileEditPreview);
 profileEditProfile.addEventListener("input", updateProfileEditPreview);
+
+loginName.addEventListener("input", () => {
+  loginName.value = loginName.value.replace(/[^A-Za-z0-9_-]/g, "").slice(0, 16);
+});
 
 profileEditClose.addEventListener("click", closeProfileEdit);
 profileEditCancel.addEventListener("click", closeProfileEdit);
@@ -3293,7 +3292,7 @@ profileEditSave.addEventListener("click", async () => {
 
   const name = profileEditName.value.trim();
   const profile = profileEditProfile.value.trim();
-  const color = normalizeHexColor(profileEditColor.value);
+  const color = getSelectedProfileColor();
 
   profileEditMessage.textContent = "";
 
@@ -3302,8 +3301,8 @@ profileEditSave.addEventListener("click", async () => {
     return;
   }
 
-  if (name.length < 2) {
-    profileEditMessage.textContent = "Nama minimal 2 karakter.";
+  if (!isValidPlayerName(name)) {
+    profileEditMessage.textContent = "Nama hanya boleh berisi huruf, angka, _ dan - (2-16 karakter).";
     return;
   }
 
@@ -3312,8 +3311,8 @@ profileEditSave.addEventListener("click", async () => {
     return;
   }
 
-  if (!color) {
-    profileEditMessage.textContent = "Warna harus berupa kode HEX, contoh #ff7f50.";
+  if (!avatarColors.includes(color)) {
+    profileEditMessage.textContent = "Pilih salah satu warna yang tersedia.";
     return;
   }
 
@@ -3955,6 +3954,7 @@ openSettingsBtn.addEventListener("click", openSettings);
 settingsClose.addEventListener("click", closeSettings);
 settingsCancel.addEventListener("click", closeSettings);
 settingsSave.addEventListener("click", saveSettings);
+settingRarity.addEventListener("change", () => { settingsRarityPanel.classList.toggle("hidden", !settingRarity.checked); });
 
 settingsPopup.addEventListener("click", event => {
   if (event.target === settingsPopup) closeSettings();
@@ -4006,15 +4006,25 @@ function shuffleArray(array) {
    GAME SETTINGS
 ========================= */
 
+const RARITY_DEFINITIONS = {
+  common: { name: "Common", weight: 60 },
+  uncommon: { name: "Uncommon", weight: 25 },
+  rare: { name: "Rare", weight: 10 },
+  legendary: { name: "Legendary", weight: 5 }
+};
+
+const DEFAULT_ITEM_RARITIES = {
+  magnifying_glass: "common", hand_saw: "uncommon", cigarette: "common", handcuff: "rare",
+  beer: "common", inverter: "rare", expired_medicine: "uncommon", adrenaline: "rare",
+  burner_phone: "uncommon", remote: "rare", jammer: "rare", reflector_mirror: "rare",
+  dynamite: "uncommon", dice: "rare", rewind_film: "legendary", coin_flip: "uncommon",
+  life_steal: "rare", megazine: "legendary", ace_card: "legendary", magnet: "uncommon"
+};
+
 const DEFAULT_GAME_SETTINGS = {
-  maxHealth: 4,
-  minShell: 5,
-  maxShell: 8,
-  minEach: 3,
-  itemRewardCount: 2,
-  realtimeShellInfo: true,
-  showShellNumber: true,
-  enabledItems: {}
+  maxHealth: 4, minShell: 5, maxShell: 8, minEach: 3,
+  startingItemCount: 2, itemRewardCount: 2, rarityEnabled: false,
+  itemRarities: DEFAULT_ITEM_RARITIES, realtimeShellInfo: true, showShellNumber: true, enabledItems: {}
 };
 
 function getGameSettings(source = roomData?.settings) {
@@ -4024,12 +4034,22 @@ function getGameSettings(source = roomData?.settings) {
     enabledItems[type] = sourceItems[type] !== false;
   });
 
+  const sourceRarities = source?.itemRarities || {};
+  const itemRarities = {};
+  Object.keys(ITEM_DEFINITIONS).forEach(type => {
+    itemRarities[type] = RARITY_DEFINITIONS[sourceRarities[type]]
+      ? sourceRarities[type] : (DEFAULT_ITEM_RARITIES[type] || "common");
+  });
+
   return {
     maxHealth: Math.max(1, Number(source?.maxHealth ?? DEFAULT_GAME_SETTINGS.maxHealth)),
     minShell: Math.max(1, Number(source?.minShell ?? DEFAULT_GAME_SETTINGS.minShell)),
     maxShell: Math.max(1, Number(source?.maxShell ?? DEFAULT_GAME_SETTINGS.maxShell)),
     minEach: Math.max(1, Number(source?.minEach ?? DEFAULT_GAME_SETTINGS.minEach)),
+    startingItemCount: Math.max(0, Math.min(8, Number(source?.startingItemCount ?? DEFAULT_GAME_SETTINGS.startingItemCount))),
     itemRewardCount: Math.max(0, Math.min(8, Number(source?.itemRewardCount ?? DEFAULT_GAME_SETTINGS.itemRewardCount))),
+    rarityEnabled: source?.rarityEnabled === true,
+    itemRarities,
     realtimeShellInfo: source?.realtimeShellInfo !== false,
     showShellNumber: source?.showShellNumber !== false,
     enabledItems
@@ -4046,12 +4066,30 @@ function buildDefaultSettings() {
   return { ...DEFAULT_GAME_SETTINGS, enabledItems };
 }
 
+function renderRaritySettings(settings = getGameSettings()) {
+  settingsRarityPanel.classList.toggle("hidden", !settings.rarityEnabled);
+  settingsRarityGrid.innerHTML = "";
+  Object.entries(ITEM_DEFINITIONS).forEach(([type, definition]) => {
+    const row = document.createElement("div");
+    row.className = "settings-rarity-item";
+    const options = Object.entries(RARITY_DEFINITIONS).map(([key, rarity]) =>
+      `<option value="${key}" ${settings.itemRarities[type] === key ? "selected" : ""}>${rarity.name}</option>`
+    ).join("");
+    row.innerHTML = `<div class="settings-rarity-name"><i data-lucide="${definition.icon}"></i><span>${definition.name}</span></div><select class="settings-rarity-select" data-setting-rarity="${type}">${options}</select>`;
+    settingsRarityGrid.appendChild(row);
+  });
+  lucide.createIcons();
+}
+
 function populateSettingsUI(settings = getGameSettings()) {
   settingMaxHealth.value = settings.maxHealth;
   settingMinShell.value = settings.minShell;
   settingMaxShell.value = settings.maxShell;
   settingMinEach.value = settings.minEach;
+  settingStartingItems.value = settings.startingItemCount;
   settingItemReward.value = settings.itemRewardCount;
+  settingRarity.checked = settings.rarityEnabled;
+  renderRaritySettings(settings);
   settingRealtimeShell.checked = settings.realtimeShellInfo;
   settingShowShellNumber.checked = settings.showShellNumber;
   settingsMessage.textContent = "";
@@ -4114,6 +4152,7 @@ async function saveSettings() {
   const minShell = Math.max(1, Math.min(20, Number(settingMinShell.value || 5)));
   const maxShell = Math.max(1, Math.min(20, Number(settingMaxShell.value || 8)));
   const minEach = Math.max(1, Math.min(10, Number(settingMinEach.value || 3)));
+  const startingItemCount = Math.max(0, Math.min(8, Number(settingStartingItems.value || 0)));
   const itemRewardCount = Math.max(0, Math.min(8, Number(settingItemReward.value || 0)));
 
   if (maxShell < minShell) {
@@ -4130,15 +4169,15 @@ async function saveSettings() {
     enabledItems[input.dataset.settingItem] = input.checked;
   });
 
+  const itemRarities = {};
+  settingsRarityGrid.querySelectorAll("[data-setting-rarity]").forEach(select => {
+    itemRarities[select.dataset.settingRarity] = RARITY_DEFINITIONS[select.value] ? select.value : "common";
+  });
+
   const settings = {
-    maxHealth,
-    minShell,
-    maxShell,
-    minEach,
-    itemRewardCount,
-    realtimeShellInfo: settingRealtimeShell.checked,
-    showShellNumber: settingShowShellNumber.checked,
-    enabledItems
+    maxHealth, minShell, maxShell, minEach, startingItemCount, itemRewardCount,
+    rarityEnabled: settingRarity.checked, itemRarities,
+    realtimeShellInfo: settingRealtimeShell.checked, showShellNumber: settingShowShellNumber.checked, enabledItems
   };
 
   settingsSave.disabled = true;
@@ -4278,26 +4317,40 @@ const ITEM_DEFINITIONS = {
     target: false
   },
   megazine: {
-    name: "Megazine",
-    icon: "package-2",
-    info: "Reload shell dan memulai set shell baru.",
-    target: false
+    name: "Megazine", icon: "package-2", info: "Reload shell dan memulai set shell baru.", target: false
+  },
+  ace_card: {
+    name: "Ace Card", icon: "playing-card",
+    info: "Menonaktifkan efek item pemain lain terhadap pemilik selama 1 ronde. Tidak dapat diborgol, dipengaruhi Hand Saw, Remote, Jammer, Dice, Shield, Dynamite, atau Adrenaline.", target: false
+  },
+  magnet: {
+    name: "Magnet", icon: "magnet",
+    info: "Mengambil 1 item random yang dimiliki lalu mengubahnya menjadi +1 HP. Tidak berfungsi jika hanya memiliki Magnet.", target: false
   }
 };
 
 function createPlayerItems(playerCount) {
-  return createItemRewards(2, getGameSettings());
+  return createItemRewards(getGameSettings().startingItemCount, getGameSettings());
 }
 
 function createItemRewards(count = 2, settings = getGameSettings()) {
   const types = getEnabledItemTypes(settings);
   const rewards = [];
   if (!types.length) return rewards;
-
-  for (let i = 0; i < count; i++) {
-    rewards.push(types[Math.floor(Math.random() * types.length)]);
+  if (!settings.rarityEnabled) {
+    for (let i = 0; i < count; i++) rewards.push(types[Math.floor(Math.random() * types.length)]);
+    return rewards;
   }
-
+  const weighted = types.map(type => ({ type, weight: Number(RARITY_DEFINITIONS[settings.itemRarities?.[type] || "common"]?.weight || 0) })).filter(x => x.weight > 0);
+  const totalWeight = weighted.reduce((sum, x) => sum + x.weight, 0);
+  if (!totalWeight) return rewards;
+  for (let i = 0; i < count; i++) {
+    let roll = Math.random() * totalWeight;
+    for (const entry of weighted) {
+      roll -= entry.weight;
+      if (roll <= 0) { rewards.push(entry.type); break; }
+    }
+  }
   return rewards;
 }
 
@@ -4437,6 +4490,17 @@ async function showSelectedItemInfo() {
   lucide.createIcons();
 }
 
+function reorderNonAcePlayers(players, ids, mode = "shuffle") {
+  const allAlive = Object.keys(players || {})
+    .filter(id => players[id] && Number(players[id].hp ?? 0) > 0)
+    .sort((a, b) => Number(players[a].turnOrder ?? 0) - Number(players[b].turnOrder ?? 0));
+  const movable = allAlive.filter(id => !players[id].aceCardActive);
+  if (movable.length < 2) return;
+  const slots = movable.map(id => Number(players[id].turnOrder ?? 0)).sort((a, b) => a - b);
+  const arranged = mode === "reverse" ? [...movable].reverse() : shuffleArray(movable);
+  arranged.forEach((id, index) => { players[id].turnOrder = slots[index]; });
+}
+
 async function useSelectedItem(targetId = null) {
   if (!selectedItemType || selectedItemSlot === null || shootingLocked || !gameData) return;
   if (gameData.phase !== "playing" || gameData.turn?.current !== currentPlayerId) {
@@ -4462,6 +4526,7 @@ async function useSelectedItem(targetId = null) {
   let burnerResult = null;
   let rewindResult = null;
   let coinFlipResult = null;
+  let magnetResult = null;
   let adrenalineStolenFromId = null;
   let inventoryHandled = false;
 
@@ -4502,6 +4567,7 @@ async function useSelectedItem(targetId = null) {
         const target = game.players?.[targetId];
         if (!player || Number(player.hp ?? 0) <= 0) return;
         if (!target || Number(target.hp ?? 0) <= 0) return;
+        if (target.aceCardActive === true) return;
 
         const inventory = Array.isArray(player.items) ? [...player.items] : [];
         const adrenalineIndex = inventory.indexOf("adrenaline");
@@ -4579,6 +4645,7 @@ async function useSelectedItem(targetId = null) {
         if (!targetId || targetId === currentPlayerId) return;
         const target = game.players?.[targetId];
         if (!target || Number(target.hp ?? 0) <= 0) return;
+        if (target.aceCardActive === true) return;
         target.skipTurns = Number(target.skipTurns ?? 0) + 1;
         target.handcuffed = true;
       } else if (type === "beer") {
@@ -4618,22 +4685,13 @@ async function useSelectedItem(targetId = null) {
           type: futureType
         };
       } else if (type === "remote") {
-        const orderedIds = Object.keys(game.players || {})
-          .filter(id => game.players[id] && Number(game.players[id].hp ?? 0) > 0)
-          .sort((a, b) => Number(game.players[a].turnOrder ?? 0) - Number(game.players[b].turnOrder ?? 0));
-        orderedIds.reverse().forEach((id, index) => {
-          game.players[id].turnOrder = index;
-        });
-        const newOrder = orderedIds;
+        reorderNonAcePlayers(game.players, Object.keys(game.players || {}), "reverse");
+        const newOrder = Object.keys(game.players || {}).filter(id => game.players[id] && Number(game.players[id].hp ?? 0) > 0).sort((a, b) => Number(game.players[a].turnOrder ?? 0) - Number(game.players[b].turnOrder ?? 0));
         game.turn.current = currentPlayerId;
         game.turn.index = newOrder.indexOf(currentPlayerId);
       } else if (type === "jammer") {
-        const shuffledIds = shuffleArray(
-          Object.keys(game.players || {}).filter(id => game.players[id] && Number(game.players[id].hp ?? 0) > 0)
-        );
-        shuffledIds.forEach((id, index) => {
-          game.players[id].turnOrder = index;
-        });
+        reorderNonAcePlayers(game.players, Object.keys(game.players || {}), "shuffle");
+        const shuffledIds = Object.keys(game.players || {}).filter(id => game.players[id] && Number(game.players[id].hp ?? 0) > 0).sort((a, b) => Number(game.players[a].turnOrder ?? 0) - Number(game.players[b].turnOrder ?? 0));
         game.turn.current = currentPlayerId;
         game.turn.index = shuffledIds.indexOf(currentPlayerId);
       } else if (type === "reflector_mirror") {
@@ -4643,10 +4701,12 @@ async function useSelectedItem(targetId = null) {
         if (!targetId || targetId === currentPlayerId) return;
         const target = game.players?.[targetId];
         if (!target || Number(target.hp ?? 0) <= 0 || target.dynamiteTrapped) return;
+        if (target.aceCardActive === true) return;
         target.dynamiteTrapped = true;
         target.dynamiteTrappedById = currentPlayerId;
+        target.dynamiteActivatedTurn = Number(game.turn?.counter ?? 0);
       } else if (type === "dice") {
-        const ids = Object.keys(game.players || {}).filter(id => game.players[id] && Number(game.players[id].hp ?? 0) > 0);
+        const ids = Object.keys(game.players || {}).filter(id => game.players[id] && Number(game.players[id].hp ?? 0) > 0 && !game.players[id].aceCardActive);
         if (ids.length < 2) return;
         inventory.splice(slotIndex, 1);
         sourcePlayer.items = inventory;
@@ -4680,7 +4740,7 @@ async function useSelectedItem(targetId = null) {
         if (coinFlipResult === "all") {
           /* Semua pemain lain terkena Handcuff. Diri sendiri tetap mendapat giliran. */
           Object.entries(game.players || {}).forEach(([id, target]) => {
-            if (id === currentPlayerId || !target || Number(target.hp ?? 0) <= 0) return;
+            if (id === currentPlayerId || !target || Number(target.hp ?? 0) <= 0 || target.aceCardActive === true) return;
             target.skipTurns = Number(target.skipTurns ?? 0) + 1;
             target.handcuffed = true;
           });
@@ -4701,6 +4761,21 @@ async function useSelectedItem(targetId = null) {
             game.turn.counter = Number(game.turn.counter ?? 0) + 1;
           }
         }
+      } else if (type === "ace_card") {
+        const aliveCount = Object.values(game.players || {}).filter(p => p && Number(p.hp ?? 0) > 0).length;
+        player.aceCardActive = true;
+        player.aceCardActivatedTurn = Number(game.turn?.counter ?? 0);
+        player.aceCardExpiresTurn = Number(game.turn?.counter ?? 0) + Math.max(1, aliveCount);
+      } else if (type === "magnet") {
+        const magnetItems = inventory.filter(item => item !== "magnet");
+        if (!magnetItems.length) return;
+        const chosen = magnetItems[Math.floor(Math.random() * magnetItems.length)];
+        const chosenIndex = inventory.indexOf(chosen);
+        if (chosenIndex < 0) return;
+        inventory.splice(chosenIndex, 1);
+        player.hp = Math.min(Number(game.settings?.maxHealth ?? 4), Number(player.hp ?? 0) + 1);
+        inventoryHandled = true;
+        magnetResult = chosen;
       } else if (type === "megazine") {
         game.shells = createShellSet(Object.keys(game.players || {}).length, game.settings || getGameSettings());
         Object.values(game.players || {}).forEach(p => {
@@ -4732,6 +4807,7 @@ async function useSelectedItem(targetId = null) {
         expiredResult,
         rewindResult,
         coinFlipResult,
+        magnetResult,
         adrenalineStolenFromId: isBorrowed ? sourceId : null,
         at: Date.now()
       };
@@ -4756,6 +4832,14 @@ async function useSelectedItem(targetId = null) {
     if (wasBorrowed) {
       adrenalineTargetId = null;
       adrenalineActive = false;
+    }
+
+    if (type === "magnet" && magnetResult) {
+      itemInfoTitle.textContent = definition.name;
+      itemInfoText.textContent = `${ITEM_DEFINITIONS[magnetResult]?.name || magnetResult} berubah menjadi +1 HP`;
+      itemInfoText.style.color = "#ddd";
+      itemInfoPopup.classList.remove("hidden");
+      lucide.createIcons();
     }
 
     if (type === "magnifying_glass" && magnifyLabel) {
@@ -4822,12 +4906,77 @@ async function useSelectedItem(targetId = null) {
         }
 
         if (Number(player.hp ?? 0) <= 0) {
-          const living = Object.keys(game.players || {}).filter(id => Number(game.players[id]?.hp ?? 0) > 0);
+          const playerIds = Object.keys(game.players || {})
+            .filter(id => game.players[id])
+            .sort((a, b) => Number(game.players[a]?.turnOrder ?? 0) - Number(game.players[b]?.turnOrder ?? 0));
+
+          const living = playerIds.filter(id => Number(game.players[id]?.hp ?? 0) > 0);
+
           if (living.length <= 1) {
             game.phase = "finished";
             game.winner = living[0] || null;
             game.turn.current = living[0] || currentPlayerId;
-            game.turn.index = living[0] ? Number(game.players[living[0]]?.turnOrder ?? 0) : 0;
+            game.turn.index = living[0] ? playerIds.indexOf(living[0]) : 0;
+          } else {
+            /*
+             * Expired Medicine menghabiskan giliran pemain.
+             * Jika hasil gambling membuat pemain mati, jangan biarkan
+             * turn.current tetap menunjuk ke pemain yang sudah mati.
+             * Langsung cari pemain hidup berikutnya sesuai turn order.
+             */
+            const currentIndex = playerIds.indexOf(currentPlayerId);
+            let nextIndex = currentIndex >= 0 ? (currentIndex + 1) % playerIds.length : 0;
+            let checked = 0;
+            let skippedPlayerId = null;
+
+            while (checked < playerIds.length) {
+              const candidateId = playerIds[nextIndex];
+
+              if (Number(game.players[candidateId]?.hp ?? 0) > 0) {
+                if (Number(game.players[candidateId]?.skipTurns ?? 0) > 0) {
+                  skippedPlayerId = candidateId;
+                  game.players[candidateId].skipTurns = Number(game.players[candidateId].skipTurns) - 1;
+                  game.players[candidateId].handcuffed = false;
+                  nextIndex = (nextIndex + 1) % playerIds.length;
+                  checked++;
+                  continue;
+                }
+                break;
+              }
+
+              nextIndex = (nextIndex + 1) % playerIds.length;
+              checked++;
+            }
+
+            game.turn.current = playerIds[nextIndex];
+            game.turn.index = nextIndex;
+            game.turn.counter = Number(game.turn.counter ?? 0) + 1;
+
+            /* Periksa efek 1 ronde setelah giliran benar-benar berpindah. */
+            const activeAliveCount = living.length;
+            Object.entries(game.players || {}).forEach(([id, p]) => {
+              if (!p) return;
+
+              if (p.dynamiteTrapped && Number(p.dynamiteActivatedTurn ?? -999999) + Math.max(1, activeAliveCount) <= Number(game.turn.counter ?? 0)) {
+                p.dynamiteTrapped = false;
+                p.dynamiteTrappedById = null;
+                p.dynamiteActivatedTurn = null;
+              }
+
+              if (p.aceCardActive && Number(p.aceCardExpiresTurn ?? 999999) <= Number(game.turn.counter ?? 0)) {
+                p.aceCardActive = false;
+                p.aceCardActivatedTurn = null;
+                p.aceCardExpiresTurn = null;
+              }
+            });
+
+            game.lastEvent = {
+              ...(game.lastEvent || {}),
+              nextId: game.turn.current,
+              skippedPlayerId,
+              itemDeath: true,
+              at: Date.now()
+            };
           }
         }
 
@@ -4932,15 +5081,14 @@ function createGameState(
         hp: settings.maxHealth,
 
         turnOrder: index,
-        items: createItemRewards(settings.itemRewardCount, settings),
+        items: createItemRewards(settings.startingItemCount, settings),
         sawActive: false,
         skipTurns: 0,
         handcuffed: false,
         shellItemUses: {},
-        shieldActive: false,
-        shieldActivatedTurn: null,
-        dynamiteTrapped: false,
-        dynamiteTrappedById: null
+        shieldActive: false, shieldActivatedTurn: null,
+        dynamiteTrapped: false, dynamiteTrappedById: null, dynamiteActivatedTurn: null,
+        aceCardActive: false, aceCardActivatedTurn: null, aceCardExpiresTurn: null, lifeStealActive: false
 
       };
 
@@ -5197,7 +5345,8 @@ async function loadGamePlayers() {
             profile: player.profile || "",
             profileColor: player.profileColor || "",
             hp: Number(gamePlayer.hp ?? gameData?.settings?.maxHealth ?? 4),
-            turnOrder: Number(gamePlayer.turnOrder ?? 0)
+            turnOrder: Number(gamePlayer.turnOrder ?? 0),
+            aceCardActive: gamePlayer.aceCardActive === true
           };
 
         }
@@ -5313,6 +5462,14 @@ function renderGamePlayerList() {
     const nameStatus = document.createElement("div");
     nameStatus.className = "pl-name-status";
     nameStatus.appendChild(name);
+
+    if (gameData.players?.[player.id]?.aceCardActive) {
+      const ace = document.createElement("i");
+      ace.setAttribute("data-lucide", "playing-card");
+      ace.className = "pl-ace";
+      ace.setAttribute("title", "Ace Card aktif");
+      nameStatus.appendChild(ace);
+    }
 
     if (gameData.players?.[player.id]?.shieldActive) {
       const shield = document.createElement("i");
@@ -5732,6 +5889,20 @@ function showGameEvent(eventData) {
         );
       }, 450));
     }
+  }
+
+  if (Array.isArray(eventData.dynamiteExpired)) {
+    eventData.dynamiteExpired.forEach(expired => {
+      const expiredName = getPlayerNameById(expired.targetId);
+      messageTimers.push(setTimeout(() => appendGameMessage(`Dynamite yang berada pada ${expiredName} telah hangus`, "info", "bomb", 3600), 650));
+    });
+  }
+
+  if (Array.isArray(eventData.aceExpired)) {
+    eventData.aceExpired.forEach(id => {
+      const expiredName = getPlayerNameById(id);
+      messageTimers.push(setTimeout(() => appendGameMessage(`${expiredName} Ace Card telah habis`, "info", "playing-card", 3200), 850));
+    });
   }
 
   if (eventData.skippedPlayerId) {
@@ -6837,14 +7008,8 @@ function openGameProfile() {
   Object.entries(ITEM_DEFINITIONS).forEach(([type, definition]) => {
     const ownedCount = ownedItems.filter(item => item === type).length;
     const row = document.createElement("div");
-    row.className = `game-profile-item${ownedCount ? " owned" : " not-owned"}`;
-    row.innerHTML = `
-      <i data-lucide="${definition.icon}"></i>
-      <div>
-        <div class="game-profile-item-name">${definition.name}${ownedCount ? ` ×${ownedCount}` : ""}</div>
-        <div class="game-profile-item-info">${definition.info}</div>
-      </div>
-    `;
+    row.className = "item-list-row";
+    row.innerHTML = `<div class="item-list-icon"><i data-lucide="${definition.icon}"></i></div><div><div class="item-list-name">${definition.name}${ownedCount ? ` ×${ownedCount}` : ""}</div><div class="item-list-info">${definition.info}</div></div>`;
     gameProfileItems.appendChild(row);
   });
 
@@ -7513,9 +7678,12 @@ async function shoot(targetId) {
       let reflectedShot = false;
       let dynamiteTriggered = false;
       let dynamiteRemoved = false;
+      let dynamiteExpired = [];
+      let aceExpired = [];
 
-      const targetShielded = targetPlayer.shieldActive === true;
-      const targetTrapped = targetPlayer.dynamiteTrapped === true;
+      const targetAceCard = targetPlayer.aceCardActive === true;
+      const targetShielded = !targetAceCard && targetPlayer.shieldActive === true;
+      const targetTrapped = !targetAceCard && targetPlayer.dynamiteTrapped === true;
 
       if (currentShellType === "live") {
         if (targetShielded) {
@@ -7529,7 +7697,7 @@ async function shoot(targetId) {
           targetPlayer.shieldActive = false;
           targetPlayer.shieldActivatedTurn = null;
         } else {
-          damage = Number(players[currentPlayerId]?.sawActive ?? 0) ? 2 : 1;
+          damage = Number(players[currentPlayerId]?.sawActive ?? 0) && !targetAceCard ? 2 : 1;
           targetPlayer.hp = Math.max(0, Number(targetPlayer.hp ?? 0) - damage);
         }
 
@@ -7677,6 +7845,19 @@ async function shoot(targetId) {
         currentGame.turn.index = nextIndex;
         currentGame.turn.counter = Number(currentGame.turn.counter ?? 0) + 1;
 
+        const activeAliveCount = Object.values(players).filter(p => p && Number(p.hp ?? 0) > 0).length;
+        Object.entries(players).forEach(([id, p]) => {
+          if (!p) return;
+          if (p.dynamiteTrapped && Number(p.dynamiteActivatedTurn ?? -999999) + Math.max(1, activeAliveCount) <= Number(currentGame.turn.counter ?? 0)) {
+            dynamiteExpired.push({ targetId: id, placerId: p.dynamiteTrappedById || null });
+            p.dynamiteTrapped = false; p.dynamiteTrappedById = null; p.dynamiteActivatedTurn = null;
+          }
+          if (p.aceCardActive && Number(p.aceCardExpiresTurn ?? 999999) <= Number(currentGame.turn.counter ?? 0)) {
+            aceExpired.push(id);
+            p.aceCardActive = false; p.aceCardActivatedTurn = null; p.aceCardExpiresTurn = null;
+          }
+        });
+
         const finishedPlayer = players[currentPlayerId];
         if (finishedPlayer?.shieldActive && Number(finishedPlayer.shieldActivatedTurn ?? -1) + 2 <= Number(currentGame.turn.counter ?? 0)) {
           finishedPlayer.shieldActive = false;
@@ -7703,6 +7884,8 @@ async function shoot(targetId) {
         winnerId: null,
         nextId: currentGame.turn.current || null,
         skippedPlayerId,
+        dynamiteExpired,
+        aceExpired,
         reload: shellReloaded,
         itemRewards: shellReloaded ? itemRewards : {},
         at: Date.now()
