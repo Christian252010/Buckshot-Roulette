@@ -743,6 +743,11 @@ renderLoginColorSwatches();
   background: #666 !important;
 }
 
+.shot-btn button.self.info-mode {
+  background: #d4af37 !important;
+  color: #1a1a1a !important;
+}
+
 .shot-btn button:disabled {
   opacity: .45;
   background: #555 !important;
@@ -1048,7 +1053,7 @@ renderLoginColorSwatches();
 }
 
 .player-list .pl-list.current-turn {
-  background: #303030;
+  background: #292929;
   border-bottom: none;
   border-left: none;
   border-radius: 6px;
@@ -2978,6 +2983,91 @@ function applyAvatarStyle(element, player) {
   element.style.background = getPlayerAvatarColor(player);
 }
 
+/* =========================
+   PROFILE IMAGE RESOLVER
+========================= */
+
+const profileImageCache = new Map();
+
+function isShareGoogleUrl(url) {
+  try {
+    const parsed = new URL(String(url || ""));
+    return parsed.hostname === "share.google" || parsed.hostname.endsWith(".share.google");
+  } catch {
+    return false;
+  }
+}
+
+async function resolveProfileImageUrl(url) {
+  const original = String(url || "").trim();
+  if (!original) return "";
+  if (!isShareGoogleUrl(original)) return original;
+
+  if (profileImageCache.has(original)) {
+    return profileImageCache.get(original);
+  }
+
+  const proxies = [
+    `https://api.allorigins.win/raw?url=${encodeURIComponent(original)}`,
+    `https://corsproxy.io/?url=${encodeURIComponent(original)}`
+  ];
+
+  for (const proxy of proxies) {
+    try {
+      const response = await fetch(proxy, { cache: "no-store" });
+      if (!response.ok) continue;
+
+      const html = await response.text();
+      const doc = new DOMParser().parseFromString(html, "text/html");
+      const meta =
+        doc.querySelector('meta[property="og:image"]') ||
+        doc.querySelector('meta[name="twitter:image"]') ||
+        doc.querySelector('meta[property="twitter:image"]');
+      const imageUrl = meta?.getAttribute("content")?.trim();
+      if (!imageUrl) continue;
+
+      const resolved = new URL(imageUrl, original).href;
+      profileImageCache.set(original, resolved);
+      return resolved;
+    } catch (error) {
+      console.warn("Gagal resolve profile URL:", original, error);
+    }
+  }
+
+  profileImageCache.set(original, "");
+  return "";
+}
+
+async function attachProfileImage(element, url, fallbackText = "?") {
+  if (!element) return;
+
+  const original = String(url || "").trim();
+  const fallback = String(fallbackText || "?").charAt(0).toUpperCase();
+  element.innerHTML = "";
+
+  if (!original) {
+    element.textContent = fallback;
+    return;
+  }
+
+  const resolved = await resolveProfileImageUrl(original);
+  if (!resolved) {
+    element.textContent = fallback;
+    return;
+  }
+
+  const image = document.createElement("img");
+  image.src = resolved;
+  image.alt = "Profile";
+  image.loading = "lazy";
+  image.referrerPolicy = "no-referrer";
+  image.onerror = () => {
+    element.innerHTML = "";
+    element.textContent = fallback;
+  };
+  element.appendChild(image);
+}
+
 
 /* =========================
    NORMALIZE NAME
@@ -3338,20 +3428,10 @@ function updateHeader() {
       applyAvatarStyle(element, currentPlayer);
 
       if (profile) {
-
-        element.innerHTML = `
-
-          <img
-            src="${profile}"
-            alt="Profile">
-
-        `;
-
+        attachProfileImage(element, profile, firstLetter);
       } else {
-
-        element.textContent =
-          firstLetter;
-
+        element.innerHTML = "";
+        element.textContent = firstLetter;
       }
 
     });
@@ -3439,23 +3519,21 @@ function updateProfileEditPreview() {
   profileEditPreview.style.background = color;
 
   if (profile) {
-    profileEditPreview.innerHTML = `
-      <img src="${profile}" alt="Profile">
-    `;
+    attachProfileImage(profileEditPreview, profile, name.charAt(0).toUpperCase());
   } else {
-    profileEditPreview.textContent =
-      name.charAt(0).toUpperCase();
+    profileEditPreview.innerHTML = "";
+    profileEditPreview.textContent = name.charAt(0).toUpperCase();
   }
 }
 
 profileEditName.addEventListener("input", () => {
-  profileEditName.value = profileEditName.value.replace(/[^A-Za-z0-9_-]/g, "").slice(0, 16);
+  profileEditName.value = profileEditName.value.replace(/[^A-Za-z0-9 _-]/g, "").slice(0, 10);
   updateProfileEditPreview();
 });
 profileEditProfile.addEventListener("input", updateProfileEditPreview);
 
 loginName.addEventListener("input", () => {
-  loginName.value = loginName.value.replace(/[^A-Za-z0-9_-]/g, "").slice(0, 16);
+  loginName.value = loginName.value.replace(/[^A-Za-z0-9 _-]/g, "").slice(0, 10);
 });
 
 profileEditClose.addEventListener("click", closeProfileEdit);
@@ -3540,6 +3618,7 @@ profileEditSave.addEventListener("click", async () => {
     );
 
     currentPlayer = updatedPlayer;
+    profileImageCache.delete(profile);
     updateHeader();
     closeProfileEdit();
 
@@ -3869,6 +3948,11 @@ async function renderLobbyPlayers(
     `;
 
     joinList.appendChild(item);
+
+    const lobbyProfile = item.querySelector(".profile");
+    if (lobbyProfile) {
+      await attachProfileImage(lobbyProfile, profile, firstLetter);
+    }
 
   }
 
@@ -4403,7 +4487,13 @@ async function saveSettings() {
 
 function renderLobbySettingsButton() {
   const joined = !!roomData?.players?.[currentPlayerId] && roomData?.status === "lobby";
-  lobbyExtraButtons.classList.toggle("hidden", !joined);
+
+  /* Tombol List item selalu tersedia, termasuk sebelum Join dan saat menunggu game selesai. */
+  lobbyExtraButtons.classList.remove("hidden");
+  openItemListBtn.classList.remove("hidden");
+
+  /* Settings hanya tersedia setelah masuk ke room lobby. */
+  openSettingsBtn.classList.toggle("hidden", !joined);
 }
 
 /* =========================
@@ -4575,6 +4665,7 @@ function resetItemSelection() {
   itemElements.forEach(item => item.classList.remove("selected"));
   playerBtn.textContent = "Player";
   selfBtn.textContent = "Self";
+  selfBtn.classList.remove("info-mode");
   playerBtn.classList.remove("use-mode");
 }
 
@@ -4659,6 +4750,7 @@ function setItemMode(type, slotIndex) {
 
   playerBtn.textContent = "Use";
   selfBtn.textContent = "Info";
+  selfBtn.classList.add("info-mode");
   playerBtn.classList.add("use-mode");
   enableShotButtons();
 }
@@ -5630,6 +5722,13 @@ function renderGamePlayerList() {
       image.alt = "Profile";
 
       profile.appendChild(image);
+      resolveProfileImageUrl(player.profile).then(resolved => {
+        if (resolved && image.isConnected) image.src = resolved;
+        else if (!resolved && image.isConnected) {
+          profile.innerHTML = "";
+          profile.textContent = (player.name || "?").charAt(0).toUpperCase();
+        }
+      });
 
     } else {
 
@@ -7208,9 +7307,12 @@ function openGameProfile() {
   if (!me || !currentPlayer) return;
 
   applyAvatarStyle(gameProfileAvatar, currentPlayer);
-  gameProfileAvatar.innerHTML = currentPlayer.profile
-    ? `<img src="${currentPlayer.profile}" alt="Profile">`
-    : (currentPlayer.name || "?").charAt(0).toUpperCase();
+  gameProfileAvatar.innerHTML = "";
+  if (currentPlayer.profile) {
+    attachProfileImage(gameProfileAvatar, currentPlayer.profile, (currentPlayer.name || "?").charAt(0).toUpperCase());
+  } else {
+    gameProfileAvatar.textContent = (currentPlayer.name || "?").charAt(0).toUpperCase();
+  }
   gameProfileName.textContent = currentPlayer.name || "Unknown";
   gameProfileHp.textContent = `HP : ${Number(me.hp ?? 0)} / ${Number(gameData.settings?.maxHealth ?? 4)}`;
 
@@ -8208,6 +8310,7 @@ function enableShotButtons() {
   if (adrenalineActive && !itemMode) {
     playerBtn.textContent = "Use";
     selfBtn.textContent = "Info";
+    selfBtn.classList.add("info-mode");
     playerBtn.classList.add("use-mode");
     playerBtn.disabled = true;
     selfBtn.disabled = true;
@@ -8217,6 +8320,7 @@ function enableShotButtons() {
   if (itemMode && selectedItemType) {
     playerBtn.textContent = "Use";
     selfBtn.textContent = "Info";
+    selfBtn.classList.add("info-mode");
     playerBtn.classList.add("use-mode");
     playerBtn.disabled = !myTurn;
     selfBtn.disabled = false;
@@ -8228,6 +8332,7 @@ function enableShotButtons() {
   selfBtn.disabled = !canShootInteract;
   playerBtn.textContent = "Player";
   selfBtn.textContent = "Self";
+  selfBtn.classList.remove("info-mode");
 
 }
 
