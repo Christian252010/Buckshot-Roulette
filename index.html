@@ -1053,7 +1053,7 @@ renderLoginColorSwatches();
 }
 
 .player-list .pl-list.current-turn {
-  background: #292929;
+  background: #222222;
   border-bottom: none;
   border-left: none;
   border-radius: 6px;
@@ -1372,9 +1372,13 @@ renderLoginColorSwatches();
   flex: 1;
 }
 
-.lobby-settings-btn,
-.lobby-items-btn {
+.lobby-settings-btn {
   background: mediumpurple !important;
+}
+
+.lobby-items-btn {
+  background: #d4af37 !important;
+  color: #1a1a1a !important;
 }
 
 /* =========================
@@ -3007,30 +3011,88 @@ async function resolveProfileImageUrl(url) {
     return profileImageCache.get(original);
   }
 
-  const proxies = [
+  /*
+     share.google bukan URL gambar langsung. Browser biasanya menerima
+     redirect/halaman Google, sehingga <img src="share.google/..."> gagal.
+     Untuk membuatnya tetap bisa tampil di semua client game, coba proxy
+     gambar terlebih dahulu. Proxy tersebut yang mengambil redirect Google
+     dan mengembalikan resource gambar untuk <img>.
+  */
+  const imageProxies = [
+    `https://images.weserv.nl/?url=${encodeURIComponent(original)}`,
+    `https://wsrv.nl/?url=${encodeURIComponent(original)}`
+  ];
+
+  for (const proxy of imageProxies) {
+    try {
+      const testImage = new Image();
+      testImage.referrerPolicy = "no-referrer";
+      const loaded = await new Promise(resolve => {
+        let finished = false;
+        const done = value => {
+          if (finished) return;
+          finished = true;
+          clearTimeout(timer);
+          resolve(value);
+        };
+        const timer = setTimeout(() => done(false), 10000);
+        testImage.onload = () => done(testImage.naturalWidth > 0 && testImage.naturalHeight > 0);
+        testImage.onerror = () => done(false);
+        testImage.src = proxy;
+      });
+
+      if (loaded) {
+        profileImageCache.set(original, proxy);
+        return proxy;
+      }
+    } catch (error) {
+      console.warn("Gagal memuat proxy profile URL:", original, error);
+    }
+  }
+
+  /*
+     Resolver metadata sebagai fallback. Microlink mengikuti redirect
+     share.google dan biasanya mengembalikan URL gambar pada metadata
+     halaman Google yang dituju.
+  */
+  const metadataResolvers = [
+    `https://api.microlink.io?url=${encodeURIComponent(original)}&meta=true`,
     `https://api.allorigins.win/raw?url=${encodeURIComponent(original)}`,
     `https://corsproxy.io/?url=${encodeURIComponent(original)}`
   ];
 
-  for (const proxy of proxies) {
+  for (const resolver of metadataResolvers) {
     try {
-      const response = await fetch(proxy, { cache: "no-store" });
+      const response = await fetch(resolver, { cache: "no-store" });
       if (!response.ok) continue;
 
-      const html = await response.text();
-      const doc = new DOMParser().parseFromString(html, "text/html");
-      const meta =
-        doc.querySelector('meta[property="og:image"]') ||
-        doc.querySelector('meta[name="twitter:image"]') ||
-        doc.querySelector('meta[property="twitter:image"]');
-      const imageUrl = meta?.getAttribute("content")?.trim();
-      if (!imageUrl) continue;
+      const contentType = response.headers.get("content-type") || "";
+      let imageUrl = "";
+
+      if (resolver.includes("api.microlink.io") && contentType.includes("application/json")) {
+        const data = await response.json();
+        imageUrl =
+          data?.data?.image?.url ||
+          data?.data?.logo?.url ||
+          data?.data?.image ||
+          "";
+      } else {
+        const html = await response.text();
+        const doc = new DOMParser().parseFromString(html, "text/html");
+        const meta =
+          doc.querySelector('meta[property="og:image"]') ||
+          doc.querySelector('meta[name="twitter:image"]') ||
+          doc.querySelector('meta[property="twitter:image"]');
+        imageUrl = meta?.getAttribute("content")?.trim() || "";
+      }
+
+      if (!imageUrl || typeof imageUrl !== "string") continue;
 
       const resolved = new URL(imageUrl, original).href;
       profileImageCache.set(original, resolved);
       return resolved;
     } catch (error) {
-      console.warn("Gagal resolve profile URL:", original, error);
+      console.warn("Gagal resolve metadata profile URL:", original, error);
     }
   }
 
@@ -3444,7 +3506,7 @@ function updateHeader() {
 ========================= */
 
 function openProfileEdit() {
-  if (!currentPlayer || roomData?.status === "playing") {
+  if (!currentPlayer) {
     return;
   }
 
@@ -3641,7 +3703,7 @@ document.querySelectorAll(".header-profile, .game-profile").forEach(element => {
       openGameProfile();
       return;
     }
-    if (element.closest(".lobby") && roomData?.status !== "playing") {
+    if (element.closest(".lobby")) {
       openProfileEdit();
     }
   });
