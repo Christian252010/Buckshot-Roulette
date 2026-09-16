@@ -482,6 +482,9 @@ renderLoginColorSwatches();
   color: #888;
 }
 
+.game-message .message-line.heart-event svg {
+  rotate: 0deg !important;
+}
 
 /* =========================
    RANDOM SHELL
@@ -1132,20 +1135,31 @@ renderLoginColorSwatches();
   flex-shrink: 0;
 }
 
-.pl-shield {
+.player-list .pl-shield {
   width: 16px;
   height: 16px;
   flex: 0 0 16px;
-  color: #ddd;
+  color: #3da5ff;
+}
+
+.player-list .pl-ace {
+  width: 16px;
+  height: 16px;
+  flex: 0 0 16px;
+  color: #32cd32;
 }
 
 
 .player-list .pl-list.current-turn .pl-lock {
-  color: white;
+  color: crimson;
 }
 
 .player-list .pl-list.current-turn .pl-shield {
-  color: white;
+  color: #3da5ff;
+}
+
+.player-list .pl-list.current-turn .pl-ace {
+  color: #32cd32;
 }
 
 .player-list .pl-healt {
@@ -4950,15 +4964,23 @@ async function useSelectedItem(targetId = null) {
         player.aceCardActivatedTurn = Number(game.turn?.counter ?? 0);
         player.aceCardExpiresTurn = Number(game.turn?.counter ?? 0) + Math.max(1, aliveCount);
       } else if (type === "magnet") {
-        const magnetItems = inventory.filter(item => item !== "magnet");
-        if (!magnetItems.length) return;
-        const chosen = magnetItems[Math.floor(Math.random() * magnetItems.length)];
-        const chosenIndex = inventory.indexOf(chosen);
-        if (chosenIndex < 0) return;
-        inventory.splice(chosenIndex, 1);
-        player.hp = Math.min(Number(game.settings?.maxHealth ?? 4), Number(player.hp ?? 0) + 1);
+        /* Pilih 1 item acak dari inventory pemain, kecuali Magnet yang digunakan. */
+        const candidateIndexes = inventory
+          .map((item, index) => ({ item, index }))
+          .filter(entry => entry.item !== "magnet");
+        if (!candidateIndexes.length) return;
+
+        const chosenEntry = candidateIndexes[Math.floor(Math.random() * candidateIndexes.length)];
+        if (!chosenEntry) return;
+
+        magnetResult = chosenEntry.item;
+        inventory.splice(chosenEntry.index, 1);
+        player.items = inventory;
+        player.hp = Math.min(
+          Number(game.settings?.maxHealth ?? 4),
+          Number(player.hp ?? 0) + 1
+        );
         inventoryHandled = true;
-        magnetResult = chosen;
       } else if (type === "megazine") {
         game.shells = createShellSet(Object.keys(game.players || {}).length, game.settings || getGameSettings());
         Object.values(game.players || {}).forEach(p => {
@@ -5646,12 +5668,12 @@ function renderGamePlayerList() {
     nameStatus.className = "pl-name-status";
     nameStatus.appendChild(name);
 
-    if (gameData.players?.[player.id]?.aceCardActive) {
-      const ace = document.createElement("i");
-      ace.setAttribute("data-lucide", "playing-card");
-      ace.className = "pl-ace";
-      ace.setAttribute("title", "Ace Card aktif");
-      nameStatus.appendChild(ace);
+    if (gameData.players?.[player.id]?.handcuffed || Number(gameData.players?.[player.id]?.skipTurns ?? 0) > 0) {
+      const lock = document.createElement("i");
+      lock.setAttribute("data-lucide", "lock");
+      lock.className = "pl-lock";
+      lock.setAttribute("title", "Handcuffed");
+      nameStatus.appendChild(lock);
     }
 
     if (gameData.players?.[player.id]?.shieldActive) {
@@ -5662,12 +5684,12 @@ function renderGamePlayerList() {
       nameStatus.appendChild(shield);
     }
 
-    if (gameData.players?.[player.id]?.handcuffed || Number(gameData.players?.[player.id]?.skipTurns ?? 0) > 0) {
-      const lock = document.createElement("i");
-      lock.setAttribute("data-lucide", "lock");
-      lock.className = "pl-lock";
-      lock.setAttribute("title", "Handcuffed");
-      nameStatus.appendChild(lock);
+    if (gameData.players?.[player.id]?.aceCardActive) {
+      const ace = document.createElement("i");
+      ace.setAttribute("data-lucide", "playing-card");
+      ace.className = "pl-ace";
+      ace.setAttribute("title", "Ace Card aktif");
+      nameStatus.appendChild(ace);
     }
 
     const identity = document.createElement("div");
@@ -5774,6 +5796,7 @@ function appendGameMessage(
 
   const line = document.createElement("div");
   line.className = "message-line " + type;
+  if (icon === "heart" || icon === "heart-crack") line.classList.add("heart-event");
 
   if (icon) {
     const iconElement = document.createElement("i");
@@ -7608,8 +7631,8 @@ function renderPlayerPopup() {
           class="st-player-btn"
           data-id="${player.id}"
           ${itemMode && ["handcuff", "adrenaline"].includes(selectedItemType) && gameData?.turn?.current !== currentPlayerId ? "disabled" : ""}
-          ${itemMode && selectedItemType === "adrenaline" && !(Array.isArray(gameData?.players?.[player.id]?.items) && gameData.players[player.id].items.length) ? "disabled" : ""}
-          ${itemMode && selectedItemType === "dynamite" && gameData?.players?.[player.id]?.dynamiteTrapped ? "disabled" : ""}>
+          ${itemMode && selectedItemType === "adrenaline" && (gameData?.players?.[player.id]?.aceCardActive || !(Array.isArray(gameData?.players?.[player.id]?.items) && gameData.players[player.id].items.length)) ? "disabled" : ""}
+          ${itemMode && selectedItemType === "dynamite" && (gameData?.players?.[player.id]?.aceCardActive || gameData?.players?.[player.id]?.dynamiteTrapped) ? "disabled" : ""}>
 
           ${itemMode && selectedItemType === "handcuff" ? "Lock" : itemMode && selectedItemType === "adrenaline" ? "Steal" : itemMode && selectedItemType === "dynamite" ? "Trap" : "Shot"}
 
@@ -7865,11 +7888,11 @@ async function shoot(targetId) {
       let aceExpired = [];
 
       const targetAceCard = targetPlayer.aceCardActive === true;
-      const targetShielded = !targetAceCard && targetPlayer.shieldActive === true;
-      const targetTrapped = !targetAceCard && targetPlayer.dynamiteTrapped === true;
+      const targetShielded = targetPlayer.shieldActive === true;
+      const targetTrapped = targetPlayer.dynamiteTrapped === true;
 
       if (currentShellType === "live") {
-        if (targetShielded) {
+        if (targetShielded && !targetAceCard) {
           if (isSelf) {
             damage = 2;
             targetPlayer.hp = Math.max(0, Number(targetPlayer.hp ?? 0) - damage);
@@ -7884,7 +7907,7 @@ async function shoot(targetId) {
           targetPlayer.hp = Math.max(0, Number(targetPlayer.hp ?? 0) - damage);
         }
 
-        if (targetTrapped && !isSelf) {
+        if (targetTrapped && !targetAceCard && !isSelf) {
           shooterDamage += 1;
           dynamiteTriggered = true;
           targetPlayer.dynamiteTrapped = false;
@@ -7908,11 +7931,11 @@ async function shoot(targetId) {
       } else {
         players[currentPlayerId].sawActive = false;
         players[currentPlayerId].lifeStealActive = false;
-        if (targetShielded) {
+        if (targetShielded && !targetAceCard) {
           targetPlayer.shieldActive = false;
           targetPlayer.shieldActivatedTurn = null;
         }
-        if (targetTrapped) {
+        if (targetTrapped && !targetAceCard) {
           targetPlayer.dynamiteTrapped = false;
           targetPlayer.dynamiteTrappedById = null;
           dynamiteRemoved = true;
