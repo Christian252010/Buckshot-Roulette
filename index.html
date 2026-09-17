@@ -566,194 +566,49 @@ body {
 ========================= */
 
 /* =========================
-   ITEM SPIN
+   ITEM SPIN / RELOAD REWARD
 ========================= */
 
-:root {
-  --spbg: #4A1620;
-}
-
-.item-spin {
-  display: none !important;
-  flex-direction: column;
-  justify-content: center;
-  align-items: center;
-  background: var(--spbg);
+.spin {
+  display: flex;
   position: absolute;
+  justify-content: space-evenly;
+  align-items: center;
   top: 44.5%;
   left: 0;
   transform: translateY(-60%);
+  background: #4a1620;
   width: 100%;
-  height: 140px;
-  gap: 16px;
-  z-index: 10;
-  overflow: hidden;
-}
-
-.item-spin.hidden {
-  display: none !important;
-}
-
-.spin-top, .spin-bottom {
-  background: #1f1f1f;
-  width: 100%;
-  height: 40px;
-  flex-shrink: 0;
-  z-index: 11;
-}
-
-.spin-top {
-  border-bottom: 4px solid crimson;
-  box-shadow: 0 16px 0 0 var(--spbg);
-}
-
-.spin-bottom {
+  height: 100px;
   border-top: 4px solid crimson;
-  box-shadow: 0 -16px 0 0 var(--spbg);
-}
-
-.bdr-spin {
-  display: flex;
-  width: 100%;
-  justify-content: space-evenly;
-  z-index: 11;
-}
-
-.bdr-spin span {
-  width: 52px;
-  height: 52px;
-  border: 4px solid crimson;
-  border-radius: 4px;
-}
-
-.it-sp {
-  display: flex;
-  justify-content: space-evenly;
-  position: absolute;
-  width: 100%;
-  color: white;
+  border-bottom: 4px solid crimson;
   z-index: 12;
+  opacity: 1;
+  transition: opacity .28s ease;
 }
-
-.it-sp svg {
-  width: 38px;
-  height: 38px;
-  padding: 9px;
-  background: #1f1f1f;
+.spin.hidden { display: flex !important; opacity: 0; pointer-events: none; }
+.spin svg {
+  background: #2f2f2f;
+  color: white;
+  width: 36px;
+  height: 36px;
+  padding: 14px;
+  border: 4px solid crimson;
+  border-radius: 6px;
+  box-sizing: content-box;
+  transition: transform .12s ease, opacity .12s ease;
 }
-
-.it-sp {
-  height: 210px;
-  align-items: flex-start;
-  gap: 0;
-  overflow: hidden;
+.spin.spinning svg { animation: spinIconPulse .18s ease-in-out infinite alternate; }
+.spin .spin-slot-final { animation: spinFinal .35s cubic-bezier(.2,.9,.25,1) both; }
+@keyframes spinIconPulse {
+  from { transform: translateY(-3px) scale(.96) rotate(-2deg); opacity: .72; }
+  to { transform: translateY(3px) scale(1.03) rotate(2deg); opacity: 1; }
 }
-
-.spin-column {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 12px;
-  width: 50%;
+@keyframes spinFinal {
+  0% { transform: scale(.65) rotate(-12deg); opacity: .2; }
+  70% { transform: scale(1.12) rotate(4deg); opacity: 1; }
+  100% { transform: scale(1) rotate(0); opacity: 1; }
 }
-
-.spin-column i {
-  display: flex;
-  flex-shrink: 0;
-}
-
-.spin-column i svg {
-  width: 38px;
-  height: 38px;
-  padding: 9px;
-  background: #1f1f1f;
-}
-
-.item-spin.spinning .it-sp {
-  animation: itemSpinRoll 1.6s cubic-bezier(.18,.72,.28,1) forwards;
-}
-
-.item-spin.spinning .bdr-spin span {
-  animation: itemSpinPulse .22s ease-in-out infinite alternate;
-}
-
-@keyframes itemSpinRoll {
-  0% { transform: translateY(-210px); opacity: .15; }
-  18% { opacity: .45; }
-  42% { opacity: .9; }
-  72% { opacity: 1; }
-  100% { transform: translateY(0); opacity: 1; }
-}
-
-@keyframes itemSpinPulse {
-  from { transform: translateY(-3px); }
-  to { transform: translateY(3px); }
-}
-
-.shot {
-  position: absolute;
-  display: flex;
-  left: 50%;
-  top: 45%;
-  width: 112px;
-  height: 112px;
-  align-items: center;
-  justify-content: center;
-  transform: translateX(-50%) translateY(-60%);
-  padding: 0;
-  border-radius: 50%;
-  cursor: pointer;
-  transition: none;
-}
-
-.shot:active {
-  transform: translateX(-50%) translateY(-60%);
-}
-
-.shot.active {
-  background: #333;
-}
-
-.shot.reload-hidden {
-  display: none !important;
-}
-
-.shot img {
-  display: block;
-  width: 84px;
-  height: 84px;
-  object-fit: contain;
-}
-
-.shot.shooting {
-  animation: shotDisappear 1.15s linear forwards;
-  pointer-events: none;
-  will-change: transform, opacity;
-}
-
-@keyframes shotDisappear {
-  0% {
-    opacity: 1;
-    transform: translateX(-50%) translateY(-60%) rotate(0deg) scale(1);
-  }
-  25% {
-    opacity: 1;
-    transform: translateX(-50%) translateY(-60%) rotate(90deg) scale(.88);
-  }
-  50% {
-    opacity: .96;
-    transform: translateX(-50%) translateY(-60%) rotate(180deg) scale(.68);
-  }
-  75% {
-    opacity: .72;
-    transform: translateX(-50%) translateY(-60%) rotate(270deg) scale(.38);
-  }
-  100% {
-    opacity: 0;
-    transform: translateX(-50%) translateY(-60%) rotate(360deg) scale(0);
-  }
-}
-
 
 /* =========================
    BOTTOM
@@ -2661,17 +2516,10 @@ body {
 
   <!-- ITEM SPIN -->
 
-  <div class="item-spin hidden" id="itemSpin">
-    <span class="spin-top"></span>
-    <div class="bdr-spin">
-      <span></span>
-      <span></span>
-    </div>
-    <div class="it-sp">
-      <div class="spin-column"></div>
-      <div class="spin-column"></div>
-    </div>
-    <span class="spin-bottom"></span>
+  <div class="spin hidden" id="itemSpin">
+    <i data-lucide="cigarette"></i>
+    <i data-lucide="search"></i>
+    <i data-lucide="pocket-knife"></i>
   </div>
 
   <!-- SHOTGUN -->
@@ -3652,6 +3500,8 @@ function showLogin() {
 function showLobby() {
 
   if (handcuffOverlay) handcuffOverlay.classList.add("hidden");
+  const reloadSpin = document.querySelector("#itemSpin");
+  if (reloadSpin) { reloadSpin.classList.add("hidden"); reloadSpin.classList.remove("spinning"); }
   if (startCountdownTimer) { clearTimeout(startCountdownTimer); startCountdownTimer = null; }
   startBtn.textContent = "Mulai";
   startBtn.disabled = false;
@@ -5125,7 +4975,14 @@ function renderMyItems() {
     !shootingLocked &&
     gameData?.turn?.current === currentPlayerId;
 
-  const visibleItems = [...items];
+  let visibleItems = [...items];
+  const reloadEvent = gameData?.lastEvent?.reload ? gameData.lastEvent : null;
+  const pendingRewards = reloadEvent && revealedItemSpinEventId !== reloadEvent.id
+    ? (Array.isArray(reloadEvent.itemRewards?.[currentPlayerId]) ? reloadEvent.itemRewards[currentPlayerId] : [])
+    : [];
+  if (pendingRewards.length) {
+    visibleItems = visibleItems.slice(0, Math.max(0, visibleItems.length - pendingRewards.length));
+  }
 
   if (!canSelectItems && itemMode) {
     resetItemSelection();
@@ -6224,8 +6081,11 @@ function renderGamePlayerList() {
     nameStatus.className = "pl-name-status";
     nameStatus.appendChild(name);
 
-    if (gameData.players?.[player.id]?.handcuffed || Number(gameData.players?.[player.id]?.skipTurns ?? 0) > 0) {
-      const lockedByCoin = gameData.players?.[player.id]?.coinFlipLocked === true;
+    const playerState = gameData.players?.[player.id];
+    const lockedByCoin = playerState?.coinFlipLocked === true;
+    const lockedByHandcuff = !lockedByCoin && (playerState?.handcuffed === true || Number(playerState?.skipTurns ?? 0) > 0);
+
+    if (lockedByCoin || lockedByHandcuff) {
       const lock = document.createElement("i");
       lock.setAttribute("data-lucide", lockedByCoin ? "circle-euro" : "lock");
       lock.className = lockedByCoin ? "pl-coin" : "pl-lock";
@@ -6712,45 +6572,23 @@ function showGameEvent(eventData) {
       }
 
       if (eventData.reload) {
+        /* OUT + IN -> Random Shell -> hilang -> spin item -> item masuk inventory. */
         playGameSound("out");
+        playGameSound("in", 1, 120);
         appendGameMessage("Shell telah habis", "info", "refresh-cw", 2600);
 
-        messageTimers.push(
-          setTimeout(() => {
-            playGameSound("in");
-            showShellReveal();
-            appendGameMessage("Shell baru masuk", "info", "package-open", 2600);
-          }, 650)
-        );
+        messageTimers.push(setTimeout(() => {
+          showShellReveal();
+          appendGameMessage("Shell baru masuk", "info", "package-open", 2600);
+        }, 420));
 
-        messageTimers.push(
-          setTimeout(() => {
-            const rewards = Array.isArray(eventData.itemRewards?.[currentPlayerId])
-              ? eventData.itemRewards[currentPlayerId]
-              : [];
-            playGameSound("get-item");
-            renderMyItems();
-            appendGameMessage(
-              rewards.length
-                ? `${rewards.length} item baru didapat`
-                : "Inventory penuh, item baru tidak ditambahkan",
-              "info",
-              rewards.length ? "package-plus" : "package-x",
-              3000
-            );
-          }, 1500)
-        );
+        messageTimers.push(setTimeout(() => {
+          showItemSpin(eventData);
+        }, 4050));
 
-        messageTimers.push(
-          setTimeout(() => {
-            appendGameMessage(
-              "Giliran lanjut ke " + getPlayerNameById(eventData.nextId),
-              "info",
-              "arrow-right",
-              3600
-            );
-          }, 2500)
-        );
+        messageTimers.push(setTimeout(() => {
+          appendGameMessage("Giliran lanjut ke " + getPlayerNameById(eventData.nextId), "info", "arrow-right", 3600);
+        }, 7600));
 
         return;
       }
@@ -7148,69 +6986,67 @@ function getItemSpinIcon(type) {
   return ITEM_DEFINITIONS[type]?.icon || "package";
 }
 
-function showItemSpin() {
+function showItemSpin(eventData = gameData?.lastEvent) {
   const spin = document.querySelector("#itemSpin");
-  if (!spin) return;
+  if (!spin || !eventData?.id) return;
 
   clearTimeout(itemSpinTimer);
   clearTimeout(itemSpinHideTimer);
 
-  const rewards = Array.isArray(gameData?.lastEvent?.itemRewards?.[currentPlayerId])
-    ? gameData.lastEvent.itemRewards[currentPlayerId].slice(0, Number(gameData.settings?.itemRewardCount ?? 2))
+  const rewards = Array.isArray(eventData.itemRewards?.[currentPlayerId])
+    ? eventData.itemRewards[currentPlayerId].slice(0, 3)
     : [];
 
   if (!rewards.length) {
+    revealedItemSpinEventId = eventData.id;
     spin.classList.add("hidden");
     spin.classList.remove("spinning");
+    renderMyItems();
     return;
   }
 
-  activeItemSpinEventId = gameData?.lastEvent?.id || null;
+  activeItemSpinEventId = eventData.id;
   revealedItemSpinEventId = null;
-  renderMyItems();
 
-  const columns = spin.querySelectorAll(".spin-column");
+  const slots = Array.from(spin.querySelectorAll("i"));
   const types = Object.keys(ITEM_DEFINITIONS);
 
-  columns.forEach((column, columnIndex) => {
-    column.innerHTML = "";
-
-    const sequence = [];
-    for (let i = 0; i < 7; i++) {
-      sequence.push(types[Math.floor(Math.random() * types.length)]);
-    }
-    sequence.push(rewards[columnIndex] || rewards[0]);
-
-    sequence.forEach(type => {
-      const icon = document.createElement("i");
-      icon.setAttribute("data-lucide", getItemSpinIcon(type));
-      column.appendChild(icon);
+  const renderSpinIcons = final => {
+    slots.forEach((slot, index) => {
+      const type = final ? (rewards[index] || rewards[0]) : types[Math.floor(Math.random() * types.length)];
+      slot.setAttribute("data-lucide", getItemSpinIcon(type));
+      slot.classList.toggle("spin-slot-final", final);
     });
-  });
+    lucide.createIcons();
+  };
 
+  renderSpinIcons(false);
   spin.classList.remove("hidden", "spinning");
   void spin.offsetWidth;
   spin.classList.add("spinning");
-  lucide.createIcons();
 
-  [0, 320, 620, 900, 1180].forEach(delay => {
-    playGameSound("click", 0.72, delay);
-  });
+  const cycleTimer = setInterval(() => {
+    if (!spin.classList.contains("spinning")) return;
+    renderSpinIcons(false);
+    playGameSound("click", 0.72);
+  }, 180);
 
-  appendGameMessage("Memutar mesin item...", "info", null, 1900);
+  appendGameMessage("Mencari item...", "info", null, 3600);
 
   itemSpinTimer = setTimeout(() => {
+    clearInterval(cycleTimer);
     spin.classList.remove("spinning");
-    lucide.createIcons();
+    renderSpinIcons(true);
     playGameSound("get-item");
     revealedItemSpinEventId = activeItemSpinEventId;
     renderMyItems();
-    appendGameMessage("Item didapat!", "info", null, 2200);
-  }, 1600);
+    appendGameMessage(rewards.length > 1 ? `${rewards.length} item didapat!` : "Item didapat!", "info", "package-plus", 3000);
+  }, 3000);
 
   itemSpinHideTimer = setTimeout(() => {
     spin.classList.add("hidden");
-  }, 2100);
+    spin.classList.remove("spinning");
+  }, 3450);
 }
 
 function showShellReveal() {
