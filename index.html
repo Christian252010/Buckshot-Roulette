@@ -6662,8 +6662,8 @@ function showGameEvent(eventData) {
           getPlayerNameById(eventData.winnerId);
 
         /* Kemenangan: kedua suara diputar bersamaan. */
-        playGameSound("levelup");
         playGameSound("winner");
+        playGameSound("levelup");
 
         appendGameMessage(
           winnerName + " pemenangnya",
