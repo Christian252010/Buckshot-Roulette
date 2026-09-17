@@ -2,7 +2,7 @@
 <html lang="id">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
 
 <title>Recovery Account</title>
 
@@ -109,6 +109,12 @@ button:active{
     transform:scale(.98);
 }
 
+button:disabled{
+    background:#666;
+    cursor:not-allowed;
+    transform:none;
+}
+
 .message{
     display:none;
     margin-top:14px;
@@ -131,6 +137,10 @@ button:active{
 .message.success{
     color:#6cff9a;
 }
+
+.message.loading{
+    color:#aaa;
+}
 </style>
 </head>
 
@@ -145,7 +155,7 @@ button:active{
     <h1>Recovery Account</h1>
 
     <div class="desc">
-        Masukkan ID pemain kamu untuk memulihkan
+        Masukkan ID pemain untuk memulihkan
         akun yang tersimpan di perangkat ini.
     </div>
 
@@ -156,6 +166,7 @@ button:active{
         type="text"
         placeholder="Masukkan ID pemain"
         autocomplete="off"
+        spellcheck="false"
     >
 
     <button id="recoveryBtn">
@@ -166,63 +177,238 @@ button:active{
 
 </div>
 
-<script>
-lucide.createIcons();
+<script type="module">
 
-const playerIdInput = document.getElementById("playerId");
-const recoveryBtn = document.getElementById("recoveryBtn");
-const message = document.getElementById("message");
+import {
+    initializeApp
+} from "https://www.gstatic.com/firebasejs/12.1.0/firebase-app.js";
 
-function showMessage(text, type){
+import {
+    getDatabase,
+    ref,
+    get
+} from "https://www.gstatic.com/firebasejs/12.1.0/firebase-database.js";
+
+
+/* =========================
+   FIREBASE
+========================= */
+
+const firebaseConfig = {
+    databaseURL:
+        "https://buckshotroulette-4c7a1-default-rtdb.asia-southeast1.firebasedatabase.app"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getDatabase(app);
+
+
+/* =========================
+   ELEMENT
+========================= */
+
+const playerIdInput =
+    document.getElementById("playerId");
+
+const recoveryBtn =
+    document.getElementById("recoveryBtn");
+
+const message =
+    document.getElementById("message");
+
+
+/* =========================
+   MESSAGE
+========================= */
+
+function showMessage(text,type){
+
     message.textContent = text;
-    message.className = "message show " + type;
+
+    message.className =
+        "message show " + type;
 }
 
-recoveryBtn.addEventListener("click", () => {
 
-    const newId = playerIdInput.value.trim();
+/* =========================
+   RECOVERY
+========================= */
+
+async function recovery(){
+
+    const newId =
+        playerIdInput.value.trim();
 
     if(!newId){
-        showMessage("Masukkan ID pemain terlebih dahulu.", "error");
+
+        showMessage(
+            "Masukkan ID pemain terlebih dahulu.",
+            "error"
+        );
+
+        playerIdInput.focus();
+
         return;
     }
 
-    /*
-     * Hapus ID akun lama
-     */
-    localStorage.removeItem("buckshotPlayerId");
 
-    /*
-     * Masukkan ID akun baru
-     * Key harus sama dengan yang digunakan index.html
-     */
-    localStorage.setItem("buckshotPlayerId", newId);
+    /* Jangan izinkan proses ganda */
 
-    /*
-     * Cek apakah benar-benar tersimpan
-     */
-    const savedId = localStorage.getItem("buckshotPlayerId");
-
-    if(savedId !== newId){
-        showMessage("Gagal menyimpan ID pemain.", "error");
-        return;
-    }
+    recoveryBtn.disabled = true;
 
     showMessage(
-        "ID berhasil dipulihkan. Membuka game...",
-        "success"
+        "Memeriksa ID pemain...",
+        "loading"
     );
 
-    setTimeout(() => {
-        window.location.href = "index.html";
-    }, 1000);
-});
 
-playerIdInput.addEventListener("keydown", e => {
-    if(e.key === "Enter"){
-        recoveryBtn.click();
+    try{
+
+        /*
+         * Cek akun di Firebase
+         *
+         * /players/{ID}
+         */
+
+        const playerRef =
+            ref(db, "players/" + newId);
+
+        const snapshot =
+            await get(playerRef);
+
+
+        /*
+         * ID tidak ditemukan
+         */
+
+        if(!snapshot.exists()){
+
+            showMessage(
+                "ID pemain tidak ditemukan.",
+                "error"
+            );
+
+            recoveryBtn.disabled = false;
+
+            return;
+        }
+
+
+        /*
+         * ID ditemukan
+         *
+         * Baru sekarang ID lama dihapus.
+         */
+
+        localStorage.removeItem(
+            "buckshotPlayerId"
+        );
+
+
+        /*
+         * Simpan ID baru
+         */
+
+        localStorage.setItem(
+            "buckshotPlayerId",
+            newId
+        );
+
+
+        /*
+         * Pastikan benar-benar tersimpan
+         */
+
+        const savedId =
+            localStorage.getItem(
+                "buckshotPlayerId"
+            );
+
+
+        if(savedId !== newId){
+
+            showMessage(
+                "Gagal menyimpan ID ke perangkat.",
+                "error"
+            );
+
+            recoveryBtn.disabled = false;
+
+            return;
+        }
+
+
+        /*
+         * Berhasil
+         */
+
+        showMessage(
+            "Akun berhasil dipulihkan.",
+            "success"
+        );
+
+
+        /*
+         * Masuk ke game
+         */
+
+        setTimeout(() => {
+
+            window.location.href =
+                "index.html";
+
+        },1000);
+
+
+    }catch(error){
+
+        console.error(
+            "Recovery error:",
+            error
+        );
+
+        showMessage(
+            "Gagal menghubungi Firebase. Periksa koneksi internet.",
+            "error"
+        );
+
+        recoveryBtn.disabled = false;
     }
-});
+}
+
+
+/* =========================
+   BUTTON
+========================= */
+
+recoveryBtn.addEventListener(
+    "click",
+    recovery
+);
+
+
+/* =========================
+   ENTER
+========================= */
+
+playerIdInput.addEventListener(
+    "keydown",
+    event => {
+
+        if(event.key === "Enter"){
+            recovery();
+        }
+
+    }
+);
+
+
+/* =========================
+   LUCIDE
+========================= */
+
+lucide.createIcons();
+
 </script>
 
 </body>
