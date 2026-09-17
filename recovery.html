@@ -180,23 +180,31 @@ function showMessage(text, type){
 
 recoveryBtn.addEventListener("click", () => {
 
-    const id = playerIdInput.value.trim();
+    const newId = playerIdInput.value.trim();
 
-    if(!id){
+    if(!newId){
         showMessage("Masukkan ID pemain terlebih dahulu.", "error");
         return;
     }
 
     /*
-     * Simpan kembali ID pemain ke localStorage.
-     *
-     * KEY INI HARUS SAMA dengan yang digunakan
-     * oleh index.html game kamu.
+     * 1. Hapus ID pemain lama
      */
-    localStorage.setItem("playerId", id);
+    localStorage.removeItem("playerId");
 
-    showMessage("ID berhasil dipulihkan ke perangkat ini.", "success");
+    /*
+     * 2. Tambahkan ID pemain baru
+     */
+    localStorage.setItem("playerId", newId);
 
+    showMessage(
+        "ID pemain berhasil dipulihkan.",
+        "success"
+    );
+
+    /*
+     * 3. Kembali ke halaman utama
+     */
     setTimeout(() => {
         window.location.href = "index.html";
     }, 1000);
