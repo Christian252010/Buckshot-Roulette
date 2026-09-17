@@ -579,15 +579,35 @@ body {
   transform: translateY(-60%);
   background: #4a1620;
   width: 100%;
+  min-height: 100px;
   height: 100px;
+  padding: 0 14px;
+  gap: 12px;
   border-top: 4px solid crimson;
   border-bottom: 4px solid crimson;
   z-index: 12;
   opacity: 1;
   transition: opacity .28s ease;
 }
-.spin.hidden { display: flex !important; opacity: 0; pointer-events: none; }
-.spin svg {
+
+.spin.hidden {
+  display: flex !important;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.spin-slot {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 1 1 0;
+  min-width: 0;
+  max-width: 78px;
+  height: 68px;
+}
+
+.spin-slot svg {
+  display: block;
   background: #2f2f2f;
   color: white;
   width: 36px;
@@ -596,18 +616,16 @@ body {
   border: 4px solid crimson;
   border-radius: 6px;
   box-sizing: content-box;
-  transition: transform .12s ease, opacity .12s ease;
 }
-.spin.spinning svg { animation: spinIconPulse .18s ease-in-out infinite alternate; }
-.spin .spin-slot-final { animation: spinFinal .35s cubic-bezier(.2,.9,.25,1) both; }
-@keyframes spinIconPulse {
-  from { transform: translateY(-3px) scale(.96) rotate(-2deg); opacity: .72; }
-  to { transform: translateY(3px) scale(1.03) rotate(2deg); opacity: 1; }
+
+.spin-slot-final svg {
+  animation: spinFinal .35s cubic-bezier(.2,.9,.25,1) both;
 }
+
 @keyframes spinFinal {
-  0% { transform: scale(.65) rotate(-12deg); opacity: .2; }
-  70% { transform: scale(1.12) rotate(4deg); opacity: 1; }
-  100% { transform: scale(1) rotate(0); opacity: 1; }
+  0% { transform: scale(.72); opacity: .25; }
+  70% { transform: scale(1.12); opacity: 1; }
+  100% { transform: scale(1); opacity: 1; }
 }
 
 /* =========================
@@ -2588,11 +2606,7 @@ body {
 
   <!-- ITEM SPIN -->
 
-  <div class="spin hidden" id="itemSpin">
-    <i data-lucide="cigarette"></i>
-    <i data-lucide="search"></i>
-    <i data-lucide="pocket-knife"></i>
-  </div>
+  <div class="spin hidden" id="itemSpin"></div>
 
   <!-- SHOTGUN -->
 
@@ -7066,13 +7080,13 @@ function showItemSpin(eventData = gameData?.lastEvent) {
   clearTimeout(itemSpinHideTimer);
 
   const rewards = Array.isArray(eventData.itemRewards?.[currentPlayerId])
-    ? eventData.itemRewards[currentPlayerId].slice(0, 3)
+    ? eventData.itemRewards[currentPlayerId].slice(0, 8)
     : [];
 
   if (!rewards.length) {
     revealedItemSpinEventId = eventData.id;
     spin.classList.add("hidden");
-    spin.classList.remove("spinning");
+    spin.innerHTML = "";
     renderMyItems();
     return;
   }
@@ -7080,45 +7094,71 @@ function showItemSpin(eventData = gameData?.lastEvent) {
   activeItemSpinEventId = eventData.id;
   revealedItemSpinEventId = null;
 
-  const slots = Array.from(spin.querySelectorAll("i"));
+  /* Jumlah slot selalu sama dengan jumlah item yang benar-benar akan didapat. */
+  spin.innerHTML = rewards.map(() => `
+    <span class="spin-slot">
+      <i data-lucide="package"></i>
+    </span>
+  `).join("");
+
+  lucide.createIcons();
+
+  const slots = Array.from(spin.querySelectorAll(".spin-slot"));
   const types = Object.keys(ITEM_DEFINITIONS);
 
-  const renderSpinIcons = final => {
-    slots.forEach((slot, index) => {
-      const type = final ? (rewards[index] || rewards[0]) : types[Math.floor(Math.random() * types.length)];
-      slot.setAttribute("data-lucide", getItemSpinIcon(type));
-      slot.classList.toggle("spin-slot-final", final);
+  /* Ganti icon tanpa animasi/getaran. Posisi slot tetap, hanya icon yang berubah. */
+  const renderRandomIcons = () => {
+    slots.forEach(slot => {
+      const icon = slot.querySelector("i");
+      if (!icon) return;
+      const type = types[Math.floor(Math.random() * types.length)];
+      icon.setAttribute("data-lucide", getItemSpinIcon(type));
     });
     lucide.createIcons();
   };
 
-  renderSpinIcons(false);
-  spin.classList.remove("hidden", "spinning");
-  void spin.offsetWidth;
-  spin.classList.add("spinning");
+  /* Saat selesai, baru tampilkan item yang benar-benar akan didapat. */
+  const renderFinalIcons = () => {
+    slots.forEach((slot, index) => {
+      const icon = slot.querySelector("i");
+      if (!icon) return;
+      icon.setAttribute("data-lucide", getItemSpinIcon(rewards[index] || rewards[0]));
+      slot.classList.add("spin-slot-final");
+    });
+    lucide.createIcons();
+  };
 
+  renderRandomIcons();
+  spin.classList.remove("hidden");
+  appendGameMessage("Mencari item...", "info", null, 3600);
+
+  /* Gaya gacha: icon stay di tempatnya, tetapi isinya berubah setiap click. */
   const cycleTimer = setInterval(() => {
-    if (!spin.classList.contains("spinning")) return;
-    renderSpinIcons(false);
+    renderRandomIcons();
     playGameSound("click", 0.72);
   }, 180);
 
-  appendGameMessage("Mencari item...", "info", null, 3600);
-
+  /* Durasi spin. Tidak ada transform/animation selama randomisasi. */
   itemSpinTimer = setTimeout(() => {
     clearInterval(cycleTimer);
-    spin.classList.remove("spinning");
-    renderSpinIcons(true);
-    playGameSound("get-item");
-    revealedItemSpinEventId = activeItemSpinEventId;
-    renderMyItems();
-    appendGameMessage(rewards.length > 1 ? `${rewards.length} item didapat!` : "Item didapat!", "info", "package-plus", 3000);
-  }, 3000);
+    renderFinalIcons();
 
-  itemSpinHideTimer = setTimeout(() => {
-    spin.classList.add("hidden");
-    spin.classList.remove("spinning");
-  }, 3450);
+    /* get-item diputar tepat ketika hasil asli mulai diperlihatkan. */
+    playGameSound("get-item");
+
+    /* Inventory baru diperbarui secara visual setelah hasil gacha ditampilkan. */
+    itemSpinHideTimer = setTimeout(() => {
+      revealedItemSpinEventId = activeItemSpinEventId;
+      renderMyItems();
+      spin.classList.add("hidden");
+      appendGameMessage(
+        rewards.length > 1 ? `${rewards.length} item didapat!` : "Item didapat!",
+        "info",
+        "package-plus",
+        3000
+      );
+    }, 550);
+  }, 3000);
 }
 
 function showShellReveal() {
