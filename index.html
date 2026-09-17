@@ -11,6 +11,11 @@
 
   <title>Buckshot Roulette</title>
 
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&display=swap" rel="stylesheet">
+  <link   href="https://fonts.googleapis.com/css2?family=Archivo&display=swap" rel="stylesheet">
+
   <script src="https://unpkg.com/lucide@latest"></script>
 
 </head>
@@ -223,7 +228,7 @@ renderLoginColorSwatches();
 }
 
 .start {
-  background: green !important;
+  background: #228b22 !important;
 }
 
 .left {
@@ -749,7 +754,7 @@ renderLoginColorSwatches();
 
 .shot-btn button.self.info-mode {
   background: #d4af37 !important;
-  color: #1a1a1a !important;
+  color: white !important;
 }
 
 .shot-btn button:disabled {
@@ -1378,12 +1383,40 @@ renderLoginColorSwatches();
 
 .lobby-settings-btn {
   background: mediumpurple !important;
+  opacity: 0.55;
 }
 
 .lobby-items-btn {
   background: dodgerblue !important;
   color: white !important;
 }
+
+.lobby-settings-btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+.leaderboard {
+  display: flex; flex-direction: column; gap: 0;
+  background: #2f2f2f; margin: 0 14px 14px; padding: 14px 18px; border-radius: 6px;
+}
+.leaderboard-title {
+  display:flex; align-items:center; justify-content:space-between; padding-bottom:8px; color:white; font-size:18px; font-weight:bold;
+}
+.leaderboard-row {
+  display:flex; align-items:center; gap:9px; min-height:48px; padding:7px 0; border-bottom:1.5px solid #555;
+}
+.leaderboard-row:last-child { border-bottom:none; }
+.leaderboard-rank { width:24px; flex:0 0 24px; color:#888; text-align:center; font-weight:bold; }
+.leaderboard-row .profile { width:36px; height:36px; font-size:18px; }
+.leaderboard-name { min-width:0; flex:1; overflow:hidden; color:#ddd; font-size:17px; text-overflow:ellipsis; white-space:nowrap; }
+.leaderboard-wins { display:flex; align-items:center; gap:5px; flex-shrink:0; color:gold; font-size:15px; font-weight:bold; }
+.leaderboard-wins svg { width:17px; height:17px; }
+.leaderboard-empty { padding:10px 0 4px; color:#777; text-align:center; font-size:14px; }
+.random-shot-btn { width:calc(100% - 16px) !important; margin:0 8px 8px; background:#444 !important; color:white; }
+.random-shot-btn:active { transform:scale(.98); }
+.settings-save { display:none !important; }
 
 /* =========================
    GAME SETTINGS / ITEM LIST
@@ -2144,7 +2177,7 @@ renderLoginColorSwatches();
         List item
       </button>
       
-      <button class="lobby-settings-btn" id="openSettingsBtn">
+      <button class="lobby-settings-btn" id="openSettingsBtn" type="button" disabled>
         <i data-lucide="settings"></i>
         Settings
       </button>
@@ -2157,6 +2190,14 @@ renderLoginColorSwatches();
 
 
   <div class="join-list"></div>
+
+  <div class="leaderboard" id="leaderboard">
+    <div class="leaderboard-title">
+      <span>Leaderboard</span>
+      <span id="leaderboardTotal">0</span>
+    </div>
+    <div id="leaderboardList"></div>
+  </div>
 
 </div>
 
@@ -2513,6 +2554,11 @@ renderLoginColorSwatches();
       <button class="self" disabled>Self</button>
     </div>
 
+    <button class="random-shot-btn" id="randomShotBtn" type="button" disabled>
+      <i data-lucide="shuffle"></i>
+      Random Shot
+    </button>
+
     <div class="items-have">
       <div class="item"></div>
       <div class="item"></div>
@@ -2675,6 +2721,7 @@ let itemMode = false;
 
 let gameWatcherStarted = false;
 let roomWatcherStarted = false;
+let leaderboardWatcherStarted = false;
 
 let prepareTimer = null;
 let startCountdownTimer = null;
@@ -2762,6 +2809,18 @@ const playerBtn =
 
 const selfBtn =
   document.querySelector(".self");
+
+const randomShotBtn =
+  document.querySelector("#randomShotBtn");
+
+const leaderboard =
+  document.querySelector("#leaderboard");
+
+const leaderboardList =
+  document.querySelector("#leaderboardList");
+
+const leaderboardTotal =
+  document.querySelector("#leaderboardTotal");
 
 const popup =
   document.querySelector(".shot-list");
@@ -3186,44 +3245,46 @@ async function nameExists(name) {
    RESERVE NAME
 ========================= */
 
-async function reserveName(name) {
+async function reserveName(name, playerId = currentPlayerId) {
+  const normalized = normalizeName(name);
+  const nameKey = encodeURIComponent(normalized);
+  const nameRef = ref(db, "names/" + nameKey);
 
-  const normalized =
-    normalizeName(name);
+  const existing = await get(nameRef);
+  if (existing.exists()) {
+    const data = existing.val() || {};
+    if (data.playerId && data.playerId === playerId) return true;
+    if (!data.playerId) {
+      const playersSnapshot = await get(ref(db, "players"));
+      const hasRealOwner = playersSnapshot.exists() && Object.values(playersSnapshot.val() || {}).some(
+        player => normalizeName(player?.name || "") === normalized
+      );
+      if (!hasRealOwner) await remove(nameRef);
+    }
+  }
 
-  const nameKey =
-    encodeURIComponent(normalized);
-
-  const nameRef =
-    ref(
-      db,
-      "names/" + nameKey
-    );
-
-  const result =
-    await runTransaction(
-      nameRef,
-      current => {
-
-        if (current === null) {
-
-          return {
-
-            name: name,
-
-            createdAt: Date.now()
-
-          };
-
-        }
-
-        return;
-
-      }
-    );
-
+  const result = await runTransaction(nameRef, current => {
+    if (current === null) {
+      return { name, playerId: playerId || null, createdAt: Date.now() };
+    }
+    if (playerId && current.playerId === playerId) return current;
+    return;
+  });
   return result.committed;
+}
 
+async function releaseNameReservation(name, playerId = currentPlayerId) {
+  if (!name) return;
+  const nameRef = ref(db, "names/" + encodeURIComponent(normalizeName(name)));
+  try {
+    await runTransaction(nameRef, current => {
+      if (!current) return null;
+      if (!current.playerId || current.playerId === playerId) return null;
+      return current;
+    });
+  } catch (error) {
+    console.warn("Gagal membersihkan reservasi nama:", error);
+  }
 }
 
 
@@ -3361,6 +3422,8 @@ loginBtn.addEventListener(
 
         profileColor: getSelectedLoginColor(),
 
+        wins: 0,
+
         createdAt: Date.now()
 
       };
@@ -3449,6 +3512,7 @@ function showLobby() {
   resetShot();
 
   updateHeader();
+  watchLeaderboard();
 
   watchRoom();
 
@@ -3646,8 +3710,9 @@ profileEditSave.addEventListener("click", async () => {
   profileEditSave.textContent = "Menyimpan...";
 
   try {
+    const oldName = currentPlayer.name || "";
     const nameChanged =
-      normalizeName(name) !== normalizeName(currentPlayer.name || "");
+      normalizeName(name) !== normalizeName(oldName);
 
     if (nameChanged) {
       const exists = await nameExists(name);
@@ -3658,7 +3723,7 @@ profileEditSave.addEventListener("click", async () => {
         return;
       }
 
-      const reserved = await reserveName(name);
+      const reserved = await reserveName(name, currentPlayerId);
 
       if (!reserved) {
         profileEditMessage.textContent =
@@ -3685,6 +3750,9 @@ profileEditSave.addEventListener("click", async () => {
 
     currentPlayer = updatedPlayer;
     profileImageCache.delete(profile);
+    if (nameChanged) {
+      await releaseNameReservation(oldName, currentPlayerId);
+    }
     updateHeader();
     closeProfileEdit();
 
@@ -3713,6 +3781,44 @@ document.querySelectorAll(".header-profile, .game-profile").forEach(element => {
   });
 });
 
+
+function renderLeaderboard(playersData) {
+  if (!leaderboard || !leaderboardList) return;
+  const players = Object.entries(playersData || {})
+    .map(([id, player]) => ({ id, ...(player || {}), wins: Number(player?.wins ?? 0) }))
+    .sort((a, b) => b.wins - a.wins || String(a.name || "").localeCompare(String(b.name || ""), "id"));
+  leaderboardTotal.textContent = players.length;
+  leaderboardList.innerHTML = "";
+  if (!players.length) {
+    leaderboardList.innerHTML = `<div class="leaderboard-empty">Belum ada pemain.</div>`;
+    return;
+  }
+  players.forEach((player, index) => {
+    const row = document.createElement("div");
+    row.className = "leaderboard-row";
+    const rank = document.createElement("span"); rank.className = "leaderboard-rank"; rank.textContent = index + 1;
+    const avatar = document.createElement("span"); avatar.className = "profile"; applyAvatarStyle(avatar, player);
+    const firstLetter = (player.name || "?").charAt(0).toUpperCase();
+    attachProfileImage(avatar, player.profile || "", firstLetter);
+    const name = document.createElement("span"); name.className = "leaderboard-name"; name.textContent = player.name || "Unknown";
+    const wins = document.createElement("span"); wins.className = "leaderboard-wins"; wins.innerHTML = `<i data-lucide="trophy"></i><span>${player.wins}</span>`;
+    row.append(rank, avatar, name, wins); leaderboardList.appendChild(row);
+  });
+  lucide.createIcons();
+}
+
+function watchLeaderboard() {
+  if (leaderboardWatcherStarted) return;
+  leaderboardWatcherStarted = true;
+  onValue(ref(db, "players"), snapshot => renderLeaderboard(snapshot.exists() ? snapshot.val() : {}));
+}
+
+function updateLeaderboardVisibility() {
+  if (!leaderboard) return;
+  const joined = !!roomData?.players?.[currentPlayerId];
+  const roomBusy = roomData?.status === "playing" || roomData?.status === "starting";
+  leaderboard.classList.toggle("hidden", joined || roomBusy);
+}
 
 /* =========================
    WATCH ROOM
@@ -3772,6 +3878,7 @@ function watchRoom() {
 async function renderRoom() {
 
   renderLobbySettingsButton();
+  updateLeaderboardVisibility();
 
   if (!roomData) {
 
@@ -4304,10 +4411,11 @@ leftBtn.addEventListener(
    LOBBY SETTINGS / ITEM LIST
 ========================= */
 
-openSettingsBtn.addEventListener("click", openSettings);
+//SETTINGS DISABLE SEMENTARA openSettingsBtn.addEventListener("click", openSettings);
 settingsClose.addEventListener("click", closeSettings);
 settingsCancel.addEventListener("click", closeSettings);
 settingsSave.addEventListener("click", saveSettings);
+if (openSettingsBtn) openSettingsBtn.disabled = true;
 
 /*
    Semua kontrol Settings disimpan otomatis saat berubah. Jadi pemain lain
@@ -4582,37 +4690,24 @@ function collectSettingsFromUI() {
 
 let settingsAutoSaveTimer = null;
 let settingsAutoSaveRunning = false;
+let settingsAutoSavePending = false;
 
 async function persistSettings(settings, closeAfter = false) {
   if (!roomData || roomData.status !== "lobby" || !roomData.players?.[currentPlayerId]) return false;
-
-  if (settingsAutoSaveRunning) return false;
+  settingsAutoSavePending = false;
   settingsAutoSaveRunning = true;
   settingsMessage.textContent = "Menyimpan...";
-
   try {
     const result = await runTransaction(ref(db, "room"), room => {
       if (!room || room.status !== "lobby" || !room.players?.[currentPlayerId]) return;
       return { ...room, settings };
     });
-
-    if (!result.committed) {
-      settingsMessage.textContent = "Gagal menyimpan settings.";
-      return false;
-    }
-
-    /* Tetap simpan sebagai default untuk room berikutnya. */
+    if (!result.committed) { settingsMessage.textContent = "Gagal menyimpan settings."; return false; }
     await set(ref(db, "gameSettings"), settings);
-
-    if (closeAfter) {
-      closeSettings();
-    } else {
+    if (closeAfter) closeSettings();
+    else {
       settingsMessage.textContent = "Tersimpan realtime.";
-      setTimeout(() => {
-        if (settingsPopup && !settingsPopup.classList.contains("hidden")) {
-          settingsMessage.textContent = "";
-        }
-      }, 700);
+      setTimeout(() => { if (settingsPopup && !settingsPopup.classList.contains("hidden")) settingsMessage.textContent = ""; }, 700);
     }
     return true;
   } catch (error) {
@@ -4621,31 +4716,24 @@ async function persistSettings(settings, closeAfter = false) {
     return false;
   } finally {
     settingsAutoSaveRunning = false;
+    if (settingsAutoSavePending) queueRealtimeSettingsSave();
   }
 }
 
 function queueRealtimeSettingsSave() {
   clearTimeout(settingsAutoSaveTimer);
-
   settingsAutoSaveTimer = setTimeout(async () => {
     if (!roomData || roomData.status !== "lobby" || !roomData.players?.[currentPlayerId]) return;
-
     const result = collectSettingsFromUI();
-    if (result.error) {
-      settingsMessage.textContent = result.error;
-      return;
-    }
-
+    if (result.error) { settingsMessage.textContent = result.error; return; }
+    if (settingsAutoSaveRunning) { settingsAutoSavePending = true; return; }
     await persistSettings(result.settings, false);
-  }, 120);
+  }, 300);
 }
 
 async function saveSettings() {
   const result = collectSettingsFromUI();
-  if (result.error) {
-    settingsMessage.textContent = result.error;
-    return;
-  }
+  if (result.error) { settingsMessage.textContent = result.error; return; }
   await persistSettings(result.settings, true);
 }
 
@@ -5884,6 +5972,12 @@ function renderGamePlayerList() {
 
       image.src = player.profile;
       image.alt = "Profile";
+      image.referrerPolicy = "no-referrer";
+      image.onerror = () => {
+        if (!image.isConnected) return;
+        profile.innerHTML = "";
+        profile.textContent = (player.name || "?").charAt(0).toUpperCase();
+      };
 
       profile.appendChild(image);
       resolveProfileImageUrl(player.profile).then(resolved => {
@@ -6518,6 +6612,19 @@ async function renderGameState() {
 }
 
 
+async function awardWinnerWin(winnerId, gameId) {
+  if (!winnerId || !gameId) return;
+  try {
+    await runTransaction(ref(db, "players/" + winnerId), player => {
+      if (!player) return;
+      if (player.lastWinGameId === String(gameId)) return player;
+      return { ...player, wins: Number(player.wins ?? 0) + 1, lastWinGameId: String(gameId) };
+    });
+  } catch (error) {
+    console.error("Gagal menyimpan kemenangan:", error);
+  }
+}
+
 /* =========================
    HANDLE GAME FINISHED
 ========================= */
@@ -6570,6 +6677,10 @@ function handleGameFinished() {
   const winnerNameText =
     winner?.name ||
     "Unknown";
+
+  const winnerGameId = String(gameData.startedAt || gameData.winner || Date.now());
+  awardWinnerWin(winnerId, winnerGameId);
+  playGameSound("win", 1);
 
   showWinnerScreen(
     winnerNameText
@@ -7916,6 +8027,11 @@ function renderPlayerPopup() {
         item
       );
 
+      const shotProfile = item.querySelector(".st-profile");
+      if (shotProfile) {
+        await attachProfileImage(shotProfile, profile, firstLetter);
+      }
+
     }
   );
 
@@ -8478,6 +8594,7 @@ function enableShotButtons() {
     playerBtn.classList.add("use-mode");
     playerBtn.disabled = true;
     selfBtn.disabled = true;
+    if (randomShotBtn) randomShotBtn.disabled = true;
     return;
   }
 
@@ -8488,12 +8605,16 @@ function enableShotButtons() {
     playerBtn.classList.add("use-mode");
     playerBtn.disabled = !myTurn;
     selfBtn.disabled = false;
+    if (randomShotBtn) randomShotBtn.disabled = true;
     return;
   }
 
   const canShootInteract = myTurn && (shotMode || itemMode);
   playerBtn.disabled = !canShootInteract;
   selfBtn.disabled = !canShootInteract;
+  if (randomShotBtn) {
+    randomShotBtn.disabled = !(myTurn && !shotMode && !itemMode && !adrenalineActive);
+  }
   playerBtn.textContent = "Player";
   selfBtn.textContent = "Self";
   selfBtn.classList.remove("info-mode");
@@ -8512,6 +8633,8 @@ function disableShotButtons() {
 
   selfBtn.disabled =
     true;
+
+  if (randomShotBtn) randomShotBtn.disabled = true;
 
 }
 
@@ -8544,6 +8667,20 @@ function resetShot(
 
 }
 
+
+if (randomShotBtn) {
+  randomShotBtn.addEventListener("click", () => {
+    if (shootingLocked || !gameData || gameData.phase !== "playing") return;
+    if (gameData.turn?.current !== currentPlayerId) return;
+    if (shotMode || itemMode || adrenalineActive) return;
+    const candidates = Object.entries(gameData.players || {})
+      .filter(([id, player]) => id !== currentPlayerId && Number(player?.hp ?? 0) > 0)
+      .map(([id]) => id);
+    if (!candidates.length) return;
+    const targetId = candidates[Math.floor(Math.random() * candidates.length)];
+    shoot(targetId);
+  });
+}
 
 /* =========================
    CLICK OUTSIDE
