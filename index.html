@@ -8922,14 +8922,11 @@ document.addEventListener(
 
 async function initialize() {
 
-  /* Tampilkan Login terlebih dahulu agar layar tidak kosong saat Firebase masih dimuat. */
-  showLogin();
-
+  /* Jangan menampilkan Login sebagai hasil sementara.
+     Tunggu proses pemulihan akun selesai terlebih dahulu. */
   try {
 
-    const loaded =
-      await loadSavedPlayer();
-
+    const loaded = await loadSavedPlayer();
 
     if (loaded) {
       const roomSnapshot = await get(ref(db, "room"));
@@ -8943,16 +8940,32 @@ async function initialize() {
       } else {
         showLobby();
       }
-
-    } else {
-
-      showLogin();
-
+      return;
     }
+
+    showLogin();
 
   } catch (error) {
 
-    console.error(error);
+    console.error("Gagal memulihkan akun:", error);
+
+    /* Jika ID masih ada, jangan langsung menghapus akun lokal.
+       Coba baca ulang akun sehingga refresh tidak membuat akun baru. */
+    const savedId = localStorage.getItem("buckshotPlayerId");
+
+    if (savedId) {
+      try {
+        const snapshot = await get(ref(db, "players/" + savedId));
+        if (snapshot.exists()) {
+          currentPlayerId = savedId;
+          currentPlayer = snapshot.val();
+          showLobby();
+          return;
+        }
+      } catch (retryError) {
+        console.error("Percobaan pemulihan kedua gagal:", retryError);
+      }
+    }
 
     showLogin();
 
