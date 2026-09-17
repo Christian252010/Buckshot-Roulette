@@ -726,8 +726,9 @@ body {
 }
 
 .shot.shooting {
-  animation: shotDisappear .9s cubic-bezier(.22,.75,.28,1) forwards;
+  animation: shotDisappear 1.15s linear forwards;
   pointer-events: none;
+  will-change: transform, opacity;
 }
 
 @keyframes shotDisappear {
@@ -735,9 +736,17 @@ body {
     opacity: 1;
     transform: translateX(-50%) translateY(-60%) rotate(0deg) scale(1);
   }
-  45% {
+  25% {
     opacity: 1;
-    transform: translateX(-50%) translateY(-60%) rotate(135deg) scale(.82);
+    transform: translateX(-50%) translateY(-60%) rotate(90deg) scale(.88);
+  }
+  50% {
+    opacity: .96;
+    transform: translateX(-50%) translateY(-60%) rotate(180deg) scale(.68);
+  }
+  75% {
+    opacity: .72;
+    transform: translateX(-50%) translateY(-60%) rotate(270deg) scale(.38);
   }
   100% {
     opacity: 0;
@@ -6215,22 +6224,12 @@ function renderGamePlayerList() {
     nameStatus.className = "pl-name-status";
     nameStatus.appendChild(name);
 
-    if (gameData.lastEvent?.type === "item" &&
-        gameData.lastEvent?.itemType === "coin_flip" &&
-        gameData.lastEvent?.playerId === player.id) {
-      const coin = document.createElement("i");
-      coin.setAttribute("data-lucide", "coins");
-      coin.className = "pl-coin";
-      coin.setAttribute("title", "Coin Flip");
-      nameStatus.appendChild(coin);
-    }
-
     if (gameData.players?.[player.id]?.handcuffed || Number(gameData.players?.[player.id]?.skipTurns ?? 0) > 0) {
       const lockedByCoin = gameData.players?.[player.id]?.coinFlipLocked === true;
       const lock = document.createElement("i");
       lock.setAttribute("data-lucide", lockedByCoin ? "circle-euro" : "lock");
       lock.className = lockedByCoin ? "pl-coin" : "pl-lock";
-      lock.setAttribute("title", lockedByCoin ? "Terlock karena Coin Flip" : "Handcuffed");
+      lock.setAttribute("title", lockedByCoin ? "Coin Fliped" : "Handcuffed");
       nameStatus.appendChild(lock);
     }
 
@@ -8791,6 +8790,7 @@ function updateHandcuffOverlay() {
   const myState = gameData?.players?.[currentPlayerId];
   const isPlaying = gameData?.phase === "playing";
   const isDead = Number(myState?.hp ?? 0) <= 0;
+  const isCoinFlipped = myState?.coinFlipLocked === true;
   const isHandcuffed =
     Number(myState?.skipTurns ?? 0) > 0 ||
     myState?.handcuffed === true;
@@ -8803,10 +8803,10 @@ function updateHandcuffOverlay() {
   const icon = handcuffOverlay.querySelector("svg, i");
   const text = handcuffOverlay.querySelector("span");
   if (icon) {
-    icon.outerHTML = `<i data-lucide="${isDead ? "skull" : "lock"}"></i>`;
+    icon.outerHTML = `<i data-lucide="${isDead ? "skull" : (isCoinFlipped ? "circle-euro" : "lock")}"></i>`;
   }
   if (text) {
-    text.textContent = isDead ? "DEAD" : "HANDCUFFED";
+    text.textContent = isDead ? "DEAD" : (isCoinFlipped ? "Coin Fliped" : "HANDCUFFED");
   }
   lucide.createIcons();
 }
