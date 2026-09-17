@@ -611,6 +611,74 @@ body {
 }
 
 /* =========================
+   SHOTGUN
+========================= */
+
+.shot {
+  position: absolute;
+  display: flex;
+  left: 50%;
+  top: 45%;
+  width: 76px !important;
+  height: 76px !important;
+  max-width: 76px;
+  max-height: 76px;
+  align-items: center;
+  justify-content: center;
+  transform: translateX(-50%) translateY(-60%);
+  padding: 0;
+  border-radius: 50%;
+  cursor: pointer;
+  transition: none;
+  overflow: hidden;
+}
+
+.shot:active {
+  transform: translateX(-50%) translateY(-60%);
+}
+
+.shot.active {
+  background: #333;
+}
+
+.shot.reload-hidden {
+  display: none !important;
+}
+
+.shot img {
+  display: block;
+  width: 58px !important;
+  height: 58px !important;
+  max-width: 58px !important;
+  max-height: 58px !important;
+  object-fit: contain;
+}
+
+.shot.shooting {
+  animation: shotDisappear .55s cubic-bezier(.16,.86,.24,1) forwards;
+  pointer-events: none;
+}
+
+@keyframes shotDisappear {
+  0% {
+    opacity: 1;
+    transform: translateX(-50%) translateY(-60%) rotate(0deg) scale(1);
+  }
+  24% {
+    opacity: 1;
+    transform: translateX(-50%) translateY(-60%) rotate(260deg) scale(.92);
+  }
+  55% {
+    opacity: .95;
+    transform: translateX(-50%) translateY(-60%) rotate(620deg) scale(.62);
+  }
+  100% {
+    opacity: 0;
+    transform: translateX(-50%) translateY(-60%) rotate(1080deg) scale(0);
+  }
+}
+
+/* =========================
    BOTTOM
 ========================= */
 
@@ -681,6 +749,10 @@ body {
 .item-info-popup.hidden,
 .handcuff-overlay.hidden {
   display: none !important;
+}
+
+.handcuff-overlay.coin-flipped {
+  color: #ffd43b;
 }
 
 .item-info-card {
@@ -6089,7 +6161,7 @@ function renderGamePlayerList() {
       const lock = document.createElement("i");
       lock.setAttribute("data-lucide", lockedByCoin ? "circle-euro" : "lock");
       lock.className = lockedByCoin ? "pl-coin" : "pl-lock";
-      lock.setAttribute("title", lockedByCoin ? "Coin Fliped" : "Handcuffed");
+      lock.setAttribute("title", lockedByCoin ? "Coin Flipped" : "Handcuffed");
       nameStatus.appendChild(lock);
     }
 
@@ -8346,11 +8418,12 @@ async function shoot(targetId) {
       let aceExpired = [];
 
       const targetAceCard = targetPlayer.aceCardActive === true;
+      const shooterAceCard = players[currentPlayerId]?.aceCardActive === true;
       const targetShielded = targetPlayer.shieldActive === true;
       const targetTrapped = targetPlayer.dynamiteTrapped === true;
 
       if (currentShellType === "live") {
-        if (targetShielded && !targetAceCard) {
+        if (targetShielded && !targetAceCard && !shooterAceCard) {
           if (isSelf) {
             damage = 2;
             targetPlayer.hp = Math.max(0, Number(targetPlayer.hp ?? 0) - damage);
@@ -8365,7 +8438,7 @@ async function shoot(targetId) {
           targetPlayer.hp = Math.max(0, Number(targetPlayer.hp ?? 0) - damage);
         }
 
-        if (targetTrapped && !targetAceCard && !isSelf) {
+        if (targetTrapped && !targetAceCard && !shooterAceCard && !isSelf) {
           shooterDamage += 1;
           dynamiteTriggered = true;
           targetPlayer.dynamiteTrapped = false;
@@ -8389,11 +8462,11 @@ async function shoot(targetId) {
       } else {
         players[currentPlayerId].sawActive = false;
         players[currentPlayerId].lifeStealActive = false;
-        if (targetShielded && !targetAceCard) {
+        if (targetShielded && !targetAceCard && !shooterAceCard) {
           targetPlayer.shieldActive = false;
           targetPlayer.shieldActivatedTurn = null;
         }
-        if (targetTrapped && !targetAceCard) {
+        if (targetTrapped && !targetAceCard && !shooterAceCard) {
           targetPlayer.dynamiteTrapped = false;
           targetPlayer.dynamiteTrappedById = null;
           dynamiteRemoved = true;
@@ -8633,6 +8706,7 @@ function updateHandcuffOverlay() {
 
   const showOverlay = isPlaying && (isDead || isHandcuffed);
   handcuffOverlay.classList.toggle("hidden", !showOverlay);
+  handcuffOverlay.classList.toggle("coin-flipped", showOverlay && isCoinFlipped && !isDead);
 
   if (!showOverlay) return;
 
@@ -8642,7 +8716,7 @@ function updateHandcuffOverlay() {
     icon.outerHTML = `<i data-lucide="${isDead ? "skull" : (isCoinFlipped ? "circle-euro" : "lock")}"></i>`;
   }
   if (text) {
-    text.textContent = isDead ? "DEAD" : (isCoinFlipped ? "Coin Fliped" : "HANDCUFFED");
+    text.textContent = isDead ? "DEAD" : (isCoinFlipped ? "Coin Flipped" : "HANDCUFFED");
   }
   lucide.createIcons();
 }
