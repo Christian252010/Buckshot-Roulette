@@ -474,6 +474,7 @@ body {
   width: 19px;
   height: 19px;
   flex-shrink: 0;
+  stroke-width: 1.7;
 }
 
 .game-message .message-line.live svg,
@@ -718,77 +719,30 @@ body {
 }
 
 .shot img {
-  position: absolute;
-  left: 50%;
-  top: 50%;
+  display: block;
   width: 84px;
   height: 84px;
   object-fit: contain;
-  transform: translate3d(-50%, -50%, 0);
-  transform-origin: center center;
-  backface-visibility: hidden;
-  -webkit-backface-visibility: hidden;
-  will-change: transform, opacity;
 }
 
-.shot .shot2 {
-  z-index: 1;
-}
-
-.shot .crosshair {
-  z-index: 2;
-}
-
-/* Keduanya dianimasikan bersama agar tidak pernah tersisa crosshair saja. */
 .shot.shooting {
-  animation: shotContainerFire 1.15s cubic-bezier(.22,.72,.25,1) forwards;
-  will-change: transform, opacity;
+  animation: shotDisappear .9s cubic-bezier(.22,.75,.28,1) forwards;
+  pointer-events: none;
 }
 
-.shot.shooting .shot2 {
-  animation: shotImageSpin 1.15s cubic-bezier(.22,.72,.25,1) forwards;
-}
-
-@keyframes shotContainerFire {
+@keyframes shotDisappear {
   0% {
     opacity: 1;
-    transform: translateX(-50%) translateY(-60%) scale(1);
+    transform: translateX(-50%) translateY(-60%) rotate(0deg) scale(1);
   }
-  22% {
+  45% {
     opacity: 1;
-    transform: translateX(-50%) translateY(-60%) scale(1.06);
-  }
-  68% {
-    opacity: .9;
-    transform: translateX(-50%) translateY(-60%) scale(.72);
+    transform: translateX(-50%) translateY(-60%) rotate(135deg) scale(.82);
   }
   100% {
     opacity: 0;
-    transform: translateX(-50%) translateY(-60%) scale(.08);
+    transform: translateX(-50%) translateY(-60%) rotate(360deg) scale(0);
   }
-}
-
-@keyframes shotImageSpin {
-  0% {
-    transform: translate3d(-50%, -50%, 0) rotate(0deg);
-  }
-  35% {
-    transform: translate3d(-50%, -50%, 0) rotate(110deg);
-  }
-  70% {
-    transform: translate3d(-50%, -50%, 0) rotate(250deg);
-  }
-  100% {
-    transform: translate3d(-50%, -50%, 0) rotate(360deg);
-  }
-}
-
-.shot.shot-ready img {
-  visibility: visible;
-}
-
-.shot:not(.shot-ready) img {
-  visibility: hidden;
 }
 
 
@@ -920,7 +874,7 @@ body {
 .handcuff-overlay svg {
   width: 54px;
   height: 54px;
-  stroke-width: 3;
+  stroke-width: 1.7;
 }
 
 .handcuff-overlay span {
@@ -1242,6 +1196,20 @@ body {
   color: #32cd32;
 }
 
+.player-list .pl-coin {
+  width: 16px;
+  height: 16px;
+  flex: 0 0 16px;
+  color: #ffd43b;
+  stroke-width: 1.7;
+}
+
+.player-list .pl-lock,
+.player-list .pl-shield,
+.player-list .pl-ace {
+  stroke-width: 1.7;
+}
+
 
 .player-list .pl-list.current-turn .pl-lock {
   color: crimson;
@@ -1493,8 +1461,36 @@ body {
 .leaderboard-wins { display:flex; align-items:center; gap:5px; flex-shrink:0; color:gold; font-size:15px; font-weight:bold; }
 .leaderboard-wins svg { width:17px; height:17px; }
 .leaderboard-empty { padding:10px 0 4px; color:#777; text-align:center; font-size:14px; }
-.shot-list .random-shot-btn { width:100% !important; margin:10px 0 0; background:#444 !important; color:white; }
-.random-shot-btn:active { transform:scale(.98); }
+.shot-list .random-shot-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100% !important;
+  min-height: 42px;
+  margin: 10px 0 2px;
+  padding: 8px 12px;
+  gap: 8px;
+  border: 0;
+  border-radius: 8px;
+  background: crimson !important;
+  color: #fff;
+  font-size: 14px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: transform .1s ease, opacity .15s ease;
+}
+.random-shot-btn:not(:disabled):active {
+  transform: scale(.97);
+}
+.random-shot-btn:disabled {
+  opacity: .45;
+  cursor: not-allowed;
+}
+.random-shot-btn svg {
+  width: 18px;
+  height: 18px;
+  stroke-width: 2;
+}
 .settings-save { display:none !important; }
 
 /* =========================
@@ -2613,17 +2609,7 @@ body {
   <!-- SHOTGUN -->
 
   <div class="shot hidden">
-
-    <img
-      class="shot2"
-      src="shot2.png"
-      alt="Shotgun">
-
-    <img
-      class="crosshair"
-      src="crosshair.png"
-      alt="Crosshair">
-
+    <img src="shot.png" alt="Shotgun">
   </div>
 
 
@@ -2719,7 +2705,7 @@ body {
 
   <button class="random-shot-btn" id="randomShotBtn" type="button" disabled>
     <i data-lucide="shuffle"></i>
-    Random Shot
+    <span>Random Shot</span>
   </button>
 
 </div>
@@ -2898,10 +2884,8 @@ const joinList =
 const shot =
   document.querySelector(".shot");
 
-const shot2Image =
-  document.querySelector(".shot .shot2");
-const crosshairImage =
-  document.querySelector(".shot .crosshair");
+const shotImage =
+  document.querySelector(".shot img");
 
 const playerBtn =
   document.querySelector(".other");
@@ -2911,26 +2895,6 @@ const selfBtn =
 
 const randomShotBtn =
   document.querySelector("#randomShotBtn");
-
-/* Pastikan kedua gambar shotgun selesai dimuat sebelum .shot ditampilkan. */
-function prepareShotImages() {
-  if (!shot || !shot2Image || !crosshairImage) return;
-
-  const markReady = () => {
-    if (shot2Image.complete && shot2Image.naturalWidth > 0 &&
-        crosshairImage.complete && crosshairImage.naturalWidth > 0) {
-      shot.classList.add("shot-ready");
-    }
-  };
-
-  shot2Image.addEventListener("load", markReady, { once: true });
-  crosshairImage.addEventListener("load", markReady, { once: true });
-  shot2Image.addEventListener("error", markReady, { once: true });
-  crosshairImage.addEventListener("error", markReady, { once: true });
-  markReady();
-}
-
-prepareShotImages();
 
 const leaderboard =
   document.querySelector("#leaderboard");
@@ -6150,6 +6114,16 @@ function renderGamePlayerList() {
     nameStatus.className = "pl-name-status";
     nameStatus.appendChild(name);
 
+    if (gameData.lastEvent?.type === "item" &&
+        gameData.lastEvent?.itemType === "coin_flip" &&
+        gameData.lastEvent?.playerId === player.id) {
+      const coin = document.createElement("i");
+      coin.setAttribute("data-lucide", "coins");
+      coin.className = "pl-coin";
+      coin.setAttribute("title", "Coin Flip");
+      nameStatus.appendChild(coin);
+    }
+
     if (gameData.players?.[player.id]?.handcuffed || Number(gameData.players?.[player.id]?.skipTurns ?? 0) > 0) {
       const lock = document.createElement("i");
       lock.setAttribute("data-lucide", "lock");
@@ -6441,13 +6415,22 @@ function showGameEvent(eventData) {
 
     if (eventData.itemType === "coin_flip") {
       appendGameMessage(
-        eventData.coinFlipResult === "all"
-          ? `${userName} mendapatkan Coin Flip: semua pemain lain terkena Handcuff.`
-          : `${userName} mendapatkan Coin Flip: dirinya sendiri kehilangan 1 giliran.`,
+        `${userName} Menggunakan Coin Flip (efeknya belum muncul).`,
         "info",
-        definition?.icon || "circle-euro",
-        3600
+        "coins",
+        2200
       );
+
+      messageTimers.push(setTimeout(() => {
+        appendGameMessage(
+          eventData.coinFlipResult === "all"
+            ? `${userName} Terkena lock semua pemain.`
+            : `${userName} Terkena lock sendiri.`,
+          "info",
+          "coins",
+          3600
+        );
+      }, 1400));
       return;
     }
 
@@ -7179,32 +7162,18 @@ function triggerDamageFlash() {
 
 
 function triggerShotAnimation() {
-  if (!shot || !shot2Image || !crosshairImage) return;
-
-  /* Reset seluruh state animasi agar tembakan berikutnya tidak mewarisi frame lama. */
-  shot.classList.remove("shooting");
-  shot.style.animation = "none";
-  shot2Image.style.animation = "none";
+  if (!shot) return;
+  shot.classList.remove("hidden", "reload-hidden", "shooting");
   void shot.offsetWidth;
-  shot.style.animation = "";
-  shot2Image.style.animation = "";
   shot.classList.add("shooting");
 }
 
 function resetShotAnimation() {
-  if (!shot || !shot2Image || !crosshairImage) return;
+  if (!shot) return;
   shot.classList.remove("shooting");
-  shot.style.animation = "none";
-  shot2Image.style.animation = "none";
-  void shot.offsetWidth;
-  shot.style.animation = "";
-  shot2Image.style.animation = "";
   shot.style.opacity = "";
   shot.style.transform = "";
-  shot2Image.style.opacity = "";
-  shot2Image.style.transform = "";
 }
-
 function renderShotEffects() {
   const shotData = gameData?.lastShot;
 
@@ -8125,6 +8094,7 @@ function renderPlayerPopup() {
           .charAt(0)
           .toUpperCase();
 
+      const profile = String(player.profile || "").trim();
 
       let profileHTML;
 
@@ -8957,8 +8927,17 @@ async function initialize() {
 
 
     if (loaded) {
+      const roomSnapshot = await get(ref(db, "room"));
+      const savedRoom = roomSnapshot.exists() ? roomSnapshot.val() : null;
+      const isInPlayingRoom =
+        savedRoom?.status === "playing" &&
+        !!savedRoom?.players?.[currentPlayerId];
 
-      showLobby();
+      if (isInPlayingRoom) {
+        await enterGame();
+      } else {
+        showLobby();
+      }
 
     } else {
 
