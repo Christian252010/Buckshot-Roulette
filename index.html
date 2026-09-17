@@ -110,8 +110,6 @@ body {
 }
 
 
-renderLoginColorSwatches();
-
 /* =========================
    LOGIN
 ========================= */
@@ -512,6 +510,14 @@ renderLoginColorSwatches();
   padding: 12px;
   background: #2a2a2a;
   z-index: 10;
+  opacity: 1;
+  transition: opacity .45s ease;
+}
+
+.random-shell.hidden {
+  display: flex !important;
+  opacity: 0;
+  pointer-events: none;
 }
 
 .shell {
@@ -688,8 +694,12 @@ renderLoginColorSwatches();
   display: flex;
   left: 50%;
   top: 45%;
+  width: 112px;
+  height: 112px;
+  align-items: center;
+  justify-content: center;
   transform: translateX(-50%) translateY(-60%);
-  padding: 14px;
+  padding: 0;
   border-radius: 50%;
   cursor: pointer;
   transition: none;
@@ -708,8 +718,49 @@ renderLoginColorSwatches();
 }
 
 .shot img {
+  position: absolute;
+  left: 50%;
+  top: 50%;
   width: 84px;
   height: 84px;
+  object-fit: contain;
+  transform: translate(-50%, -50%);
+  transform-origin: center;
+}
+
+.shot .shot2 {
+  z-index: 1;
+}
+
+.shot .crosshair {
+  z-index: 2;
+}
+
+.shot.shooting .shot2 {
+  animation: shotFire 1.05s cubic-bezier(.16,.75,.25,1) forwards;
+}
+
+@keyframes shotFire {
+  0% {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(.92) rotate(0deg);
+  }
+  18% {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1.24) rotate(55deg);
+  }
+  48% {
+    opacity: .98;
+    transform: translate(-50%, -50%) scale(1.08) rotate(150deg);
+  }
+  72% {
+    opacity: .75;
+    transform: translate(-50%, -50%) scale(.82) rotate(235deg);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(.18) rotate(360deg);
+  }
 }
 
 
@@ -2536,8 +2587,14 @@ renderLoginColorSwatches();
   <div class="shot hidden">
 
     <img
-      src="shot.png"
+      class="shot2"
+      src="shot2.png"
       alt="Shotgun">
+
+    <img
+      class="crosshair"
+      src="crosshair.png"
+      alt="Crosshair">
 
   </div>
 
@@ -2803,6 +2860,9 @@ const joinList =
 
 const shot =
   document.querySelector(".shot");
+
+const shot2Image =
+  document.querySelector(".shot .shot2");
 
 const playerBtn =
   document.querySelector(".other");
@@ -6368,6 +6428,9 @@ function showGameEvent(eventData) {
   }
 
   if (eventData.type === "shot_pending") {
+    /* Animasi senjata dimulai tepat ketika aksi menembak dimulai. */
+    triggerShotAnimation();
+
     /* Chat "X menembak Y..." menjadi titik mulai charge-shot. */
     playGameSound("charge-shot");
 
@@ -7055,6 +7118,13 @@ function triggerDamageFlash() {
 }
 
 
+function triggerShotAnimation() {
+  if (!shot || !shot2Image) return;
+  shot.classList.remove("shooting");
+  void shot.offsetWidth;
+  shot.classList.add("shooting");
+}
+
 function renderShotEffects() {
   const shotData = gameData?.lastShot;
 
@@ -7480,7 +7550,7 @@ function updateShotVisibility() {
     currentPlayerId;
 
   if (gameData.shotPending) {
-    shot.classList.add("hidden");
+    shot.classList.remove("hidden");
     shot.classList.remove("reload-hidden");
     disableShotButtons();
     return;
@@ -8775,6 +8845,9 @@ document.addEventListener(
 ========================= */
 
 async function initialize() {
+
+  /* Tampilkan Login terlebih dahulu agar layar tidak kosong saat Firebase masih dimuat. */
+  showLogin();
 
   try {
 
