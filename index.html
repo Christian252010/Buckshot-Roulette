@@ -1461,6 +1461,65 @@ body {
 .leaderboard-wins { display:flex; align-items:center; gap:5px; flex-shrink:0; color:gold; font-size:15px; font-weight:bold; }
 .leaderboard-wins svg { width:17px; height:17px; }
 .leaderboard-empty { padding:10px 0 4px; color:#777; text-align:center; font-size:14px; }
+.winner-leaderboard {
+  width: min(92%, 430px);
+  max-height: 34dvh;
+  overflow: hidden;
+  margin-top: 12px;
+  padding: 10px 14px;
+  background: #2f2f2f;
+  border-radius: 6px;
+  color: white;
+  z-index: 2;
+}
+.winner-leaderboard-title {
+  padding-bottom: 6px;
+  color: #aaa;
+  font-size: 13px;
+  font-weight: bold;
+  text-transform: uppercase;
+}
+.winner-leaderboard-list .leaderboard-row {
+  min-height: 40px;
+  padding: 5px 0;
+}
+.winner-leaderboard-list .leaderboard-row .profile {
+  width: 30px;
+  height: 30px;
+  font-size: 15px;
+}
+.winner-leaderboard-list .leaderboard-name {
+  font-size: 14px;
+}
+.winner-leaderboard-list .leaderboard-wins {
+  font-size: 13px;
+}
+.winner-leaderboard-list .leaderboard-rank {
+  width: 26px;
+  flex-basis: 26px;
+}
+.leaderboard-row.rank-1 {
+  background: rgba(255, 215, 0, .13);
+  border-radius: 6px;
+  padding-left: 6px;
+  padding-right: 6px;
+}
+.leaderboard-row.rank-1 .leaderboard-rank { color: #ffd700; font-size: 19px; }
+.leaderboard-row.rank-2 {
+  background: rgba(192, 192, 192, .10);
+  border-radius: 6px;
+  padding-left: 6px;
+  padding-right: 6px;
+}
+.leaderboard-row.rank-2 .leaderboard-rank { color: #c0c0c0; font-size: 18px; }
+.leaderboard-row.rank-3 {
+  background: rgba(205, 127, 50, .10);
+  border-radius: 6px;
+  padding-left: 6px;
+  padding-right: 6px;
+}
+.leaderboard-row.rank-3 .leaderboard-rank { color: #cd7f32; font-size: 17px; }
+
 .shot-list .random-shot-btn {
   display: flex;
   align-items: center;
@@ -1471,7 +1530,7 @@ body {
   padding: 8px 12px;
   gap: 8px;
   border: 0;
-  border-radius: 8px;
+  border-radius: 6px;
   background: crimson !important;
   color: #fff;
   font-size: 14px;
@@ -2671,6 +2730,11 @@ body {
     <span class="winner-name"></span>
   </div>
 
+  <div class="winner-leaderboard">
+    <div class="winner-leaderboard-title">Leaderboard</div>
+    <div class="winner-leaderboard-list" id="winnerLeaderboardList"></div>
+  </div>
+
 </div>
 
 
@@ -2904,6 +2968,9 @@ const leaderboardList =
 
 const leaderboardTotal =
   document.querySelector("#leaderboardTotal");
+
+const winnerLeaderboardList =
+  document.querySelector("#winnerLeaderboardList");
 
 const popup =
   document.querySelector(".shot-list");
@@ -3884,7 +3951,7 @@ function renderLeaderboard(playersData) {
   }
   topPlayers.forEach((player, index) => {
     const row = document.createElement("div");
-    row.className = "leaderboard-row";
+    row.className = `leaderboard-row rank-${index + 1}`;
     const rank = document.createElement("span"); rank.className = "leaderboard-rank"; rank.textContent = index + 1;
     const avatar = document.createElement("span"); avatar.className = "profile"; applyAvatarStyle(avatar, player);
     const firstLetter = (player.name || "?").charAt(0).toUpperCase();
@@ -3893,6 +3960,31 @@ function renderLeaderboard(playersData) {
     const wins = document.createElement("span"); wins.className = "leaderboard-wins"; wins.innerHTML = `<i data-lucide="trophy"></i><span>${player.wins}</span>`;
     row.append(rank, avatar, name, wins); leaderboardList.appendChild(row);
   });
+
+  if (winnerLeaderboardList) {
+    winnerLeaderboardList.innerHTML = "";
+    topPlayers.forEach((player, index) => {
+      const row = document.createElement("div");
+      row.className = `leaderboard-row rank-${index + 1}`;
+      const rank = document.createElement("span");
+      rank.className = "leaderboard-rank";
+      rank.textContent = index + 1;
+      const avatar = document.createElement("span");
+      avatar.className = "profile";
+      applyAvatarStyle(avatar, player);
+      const firstLetter = (player.name || "?").charAt(0).toUpperCase();
+      attachProfileImage(avatar, player.profile || "", firstLetter);
+      const name = document.createElement("span");
+      name.className = "leaderboard-name";
+      name.textContent = player.name || "Unknown";
+      const wins = document.createElement("span");
+      wins.className = "leaderboard-wins";
+      wins.innerHTML = `<i data-lucide="trophy"></i><span>${player.wins}</span>`;
+      row.append(rank, avatar, name, wins);
+      winnerLeaderboardList.appendChild(row);
+    });
+  }
+
   lucide.createIcons();
 }
 
@@ -5373,6 +5465,7 @@ async function useSelectedItem(targetId = null) {
             if (id === currentPlayerId || !target || Number(target.hp ?? 0) <= 0 || target.aceCardActive === true) return;
             target.skipTurns = Number(target.skipTurns ?? 0) + 1;
             target.handcuffed = true;
+            target.coinFlipLocked = true;
           });
           game.turn.current = currentPlayerId;
           game.turn.index = Number(player.turnOrder ?? 0);
@@ -5380,6 +5473,7 @@ async function useSelectedItem(targetId = null) {
           /* Diri sendiri kehilangan 1 giliran, jadi giliran langsung diberikan ke pemain berikutnya. */
           player.skipTurns = Number(player.skipTurns ?? 0) + 1;
           player.handcuffed = true;
+          player.coinFlipLocked = true;
           const ids = Object.keys(game.players || {})
             .filter(id => game.players[id] && Number(game.players[id].hp ?? 0) > 0)
             .sort((a, b) => Number(game.players[a].turnOrder ?? 0) - Number(game.players[b].turnOrder ?? 0));
@@ -5580,6 +5674,7 @@ async function useSelectedItem(targetId = null) {
                   skippedPlayerId = candidateId;
                   game.players[candidateId].skipTurns = Number(game.players[candidateId].skipTurns) - 1;
                   game.players[candidateId].handcuffed = false;
+                  game.players[candidateId].coinFlipLocked = false;
                   nextIndex = (nextIndex + 1) % playerIds.length;
                   checked++;
                   continue;
@@ -5728,6 +5823,7 @@ function createGameState(
         sawActive: false,
         skipTurns: 0,
         handcuffed: false,
+        coinFlipLocked: false,
         shellItemUses: {},
         shieldActive: false, shieldActivatedTurn: null,
         dynamiteTrapped: false, dynamiteTrappedById: null, dynamiteActivatedTurn: null,
@@ -6130,10 +6226,11 @@ function renderGamePlayerList() {
     }
 
     if (gameData.players?.[player.id]?.handcuffed || Number(gameData.players?.[player.id]?.skipTurns ?? 0) > 0) {
+      const lockedByCoin = gameData.players?.[player.id]?.coinFlipLocked === true;
       const lock = document.createElement("i");
-      lock.setAttribute("data-lucide", "lock");
-      lock.className = "pl-lock";
-      lock.setAttribute("title", "Handcuffed");
+      lock.setAttribute("data-lucide", lockedByCoin ? "circle-euro" : "lock");
+      lock.className = lockedByCoin ? "pl-coin" : "pl-lock";
+      lock.setAttribute("title", lockedByCoin ? "Terlock karena Coin Flip" : "Handcuffed");
       nameStatus.appendChild(lock);
     }
 
@@ -6420,7 +6517,7 @@ function showGameEvent(eventData) {
 
     if (eventData.itemType === "coin_flip") {
       appendGameMessage(
-        `${userName} Menggunakan Coin Flip (efeknya belum muncul).`,
+        `${userName} Menggunakan Coin Flip.`,
         "info",
         "coins",
         2200
@@ -6881,6 +6978,7 @@ function hideWinnerScreen() {
   winnerTitle.style.color = "white";
   winnerName.style.transform =
     "scaleY(0)";
+  if (winnerLeaderboardList) winnerLeaderboardList.innerHTML = "";
   winnerCard.style.animation = "none";
   winnerTrophy.style.animation = "none";
   winnerTrophyIcon.style.animation =
@@ -7604,7 +7702,6 @@ function updateShotVisibility() {
     currentPlayerId;
 
   if (gameData.shotPending) {
-    resetShotAnimation();
     shot.classList.remove("hidden");
     shot.classList.remove("reload-hidden");
     disableShotButtons();
@@ -8563,6 +8660,7 @@ async function shoot(targetId) {
               skippedPlayerId = candidateId;
               players[candidateId].skipTurns = Number(players[candidateId].skipTurns) - 1;
               players[candidateId].handcuffed = false;
+              players[candidateId].coinFlipLocked = false;
               nextIndex = (nextIndex + 1) % playerIds.length;
               checked++;
               continue;
