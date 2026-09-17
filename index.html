@@ -3943,8 +3943,13 @@ function watchLeaderboard() {
 function updateLeaderboardVisibility() {
   if (!leaderboard) return;
   const joined = !!roomData?.players?.[currentPlayerId];
-  const roomBusy = roomData?.status === "playing" || roomData?.status === "starting";
-  leaderboard.classList.toggle("hidden", joined || roomBusy);
+  const finished =
+    roomData?.status === "playing" &&
+    roomData?.game?.phase === "finished";
+  const roomBusy =
+    roomData?.status === "starting" ||
+    (roomData?.status === "playing" && !finished);
+  leaderboard.classList.toggle("hidden", (!finished && joined) || roomBusy);
 }
 
 /* =========================
@@ -4042,6 +4047,14 @@ async function renderRoom() {
 
   }
 
+
+  if (roomData.status === "playing" && roomData.game?.phase === "finished") {
+    /* Game selesai: jangan masuk kembali ke game/winner. Kembali ke lobby
+       dan biarkan leaderboard utama tampil untuk semua pemain yang menunggu. */
+    hideWinnerScreen();
+    showLobby();
+    return;
+  }
 
   if (roomData.status === "starting") {
     const joined = !!roomData.players?.[currentPlayerId];
@@ -6659,9 +6672,7 @@ function showGameEvent(eventData) {
       }
 
       if (eventData.reload) {
-        /* OUT + IN -> Random Shell -> hilang -> spin item -> item masuk inventory. */
-        playGameSound("out");
-        playGameSound("in", 1, 120);
+        /* OUT + IN dimainkan tepat ketika Random Shell tampil. */
         appendGameMessage("Shell telah habis", "info", "refresh-cw", 2600);
 
         messageTimers.push(setTimeout(() => {
@@ -7188,6 +7199,9 @@ function showShellReveal() {
       gameData?.phase === "playing"
     ) {
       shellElement.classList.remove("hidden");
+      /* Kedua suara dimainkan bersamaan dengan kemunculan Random Shell. */
+      playGameSound("out");
+      playGameSound("in");
     }
 
     shellRevealTimer = setTimeout(() => {
