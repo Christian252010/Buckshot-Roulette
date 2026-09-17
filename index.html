@@ -3414,12 +3414,17 @@ async function loadSavedPlayer() {
     currentPlayer.profileColor =
       getRandomAvatarColor();
 
-    await update(
-      ref(db, "players/" + currentPlayerId),
-      {
-        profileColor: currentPlayer.profileColor
-      }
-    );
+    /* Jangan membuat proses pemulihan gagal hanya karena update warna profil gagal. */
+    try {
+      await update(
+        ref(db, "players/" + currentPlayerId),
+        {
+          profileColor: currentPlayer.profileColor
+        }
+      );
+    } catch (error) {
+      console.warn("Gagal menyimpan warna profil, akun tetap dapat digunakan:", error);
+    }
   }
 
   return true;
