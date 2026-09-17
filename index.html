@@ -649,6 +649,7 @@ body {
   cursor: pointer;
   transition: none;
   overflow: hidden;
+  z-index: 1;
 }
 
 .shot:active {
@@ -7107,25 +7108,28 @@ function showItemSpin(eventData = gameData?.lastEvent) {
   const types = Object.keys(ITEM_DEFINITIONS);
 
   /* Ganti icon tanpa animasi/getaran. Posisi slot tetap, hanya icon yang berubah. */
-  const renderRandomIcons = () => {
-    slots.forEach(slot => {
-      const icon = slot.querySelector("i");
-      if (!icon) return;
-      const type = types[Math.floor(Math.random() * types.length)];
-      icon.setAttribute("data-lucide", getItemSpinIcon(type));
+  const renderSlotIcons = (typesToShow, final = false) => {
+    slots.forEach((slot, index) => {
+      const type = typesToShow[index] || typesToShow[0];
+      const iconName = getItemSpinIcon(type);
+      slot.classList.toggle("spin-slot-final", final);
+      /* Render ulang <i> agar Lucide benar-benar mengganti icon.
+         Ini mencegah icon berhenti pada bentuk package/box setelah putaran pertama. */
+      slot.innerHTML = `<i data-lucide="${iconName}"></i>`;
     });
     lucide.createIcons();
   };
 
+  const renderRandomIcons = () => {
+    const randomTypes = slots.map(() =>
+      types[Math.floor(Math.random() * types.length)]
+    );
+    renderSlotIcons(randomTypes, false);
+  };
+
   /* Saat selesai, baru tampilkan item yang benar-benar akan didapat. */
   const renderFinalIcons = () => {
-    slots.forEach((slot, index) => {
-      const icon = slot.querySelector("i");
-      if (!icon) return;
-      icon.setAttribute("data-lucide", getItemSpinIcon(rewards[index] || rewards[0]));
-      slot.classList.add("spin-slot-final");
-    });
-    lucide.createIcons();
+    renderSlotIcons(rewards, true);
   };
 
   renderRandomIcons();
