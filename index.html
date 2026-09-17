@@ -2674,10 +2674,6 @@ body {
     <span class="winner-name"></span>
   </div>
 
-  <div class="winner-leaderboard">
-    <div class="winner-leaderboard-title">Leaderboard</div>
-    <div class="winner-leaderboard-list" id="winnerLeaderboardList"></div>
-  </div>
 
 </div>
 
@@ -2819,6 +2815,7 @@ let lastWinnerId = null;
 let lastFinishedStartedAt = null;
 let winnerTimer = null;
 let winnerCleanupStartedAt = null;
+let returningFromWinner = false;
 let lobbyRenderToken = 0;
 let shellRenderId = null;
 let shellRevealTimer = null;
@@ -3943,13 +3940,13 @@ function watchLeaderboard() {
 function updateLeaderboardVisibility() {
   if (!leaderboard) return;
   const joined = !!roomData?.players?.[currentPlayerId];
-  const finished =
-    roomData?.status === "playing" &&
-    roomData?.game?.phase === "finished";
-  const roomBusy =
-    roomData?.status === "starting" ||
-    (roomData?.status === "playing" && !finished);
-  leaderboard.classList.toggle("hidden", (!finished && joined) || roomBusy);
+  const starting = roomData?.status === "starting";
+  const finished = roomData?.status === "playing" && roomData?.game?.phase === "finished";
+  const activeGame = roomData?.status === "playing" && !finished;
+
+  // Pemain yang masih berada di game tidak melihat leaderboard.
+  // Pemain yang menunggu game selesai melihat leaderboard di lobby.
+  leaderboard.classList.toggle("hidden", joined && (starting || activeGame));
 }
 
 /* =========================
@@ -4048,14 +4045,6 @@ async function renderRoom() {
   }
 
 
-  if (roomData.status === "playing" && roomData.game?.phase === "finished") {
-    /* Game selesai: jangan masuk kembali ke game/winner. Kembali ke lobby
-       dan biarkan leaderboard utama tampil untuk semua pemain yang menunggu. */
-    hideWinnerScreen();
-    showLobby();
-    return;
-  }
-
   if (roomData.status === "starting") {
     const joined = !!roomData.players?.[currentPlayerId];
     if (!joined) {
@@ -4087,6 +4076,20 @@ async function renderRoom() {
       startCountdownTimer = setTimeout(updateCountdown, 150);
     };
     updateCountdown();
+    return;
+  }
+
+  if (roomData.status === "playing" && roomData.game?.phase === "finished") {
+    // Game sudah selesai tetapi room belum sempat dihapus oleh client pemenang.
+    // Semua pemain dikembalikan ke lobby sementara dan leaderboard tetap tampil.
+    hideWinnerScreen();
+    showLobby();
+    createBtn.classList.add("hidden");
+    joinBtn.classList.add("hidden");
+    startLeft.classList.add("hidden");
+    roomMessage.textContent = "Game selesai. Menunggu kembali ke lobby...";
+    updateLeaderboardVisibility();
+    returningFromWinner = false;
     return;
   }
 
@@ -6672,7 +6675,9 @@ function showGameEvent(eventData) {
       }
 
       if (eventData.reload) {
-        /* OUT + IN dimainkan tepat ketika Random Shell tampil. */
+        /* OUT + IN -> Random Shell -> hilang -> spin item -> item masuk inventory. */
+        playGameSound("out");
+        playGameSound("in", 1, 120);
         appendGameMessage("Shell telah habis", "info", "refresh-cw", 2600);
 
         messageTimers.push(setTimeout(() => {
@@ -6886,10 +6891,21 @@ function showWinnerScreen(
   }, titleEnd + 180);
 
   winnerTimer = setTimeout(
-    () => {
-      cleanupFinishedRoom(
-        winnerCleanupStartedAt
-      );
+    async () => {
+      winnerTimer = null;
+      returningFromWinner = true;
+
+      // Hapus room terlebih dahulu. Setelah selesai, pemain yang baru saja bermain
+      // dipaksa kembali ke lobby, bukan masuk lagi ke game/winner.
+      await cleanupFinishedRoom(winnerCleanupStartedAt);
+
+      hideWinnerScreen();
+      gameData = null;
+      showLobby();
+
+      // Jika penghapusan Firebase tertunda, renderRoom akan tetap menganggap
+      // game finished sebagai lobby sementara sampai room benar-benar hilang.
+      updateLeaderboardVisibility();
     },
     7000
   );
@@ -7199,9 +7215,6 @@ function showShellReveal() {
       gameData?.phase === "playing"
     ) {
       shellElement.classList.remove("hidden");
-      /* Kedua suara dimainkan bersamaan dengan kemunculan Random Shell. */
-      playGameSound("out");
-      playGameSound("in");
     }
 
     shellRevealTimer = setTimeout(() => {
