@@ -195,9 +195,30 @@ import {
 ========================= */
 
 const firebaseConfig = {
+    apiKey: "AIzaSyBQYI-9ESAqE5AFy49hIyP0rhul9gIlkc",
+
+    authDomain:
+        "buckshotroulette-4c7a1.firebaseapp.com",
+
     databaseURL:
-        "https://buckshotroulette-4c7a1-default-rtdb.asia-southeast1.firebasedatabase.app"
+        "https://buckshotroulette-4c7a1-default-rtdb.asia-southeast1.firebasedatabase.app",
+
+    projectId:
+        "buckshotroulette-4c7a1",
+
+    storageBucket:
+        "buckshotroulette-4c7a1.firebasestorage.app",
+
+    messagingSenderId:
+        "335951554199",
+
+    appId:
+        "1:335951554199:web:8d7475fc9dda0f76b32bd2",
+
+    measurementId:
+        "G-H5RLT7K97W"
 };
+
 
 const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
@@ -221,7 +242,7 @@ const message =
    MESSAGE
 ========================= */
 
-function showMessage(text,type){
+function showMessage(text, type){
 
     message.textContent = text;
 
@@ -252,8 +273,6 @@ async function recovery(){
     }
 
 
-    /* Jangan izinkan proses ganda */
-
     recoveryBtn.disabled = true;
 
     showMessage(
@@ -265,13 +284,14 @@ async function recovery(){
     try{
 
         /*
-         * Cek akun di Firebase
-         *
-         * /players/{ID}
+         * Ambil akun langsung dari Firebase
          */
 
         const playerRef =
-            ref(db, "players/" + newId);
+            ref(
+                db,
+                "players/" + newId
+            );
 
         const snapshot =
             await get(playerRef);
@@ -295,9 +315,23 @@ async function recovery(){
 
 
         /*
-         * ID ditemukan
-         *
-         * Baru sekarang ID lama dihapus.
+         * Data pemain ditemukan
+         */
+
+        const playerData =
+            snapshot.val();
+
+
+        showMessage(
+            "ID pemain ditemukan. Memulihkan akun...",
+            "success"
+        );
+
+
+        /*
+         * =========================
+         * HAPUS ID LAMA
+         * =========================
          */
 
         localStorage.removeItem(
@@ -306,7 +340,9 @@ async function recovery(){
 
 
         /*
-         * Simpan ID baru
+         * =========================
+         * SIMPAN ID BARU
+         * =========================
          */
 
         localStorage.setItem(
@@ -316,7 +352,9 @@ async function recovery(){
 
 
         /*
-         * Pastikan benar-benar tersimpan
+         * =========================
+         * VERIFIKASI LOCAL STORAGE
+         * =========================
          */
 
         const savedId =
@@ -328,7 +366,7 @@ async function recovery(){
         if(savedId !== newId){
 
             showMessage(
-                "Gagal menyimpan ID ke perangkat.",
+                "ID gagal disimpan ke perangkat.",
                 "error"
             );
 
@@ -339,25 +377,59 @@ async function recovery(){
 
 
         /*
-         * Berhasil
+         * =========================
+         * VERIFIKASI LAGI FIREBASE
+         * =========================
+         */
+
+        const verifyRef =
+            ref(
+                db,
+                "players/" + savedId
+            );
+
+        const verifySnapshot =
+            await get(verifyRef);
+
+
+        if(!verifySnapshot.exists()){
+
+            showMessage(
+                "Akun tidak dapat diverifikasi.",
+                "error"
+            );
+
+            recoveryBtn.disabled = false;
+
+            return;
+        }
+
+
+        /*
+         * =========================
+         * SELESAI
+         * =========================
          */
 
         showMessage(
-            "Akun berhasil dipulihkan.",
+            "Recovery berhasil. Membuka game...",
             "success"
         );
 
 
         /*
-         * Masuk ke game
+         * Beri waktu agar localStorage
+         * benar-benar tersimpan sebelum
+         * berpindah halaman.
          */
 
         setTimeout(() => {
 
-            window.location.href =
-                "index.html";
+            window.location.replace(
+                "./index.html"
+            );
 
-        },1000);
+        }, 800);
 
 
     }catch(error){
@@ -368,7 +440,7 @@ async function recovery(){
         );
 
         showMessage(
-            "Gagal menghubungi Firebase. Periksa koneksi internet.",
+            "Terjadi kesalahan saat recovery.",
             "error"
         );
 
@@ -407,7 +479,9 @@ playerIdInput.addEventListener(
    LUCIDE
 ========================= */
 
-lucide.createIcons();
+if(window.lucide){
+    lucide.createIcons();
+}
 
 </script>
 
