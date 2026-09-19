@@ -8632,7 +8632,7 @@ async function shoot(targetId) {
       }
       currentGame.shotPending = null;
 
-      /* Clapper Board: kembalikan shell yang baru ditembak dan pertahankan giliran. */
+      /* Clapperboard: kembalikan shell yang baru ditembak dan pertahankan giliran. */
       if (players[currentPlayerId]?.clapperActive) {
         const original = currentGame.shells?.originalSequence?.[currentShell] || currentShellType;
         currentGame.shells.current = Math.max(0, currentShell);
