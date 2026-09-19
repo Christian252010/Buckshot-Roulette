@@ -4615,7 +4615,7 @@ const DEFAULT_ITEM_RARITIES = {
   burner_phone: "uncommon", remote: "rare", jammer: "rare", reflector_mirror: "rare",
   dynamite: "uncommon", dice: "rare", rewind_film: "legendary", coin_flip: "uncommon",
   life_steal: "rare", megazine: "legendary", ace_card: "legendary", wrench: "uncommon",
-  clapper_board: "rare", dead_battery: "rare", eraser: "common", stamp: "rare", hook: "uncommon",
+  clapperboard: "rare", dead_battery: "rare", eraser: "common", stamp: "rare", hook: "uncommon",
   floppy_disk: "rare", hourglass: "rare", magnet: "rare", future_mail: "uncommon", overtake_ticket: "rare"
 };
 
@@ -4960,7 +4960,7 @@ const ITEM_DEFINITIONS = {
     name: "Wrench", icon: "wrench",
     info: "Mengambil 1 item random yang dimiliki lalu mengubahnya menjadi +1 HP. Tidak berfungsi jika hanya memiliki Wrench.", target: false
   },
-  clapper_board: {
+  clapperboard: {
     name: "Clapperboard", icon: "clapperboard",
     info: "Mengulangi aksi tembakan terakhir: setelah selesai menembak, kembali ke shell sebelumnya dan mendapatkan giliran lagi.", target: false
   },
@@ -5483,7 +5483,7 @@ async function useSelectedItem(targetId = null) {
         Object.values(game.players || {}).forEach(p => {
           if (p) p.shellItemUses = {};
         });
-      } else if (type === "clapper_board") {
+      } else if (type === "clapperboard") {
         player.clapperActive = true;
       } else if (type === "dead_battery") {
         game.deadBatteryUntilTurn = Number(game.turn?.counter ?? 0) + 1;
