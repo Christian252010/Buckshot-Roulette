@@ -4676,7 +4676,7 @@ const DEFAULT_ITEM_RARITIES = {
   burner_phone: "uncommon", remote: "rare", jammer: "rare", reflector_mirror: "rare",
   dynamite: "uncommon", dice: "rare", rewind_film: "legendary", coin_flip: "uncommon",
   life_steal: "rare", megazine: "legendary", ace_card: "legendary",
-  wrench: "uncommon", clapper_board: "rare", dead_battery: "rare",
+  wrench: "uncommon", clapperboard: "rare", dead_battery: "rare",
   eraser: "uncommon", stamp: "rare", hook: "uncommon", floppy_disk: "rare",
   hourglass: "rare", magnet: "rare", future_mail: "uncommon", overtake_ticket: "rare"
 };
@@ -5024,8 +5024,8 @@ const ITEM_DEFINITIONS = {
     info: "Mengambil 1 item random yang dimiliki lalu mengubahnya menjadi +1 HP. Tidak berfungsi jika hanya memiliki Wrench.",
     target: false
   },
-  clapper_board: {
-    name: "Clapper Board",
+  clapperboard: {
+    name: "Clapperboard",
     icon: "clapperboard",
     info: "Setelah menembak, kembali ke shell sebelumnya dan mendapatkan giliran lagi.",
     target: false
@@ -5571,7 +5571,7 @@ async function useSelectedItem(targetId = null) {
           Number(player.hp ?? 0) + 1
         );
         inventoryHandled = true;
-      } else if (type === "clapper_board") {
+      } else if (type === "clapperboard") {
         player.clapperBoardActive = true;
       } else if (type === "dead_battery") {
         const aliveCount = Object.values(game.players || {})
@@ -6670,7 +6670,7 @@ function showGameEvent(eventData) {
       coin_flip: "coin-flip",
       megazine: "megazine",
       wrench: "get-item",
-      clapper_board: "get-item",
+      clapperboard: "get-item",
       dead_battery: "get-item",
       eraser: "get-item",
       stamp: "get-item",
@@ -6773,8 +6773,8 @@ function showGameEvent(eventData) {
       return;
     }
 
-    if (eventData.itemType === "clapper_board") {
-      appendGameMessage(`${userName} mengaktifkan Clapper Board.`, "info", definition?.icon || "clapperboard", 3600);
+    if (eventData.itemType === "clapperboard") {
+      appendGameMessage(`${userName} mengaktifkan Clapperboard.`, "info", definition?.icon || "clapperboard", 3600);
       return;
     }
 
