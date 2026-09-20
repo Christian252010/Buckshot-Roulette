@@ -9,7 +9,7 @@
     name="viewport"
     content="width=device-width, initial-scale=1.0">
 
-  <title>Buckshot Roulette - BETA2</title>
+  <title>Buckshot Roulette</title>
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -4713,7 +4713,7 @@ const DEFAULT_ITEM_RARITIES = {
   burner_phone: "uncommon", remote: "rare", jammer: "rare", reflector_mirror: "rare",
   dynamite: "uncommon", dice: "rare", rewind_film: "legendary", coin_flip: "uncommon",
   life_steal: "rare", megazine: "legendary", ace_card: "legendary", magnet: "uncommon",
-  clapperboard: "rare", wrench: "rare", eraser: "uncommon", hook: "uncommon", future_mail: "uncommon"
+  clapperboard: "rare", wrench: "rare", eraser: "uncommon", hook: "uncommon", future_mail: "uncommon", stamp: "rare", hourglass: "rare", overtake_ticket: "legendary"
 };
 
 const DEFAULT_GAME_SETTINGS = {
@@ -4998,6 +4998,24 @@ const ITEM_DEFINITIONS = {
     info: "Melihat 2 peluru berikutnya setelah peluru saat ini.",
     target: false
   },
+  stamp: {
+    name: "Stamp",
+    icon: "stamp",
+    info: "Membuat penggunaan 1 item berikutnya tidak menghilangkan item tersebut dari inventory.",
+    target: false
+  },
+  hourglass: {
+    name: "Hourglass",
+    icon: "hourglass",
+    info: "Mendapatkan 2 item sekarang melalui item spin. Setelah reload shell tidak mendapatkan item lagi pada reload tersebut.",
+    target: false
+  },
+  overtake_ticket: {
+    name: "Overtake Ticket",
+    icon: "tickets",
+    info: "Setelah pemain berikutnya menyelesaikan gilirannya, pengguna mendapatkan 1 giliran tambahan sebelum urutan kembali normal.",
+    target: false
+  },
   beer: {
     name: "Beer",
     icon: "can-soda",
@@ -5161,9 +5179,9 @@ function renderMyItems() {
     !isWrenched;
 
   let visibleItems = [...items];
-  const reloadEvent = gameData?.lastEvent?.reload ? gameData.lastEvent : null;
-  const pendingRewards = reloadEvent && revealedItemSpinEventId !== reloadEvent.id
-    ? (Array.isArray(reloadEvent.itemRewards?.[currentPlayerId]) ? reloadEvent.itemRewards[currentPlayerId] : [])
+  const rewardEvent = gameData?.lastEvent && (gameData.lastEvent.reload || gameData.lastEvent.itemType === "hourglass") ? gameData.lastEvent : null;
+  const pendingRewards = rewardEvent && revealedItemSpinEventId !== rewardEvent.id
+    ? (Array.isArray(rewardEvent.itemRewards?.[currentPlayerId]) ? rewardEvent.itemRewards[currentPlayerId] : [])
     : [];
   if (pendingRewards.length) {
     visibleItems = visibleItems.slice(0, Math.max(0, visibleItems.length - pendingRewards.length));
@@ -5308,6 +5326,8 @@ async function useSelectedItem(targetId = null) {
   let eraserRemovedItem = null;
   let hookTakenItem = null;
   let futureMailResults = null;
+  let hourglassRewards = null;
+  let overtakeActivated = false;
   let adrenalineStolenFromId = null;
   let inventoryHandled = false;
 
@@ -5422,6 +5442,11 @@ async function useSelectedItem(targetId = null) {
       const inventory = Array.isArray(sourcePlayer.items) ? [...sourcePlayer.items] : [];
       if (inventory[slotIndex] !== type) return;
 
+      const stampedUse = player.stampActive === true && type !== "stamp";
+      if (stampedUse) {
+        player.stampActive = false;
+      }
+
       if (type === "expired_medicine" && Number(player.hp ?? 0) >= Number(game.settings?.maxHealth ?? 4)) return;
 
       if (type === "cigarette") {
@@ -5452,7 +5477,7 @@ async function useSelectedItem(targetId = null) {
         if (!targetId || targetId === currentPlayerId) return;
         const target = game.players?.[targetId];
         const targetItems = Array.isArray(target?.items) ? target.items : [];
-        if (!target || Number(target.hp ?? 0) <= 0 || !targetItems.length) return;
+        if (!target || Number(target.hp ?? 0) <= 0 || target.aceCardActive === true || !targetItems.length) return;
         const randomIndex = Math.floor(Math.random() * targetItems.length);
         eraserRemovedItem = targetItems[randomIndex];
         target.items = targetItems.filter((_, index) => index !== randomIndex);
@@ -5460,15 +5485,29 @@ async function useSelectedItem(targetId = null) {
         if (!targetId || targetId === currentPlayerId) return;
         const target = game.players?.[targetId];
         const targetItems = Array.isArray(target?.items) ? target.items : [];
-        if (!target || Number(target.hp ?? 0) <= 0 || !targetItems.length) return;
+        if (!target || Number(target.hp ?? 0) <= 0 || target.aceCardActive === true || !targetItems.length) return;
         const sourceItems = Array.isArray(sourcePlayer.items) ? sourcePlayer.items : [];
-        const sourceItemsWithoutHook = sourceItems.filter((_, index) => index !== slotIndex);
+        const sourceItemsWithoutHook = stampedUse ? [...sourceItems] : sourceItems.filter((_, index) => index !== slotIndex);
         if (sourceItemsWithoutHook.length >= 8) return;
         const randomIndex = Math.floor(Math.random() * targetItems.length);
         hookTakenItem = targetItems[randomIndex];
         target.items = targetItems.filter((_, index) => index !== randomIndex);
         sourcePlayer.items = [...sourceItemsWithoutHook, hookTakenItem];
         inventoryHandled = true;
+      } else if (type === "stamp") {
+        player.stampActive = true;
+      } else if (type === "hourglass") {
+        const baseItems = inventory.filter((_, index) => index !== slotIndex);
+        if (baseItems.length > 6) return;
+        const rewards = createItemRewards(2, game.settings || getGameSettings());
+        const rewardResult = addItemRewards(baseItems, rewards, 8);
+        if (!rewardResult.added.length) return;
+        sourcePlayer.items = rewardResult.inventory;
+        hourglassRewards = rewardResult.added;
+        inventoryHandled = true;
+      } else if (type === "overtake_ticket") {
+        player.overtakePending = true;
+        overtakeActivated = true;
       } else if (type === "beer") {
         const shellIndex = Number(game.shells?.current ?? 0);
         const shellType = game.shells?.sequence?.[shellIndex];
@@ -5529,7 +5568,7 @@ async function useSelectedItem(targetId = null) {
       } else if (type === "dice") {
         const ids = Object.keys(game.players || {}).filter(id => game.players[id] && Number(game.players[id].hp ?? 0) > 0 && !game.players[id].aceCardActive);
         if (ids.length < 2) return;
-        inventory.splice(slotIndex, 1);
+        if (!stampedUse) inventory.splice(slotIndex, 1);
         sourcePlayer.items = inventory;
         inventoryHandled = true;
         const order = shuffleArray(ids);
@@ -5603,9 +5642,9 @@ async function useSelectedItem(targetId = null) {
         magnetResult = chosenEntry.item;
 
         /* Hapus tepat 2 item: Magnet yang digunakan + 1 item random. */
-        sourcePlayer.items = inventory.filter(
-          (_, index) => index !== slotIndex && index !== chosenEntry.index
-        );
+        sourcePlayer.items = stampedUse
+          ? inventory.filter((_, index) => index !== chosenEntry.index)
+          : inventory.filter((_, index) => index !== slotIndex && index !== chosenEntry.index);
 
         player.hp = Math.min(
           Number(game.settings?.maxHealth ?? 4),
@@ -5634,7 +5673,7 @@ async function useSelectedItem(targetId = null) {
         };
       }
 
-      if (!inventoryHandled) {
+      if (!inventoryHandled && !stampedUse) {
         inventory.splice(slotIndex, 1);
         sourcePlayer.items = inventory;
       }
@@ -5654,6 +5693,9 @@ async function useSelectedItem(targetId = null) {
         eraserRemovedItem,
         hookTakenItem,
         futureMailResults,
+        hourglassRewards,
+        itemRewards: hourglassRewards ? { [currentPlayerId]: hourglassRewards } : {},
+        overtakeActivated,
         adrenalineStolenFromId: isBorrowed ? sourceId : null,
         at: Date.now()
       };
@@ -5952,6 +5994,8 @@ function createGameState(
         dynamiteTrapped: false, dynamiteTrappedById: null, dynamiteActivatedTurn: null,
         aceCardActive: false, aceCardActivatedTurn: null, aceCardExpiresTurn: null, lifeStealActive: false,
         clapperboardActive: false,
+        stampActive: false,
+        overtakePending: false,
         wrenched: false, wrenchedById: null, wrenchedActivatedTurn: null
 
       };
@@ -6646,6 +6690,12 @@ function showGameEvent(eventData) {
       return;
     }
 
+    if (eventData.itemType === "hourglass") {
+      appendGameMessage(`${userName} menggunakan Hourglass dan mendapatkan 2 item.`, "info", definition?.icon || "hourglass", 3600);
+      messageTimers.push(setTimeout(() => showItemSpin(eventData), 450));
+      return;
+    }
+
     if (eventData.itemType === "future_mail") {
       const labels = Array.isArray(eventData.futureMailResults)
         ? eventData.futureMailResults.map(type => type === "live" ? "LIVE" : "BLANK")
@@ -6671,6 +6721,16 @@ function showGameEvent(eventData) {
 
     if (eventData.itemType === "megazine") {
       appendGameMessage(`${userName} menggunakan Megazine dan melakukan reload shell.`, "info", definition?.icon || "package-2", 3600);
+      return;
+    }
+
+    if (eventData.itemType === "stamp") {
+      appendGameMessage(`${userName} menggunakan Stamp. Item berikutnya tidak akan hilang.`, "info", definition?.icon || "stamp", 3600);
+      return;
+    }
+
+    if (eventData.itemType === "overtake_ticket") {
+      appendGameMessage(`${userName} menggunakan Overtake Ticket. Giliran akan kembali setelah pemain berikutnya selesai.`, "info", definition?.icon || "tickets", 3600);
       return;
     }
 
@@ -8454,9 +8514,10 @@ function renderPlayerPopup() {
           ${itemMode && ["handcuff", "adrenaline"].includes(selectedItemType) && gameData?.turn?.current !== currentPlayerId ? "disabled" : ""}
           ${itemMode && selectedItemType === "adrenaline" && (gameData?.players?.[player.id]?.aceCardActive || !(Array.isArray(gameData?.players?.[player.id]?.items) && gameData.players[player.id].items.length)) ? "disabled" : ""}
           ${itemMode && selectedItemType === "dynamite" && (gameData?.players?.[player.id]?.aceCardActive || gameData?.players?.[player.id]?.dynamiteTrapped) ? "disabled" : ""}
-          ${itemMode && selectedItemType === "wrench" && (gameData?.players?.[player.id]?.aceCardActive || gameData?.players?.[player.id]?.wrenched) ? "disabled" : ""}>
+          ${itemMode && selectedItemType === "wrench" && (gameData?.players?.[player.id]?.aceCardActive || gameData?.players?.[player.id]?.wrenched) ? "disabled" : ""}
+          ${itemMode && ["eraser", "hook"].includes(selectedItemType) && gameData?.players?.[player.id]?.aceCardActive ? "disabled" : ""}>
 
-          ${itemMode && selectedItemType === "handcuff" ? "Lock" : itemMode && selectedItemType === "wrench" ? "Wrench" : itemMode && selectedItemType === "adrenaline" ? "Steal" : itemMode && selectedItemType === "dynamite" ? "Trap" : "Shot"}
+          ${itemMode && selectedItemType === "handcuff" ? "Lock" : itemMode && selectedItemType === "wrench" ? "Wrench" : itemMode && selectedItemType === "adrenaline" ? "Steal" : itemMode && selectedItemType === "dynamite" ? "Trap" : itemMode && selectedItemType === "eraser" ? "Erase" : itemMode && selectedItemType === "hook" ? "Hook" : "Shot"}
 
         </button>
 
@@ -8854,7 +8915,14 @@ async function shoot(targetId) {
         shellReloaded = true;
       }
 
-      if ((currentShellType === "blank" && isSelf) || clapperboardRepeat) {
+      const overtakeOwnerId = playerIds.find(id => id !== currentPlayerId && players[id]?.overtakePending === true && Number(players[id]?.hp ?? 0) > 0) || null;
+      if (overtakeOwnerId) {
+        /* Pemilik tiket sudah menunggu: setelah pemain berikutnya selesai, giliran kembali ke pemilik. */
+        players[overtakeOwnerId].overtakePending = false;
+        currentGame.turn.current = overtakeOwnerId;
+        currentGame.turn.index = playerIds.indexOf(overtakeOwnerId);
+        currentGame.turn.counter = Number(currentGame.turn.counter ?? 0) + 1;
+      } else if ((currentShellType === "blank" && isSelf) || clapperboardRepeat) {
         const currentIndex = playerIds.indexOf(currentPlayerId);
         currentGame.turn.current = currentPlayerId;
         currentGame.turn.index = currentIndex >= 0 ? currentIndex : 0;
