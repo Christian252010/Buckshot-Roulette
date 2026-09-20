@@ -9,7 +9,7 @@
     name="viewport"
     content="width=device-width, initial-scale=1.0">
 
-  <title>Buckshot Roulette - BETA</title>
+  <title>Buckshot Roulette - BETA2</title>
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -4979,6 +4979,18 @@ const ITEM_DEFINITIONS = {
     info: "Mengunci inventory pemain yang terkena selama 1 giliran. Item tidak dapat digunakan selama Wrenched.",
     target: true
   },
+  eraser: {
+    name: "Eraser",
+    icon: "eraser",
+    info: "Menghapus 1 item secara acak dari inventory pemain lain.",
+    target: true
+  },
+  hook: {
+    name: "Hook",
+    icon: "fishing-hook",
+    info: "Mengambil 1 item secara acak dari inventory pemain lain.",
+    target: true
+  },
   beer: {
     name: "Beer",
     icon: "can-soda",
@@ -5286,6 +5298,8 @@ async function useSelectedItem(targetId = null) {
   let rewindResult = null;
   let coinFlipResult = null;
   let magnetResult = null;
+  let eraserRemovedItem = null;
+  let hookTakenItem = null;
   let adrenalineStolenFromId = null;
   let inventoryHandled = false;
 
@@ -5417,6 +5431,27 @@ async function useSelectedItem(targetId = null) {
         target.wrenched = true;
         target.wrenchedById = currentPlayerId;
         target.wrenchedActivatedTurn = Number(game.turn?.counter ?? 0);
+      } else if (type === "eraser") {
+        if (!targetId || targetId === currentPlayerId) return;
+        const target = game.players?.[targetId];
+        const targetItems = Array.isArray(target?.items) ? target.items : [];
+        if (!target || Number(target.hp ?? 0) <= 0 || !targetItems.length) return;
+        const randomIndex = Math.floor(Math.random() * targetItems.length);
+        eraserRemovedItem = targetItems[randomIndex];
+        target.items = targetItems.filter((_, index) => index !== randomIndex);
+      } else if (type === "hook") {
+        if (!targetId || targetId === currentPlayerId) return;
+        const target = game.players?.[targetId];
+        const targetItems = Array.isArray(target?.items) ? target.items : [];
+        if (!target || Number(target.hp ?? 0) <= 0 || !targetItems.length) return;
+        const sourceItems = Array.isArray(sourcePlayer.items) ? sourcePlayer.items : [];
+        const sourceItemsWithoutHook = sourceItems.filter((_, index) => index !== slotIndex);
+        if (sourceItemsWithoutHook.length >= 8) return;
+        const randomIndex = Math.floor(Math.random() * targetItems.length);
+        hookTakenItem = targetItems[randomIndex];
+        target.items = targetItems.filter((_, index) => index !== randomIndex);
+        sourcePlayer.items = [...sourceItemsWithoutHook, hookTakenItem];
+        inventoryHandled = true;
       } else if (type === "beer") {
         const shellIndex = Number(game.shells?.current ?? 0);
         const shellType = game.shells?.sequence?.[shellIndex];
@@ -5592,6 +5627,8 @@ async function useSelectedItem(targetId = null) {
         rewindResult,
         coinFlipResult,
         magnetResult,
+        eraserRemovedItem,
+        hookTakenItem,
         adrenalineStolenFromId: isBorrowed ? sourceId : null,
         at: Date.now()
       };
@@ -6508,7 +6545,9 @@ function showGameEvent(eventData) {
       coin_flip: "coin-flip",
       megazine: "megazine",
       clapperboard: "get-item",
-      wrench: "get-item"
+      wrench: "get-item",
+      eraser: "get-item",
+      hook: "get-item"
     };
     playGameSound(soundMap[eventData.itemType] || "get-item");
 
@@ -6544,6 +6583,26 @@ function showGameEvent(eventData) {
 
     if (eventData.itemType === "reflector_mirror") {
       appendGameMessage(`${userName} mengaktifkan Shield.`, "info", definition?.icon || "mirror-rectangular", 3600);
+      return;
+    }
+
+    if (eventData.itemType === "eraser") {
+      appendGameMessage(
+        `${userName} menghapus ${ITEM_DEFINITIONS[eventData.eraserRemovedItem]?.name || "item"} dari ${getPlayerNameById(eventData.targetId)}.`,
+        "info",
+        definition?.icon || "eraser",
+        3600
+      );
+      return;
+    }
+
+    if (eventData.itemType === "hook") {
+      appendGameMessage(
+        `${userName} mengambil ${ITEM_DEFINITIONS[eventData.hookTakenItem]?.name || "item"} dari ${getPlayerNameById(eventData.targetId)}.`,
+        "info",
+        definition?.icon || "fishing-hook",
+        3600
+      );
       return;
     }
 
