@@ -9,7 +9,7 @@
     name="viewport"
     content="width=device-width, initial-scale=1.0">
 
-  <title>Buckshot Roulette</title>
+  <title>Buckshot Roulette - BETA5</title>
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -54,6 +54,14 @@ body {
   min-height: 100dvh;
   overflow: hidden;
   background: #1f1f1f;
+}
+
+.lobby {
+  height: 100dvh;
+  min-height: 100dvh;
+  overflow-x: hidden;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
 }
 
 
@@ -5255,6 +5263,8 @@ function setItemMode(type, slotIndex) {
   if (adrenalineActive && sourceId !== currentPlayerId && type === "adrenaline") return;
   if (type === "expired_medicine" && Number(gameData.players?.[currentPlayerId]?.hp ?? 0) >= Number(gameData.settings?.maxHealth ?? 4)) return;
 
+  shotMode = false;
+  selectedTarget = null;
   selectedItemType = type;
   selectedItemSlot = slotIndex;
   selectedItemSourceId = sourceId;
@@ -5523,6 +5533,7 @@ async function useSelectedItem(targetId = null) {
         sourcePlayer.items = rewardResult.inventory;
         hourglassRewards = rewardResult.added;
         player.skipNextReloadReward = true;
+        player.skipNextReloadRewardSetId = null;
         inventoryHandled = true;
       } else if (type === "dead_battery") {
         if (player.aceCardActive === true) return;
@@ -6027,6 +6038,7 @@ function createGameState(
         coinFlipLocked: false,
         shellItemUses: {},
         skipNextReloadReward: false,
+        skipNextReloadRewardSetId: null,
         floppyStoredShell: null, floppyStoredAtTurn: null, floppyReady: false,
         deadBatteryActivatedAt: null,
         shieldActive: false, shieldActivatedTurn: null,
@@ -6653,7 +6665,17 @@ function showGameEvent(eventData) {
       magnifying_glass: "magnify-glass",
       handcuff: "handcuff",
       hand_saw: "hand-saw",
-      cigarette: "cigeratte",
+      cigarette: "cigarette",
+      clapperboard: "clapperboard",
+      wrench: "wrench",
+      eraser: "eraser",
+      hook: "hook",
+      future_mail: "future-mail",
+      stamp: "stamp",
+      hourglass: "hourglass",
+      overtake_ticket: "overtake-ticket",
+      dead_battery: "dead-battery",
+      floppy_disk: "floppy-disk",
       beer: "beer",
       inverter: "inverter",
       expired_medicine: "expired-medicine",
@@ -6667,13 +6689,8 @@ function showGameEvent(eventData) {
       rewind_film: "rewind-film",
       coin_flip: "coin-flip",
       megazine: "megazine",
-      clapperboard: "get-item",
-      wrench: "get-item",
-      eraser: "get-item",
-      hook: "get-item",
-      future_mail: "get-item",
-      dead_battery: "get-item",
-      floppy_disk: "get-item"
+      ace_card: "ace-card",
+      magnet: "magnet"
     };
     playGameSound(soundMap[eventData.itemType] || "get-item");
 
@@ -7006,9 +7023,8 @@ function showGameEvent(eventData) {
       }
 
       if (eventData.reload) {
-        /* OUT + IN -> Random Shell -> hilang -> spin item -> item masuk inventory. */
-        playGameSound("out");
-        playGameSound("in", 1, 120);
+        /* Random Shell muncul: IN langsung, lalu OUT tepat setelah IN selesai. */
+        playGameSoundSequence(["in", "out"]);
         appendGameMessage("Shell telah habis", "info", "refresh-cw", 2600);
 
         messageTimers.push(setTimeout(() => {
@@ -7065,6 +7081,7 @@ function isDeadBatteryHiddenForCurrentPlayer() {
 function updateDeadBatteryUI() {
   const hidden = isDeadBatteryHiddenForCurrentPlayer();
   document.querySelector(".game-panel")?.classList.toggle("dead-battery-hidden", hidden);
+  document.querySelector(".shot-player-health")?.classList.toggle("dead-battery-hidden", hidden);
   document.querySelector(".gp-bottom")?.classList.toggle("dead-battery-hidden", hidden);
   document.querySelector(".random-shell")?.classList.toggle("dead-battery-hidden", hidden);
   gameMessage?.classList.toggle("dead-battery-hidden", hidden);
@@ -7083,6 +7100,7 @@ async function renderGameState() {
   }
 
   await loadGamePlayers();
+  updateDeadBatteryUI();
 
   showGameEvent(gameData.lastEvent);
 
@@ -8348,6 +8366,12 @@ playerBtn.addEventListener(
 
     if (itemMode && selectedItemType) {
       if (gameData?.turn?.current !== currentPlayerId) return;
+      if (ITEM_DEFINITIONS[selectedItemType]?.target === true) {
+        renderPlayerPopup();
+        popup.classList.remove("hidden");
+        overlay.classList.remove("hidden");
+        return;
+      }
       useSelectedItem();
       return;
     }
@@ -8575,7 +8599,7 @@ function renderPlayerPopup() {
             ${player.name}
           </span>
 
-          <span class="st-healt">
+          <span class="st-healt shot-player-health ${isDeadBatteryHiddenForCurrentPlayer() ? "dead-battery-hidden" : ""}">
             (${player.hp})
           </span>
 
@@ -8990,8 +9014,12 @@ async function shoot(targetId) {
               const result = addItemRewards(players[id].items, rewards, 8);
               players[id].items = result.inventory;
               itemRewards[id] = result.added;
+            } else {
+              /* Hourglass sudah memberi 2 item saat dipakai; reload berikutnya tidak memberi item lagi. */
+              itemRewards[id] = [];
             }
             players[id].skipNextReloadReward = false;
+            players[id].skipNextReloadRewardSetId = null;
             players[id].sawActive = false;
             players[id].shellItemUses = {};
           }
