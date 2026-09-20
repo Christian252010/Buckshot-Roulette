@@ -515,6 +515,8 @@ body {
   transition: opacity .45s ease;
 }
 
+.dead-battery-hidden { display: none !important; }
+
 .random-shell.hidden {
   display: flex !important;
   opacity: 0;
@@ -2145,8 +2147,6 @@ body {
   display: none !important;
 }
 
-
-.dead-battery-hidden { display: none !important; }
 </style>
 
 
@@ -2676,6 +2676,10 @@ body {
     <span class="winner-name"></span>
   </div>
 
+  <div class="winner-leaderboard">
+    <div class="winner-leaderboard-title">Leaderboard</div>
+    <div class="winner-leaderboard-list" id="winnerLeaderboardList"></div>
+  </div>
 
 </div>
 
@@ -2817,7 +2821,6 @@ let lastWinnerId = null;
 let lastFinishedStartedAt = null;
 let winnerTimer = null;
 let winnerCleanupStartedAt = null;
-let returningFromWinner = false;
 let lobbyRenderToken = 0;
 let shellRenderId = null;
 let shellRevealTimer = null;
@@ -3942,13 +3945,8 @@ function watchLeaderboard() {
 function updateLeaderboardVisibility() {
   if (!leaderboard) return;
   const joined = !!roomData?.players?.[currentPlayerId];
-  const starting = roomData?.status === "starting";
-  const finished = roomData?.status === "playing" && roomData?.game?.phase === "finished";
-  const activeGame = roomData?.status === "playing" && !finished;
-
-  // Pemain yang masih berada di game tidak melihat leaderboard.
-  // Pemain yang menunggu game selesai melihat leaderboard di lobby.
-  leaderboard.classList.toggle("hidden", joined && (starting || activeGame));
+  const roomBusy = roomData?.status === "playing" || roomData?.status === "starting";
+  leaderboard.classList.toggle("hidden", joined || roomBusy);
 }
 
 /* =========================
@@ -4078,20 +4076,6 @@ async function renderRoom() {
       startCountdownTimer = setTimeout(updateCountdown, 150);
     };
     updateCountdown();
-    return;
-  }
-
-  if (roomData.status === "playing" && roomData.game?.phase === "finished") {
-    // Game sudah selesai tetapi room belum sempat dihapus oleh client pemenang.
-    // Semua pemain dikembalikan ke lobby sementara dan leaderboard tetap tampil.
-    hideWinnerScreen();
-    showLobby();
-    createBtn.classList.add("hidden");
-    joinBtn.classList.add("hidden");
-    startLeft.classList.add("hidden");
-    roomMessage.textContent = "Game selesai. Menunggu kembali ke lobby...";
-    updateLeaderboardVisibility();
-    returningFromWinner = false;
     return;
   }
 
@@ -4667,8 +4651,7 @@ const DEFAULT_ITEM_RARITIES = {
   beer: "common", inverter: "rare", expired_medicine: "uncommon", adrenaline: "rare",
   burner_phone: "uncommon", remote: "rare", jammer: "rare", reflector_mirror: "rare",
   dynamite: "uncommon", dice: "rare", rewind_film: "legendary", coin_flip: "uncommon",
-  life_steal: "rare", megazine: "legendary", ace_card: "legendary", magnet: "uncommon",
-  clapper_board: "rare", dead_battery: "uncommon"
+  life_steal: "rare", megazine: "legendary", ace_card: "legendary", magnet: "uncommon", clapperboard: "rare", dead_battery: "uncommon"
 };
 
 const DEFAULT_GAME_SETTINGS = {
@@ -5008,21 +4991,17 @@ const ITEM_DEFINITIONS = {
     name: "Ace Card", icon: "playing-card",
     info: "Menonaktifkan efek item pemain lain terhadap pemilik selama 1 ronde. Tidak dapat diborgol, dipengaruhi Hand Saw, Remote, Jammer, Dice, Shield, Dynamite, atau Adrenaline.", target: false
   },
-  clapper_board: {
-    name: "Clapper Board",
-    icon: "clapperboard",
-    info: "Mengulangi aksi tembakan: setelah menembak, kembali ke shell yang sama dan mendapatkan giliran lagi.",
-    target: false
-  },
-  dead_battery: {
-    name: "Dead Battery",
-    icon: "battery-low",
-    info: "Menghilangkan informasi shell, urutan pemain, info teks, tombol List Player, serta current dan next selama 1 ronde.",
-    target: false
-  },
   magnet: {
     name: "Magnet", icon: "magnet",
     info: "Mengambil 1 item random yang dimiliki lalu mengubahnya menjadi +1 HP. Tidak berfungsi jika hanya memiliki Magnet.", target: false
+  },
+  clapperboard: {
+    name: "Clapperboard", icon: "clapperboard",
+    info: "Mengulangi aksi tembakan: setelah selesai menembak, kembali ke shell sebelumnya dan mendapatkan giliran lagi.", target: false
+  },
+  dead_battery: {
+    name: "Dead Battery", icon: "battery-low",
+    info: "Menyembunyikan informasi shell, urutan pemain, teks info, List Player, pemain saat ini, dan pemain berikutnya selama 1 putaran.", target: false
   }
 };
 
@@ -5234,7 +5213,6 @@ async function useSelectedItem(targetId = null) {
   let coinFlipResult = null;
   let magnetResult = null;
   let adrenalineStolenFromId = null;
-  let deadBatteryResult = false;
   let inventoryHandled = false;
 
   if (type === "magnifying_glass") {
@@ -5498,14 +5476,13 @@ async function useSelectedItem(targetId = null) {
           Number(player.hp ?? 0) + 1
         );
         inventoryHandled = true;
-      } else if (type === "clapper_board") {
-        player.clapperActive = true;
+      } else if (type === "clapperboard") {
+        player.clapperboardActive = true;
       } else if (type === "dead_battery") {
-        const aliveCount = Object.values(game.players || {}).filter(p => p && Number(p.hp ?? 0) > 0).length;
-        const currentCounter = Number(game.turn?.counter ?? 0);
-        game.deadBatteryActivatedTurn = currentCounter;
-        game.deadBatteryUntilTurn = currentCounter + Math.max(1, aliveCount);
-        deadBatteryResult = true;
+        player.deadBatteryActive = true;
+        player.deadBatteryTurn = Number(game.turn?.counter ?? 0);
+        const aliveCountForBattery = Object.values(game.players || {}).filter(p => p && Number(p.hp ?? 0) > 0).length;
+        player.deadBatteryExpiresTurn = Number(game.turn?.counter ?? 0) + Math.max(1, aliveCountForBattery);
       } else if (type === "megazine") {
         game.shells = createShellSet(Object.keys(game.players || {}).length, game.settings || getGameSettings());
         Object.values(game.players || {}).forEach(p => {
@@ -5820,7 +5797,7 @@ function createGameState(
         shellItemUses: {},
         shieldActive: false, shieldActivatedTurn: null,
         dynamiteTrapped: false, dynamiteTrappedById: null, dynamiteActivatedTurn: null,
-        aceCardActive: false, aceCardActivatedTurn: null, aceCardExpiresTurn: null, lifeStealActive: false, clapperActive: false
+        aceCardActive: false, aceCardActivatedTurn: null, aceCardExpiresTurn: null, lifeStealActive: false
 
       };
 
@@ -6285,8 +6262,7 @@ function openPlayerList() {
 
   if (
     !gameData ||
-    gameData.phase !== "playing" ||
-    isDeadBatteryActive()
+    gameData.phase !== "playing"
   ) {
     return;
   }
@@ -6376,9 +6352,6 @@ function getPlayerNameById(id) {
 }
 
 function showGameEvent(eventData) {
-  if (isDeadBatteryActive() && eventData?.type !== "start") {
-    return;
-  }
   if (!eventData?.id) {
     return;
   }
@@ -6446,9 +6419,7 @@ function showGameEvent(eventData) {
       dice: "dice",
       rewind_film: "rewind-film",
       coin_flip: "coin-flip",
-      megazine: "megazine",
-      clapper_board: "clapper-board",
-      dead_battery: "dead-battery"
+      megazine: "megazine"
     };
     playGameSound(soundMap[eventData.itemType] || "get-item");
 
@@ -6489,16 +6460,6 @@ function showGameEvent(eventData) {
 
     if (eventData.itemType === "dynamite") {
       appendGameMessage(`${userName} memasangkan Dynamite.`, "info", definition?.icon || "bomb", 3600);
-      return;
-    }
-
-    if (eventData.itemType === "clapper_board") {
-      appendGameMessage(`${userName} menggunakan Clapper Board. Tembakan akan mengulang shell ini dan mendapat giliran lagi.`, "info", definition?.icon || "clapperboard", 3600);
-      return;
-    }
-
-    if (eventData.itemType === "dead_battery") {
-      appendGameMessage(`${userName} menggunakan Dead Battery. Informasi disembunyikan selama 1 ronde.`, "info", definition?.icon || "battery-low", 3600);
       return;
     }
 
@@ -6760,29 +6721,6 @@ function showGameEvent(eventData) {
    RENDER GAME STATE
 ========================= */
 
-async function isDeadBatteryActive() {
-  if (!gameData || gameData.phase !== "playing") return false;
-  const until = Number(gameData.deadBatteryUntilTurn ?? -1);
-  const counter = Number(gameData.turn?.counter ?? 0);
-  return until > counter;
-}
-
-function updateDeadBatteryUI() {
-  const active = isDeadBatteryActive();
-  const listButton = document.querySelector(".game .header .list");
-  const current = document.querySelector(".game-current-name");
-  const next = document.querySelector(".next");
-  const shellBottom = document.querySelector(".gp-bottom");
-  const randomShell = document.querySelector(".random-shell");
-  const message = document.querySelector(".game-message");
-
-  [listButton, current, next, shellBottom, randomShell].forEach(el => {
-    if (el) el.classList.toggle("dead-battery-hidden", active);
-  });
-  if (message) message.classList.toggle("dead-battery-hidden", active);
-  if (active && playerListPopup) playerListPopup.classList.remove("show");
-}
-
 async function renderGameState() {
 
   if (!gameData) {
@@ -6792,7 +6730,6 @@ async function renderGameState() {
   await loadGamePlayers();
 
   showGameEvent(gameData.lastEvent);
-  updateDeadBatteryUI();
 
   renderShellInfo();
   renderMyItems();
@@ -6955,21 +6892,10 @@ function showWinnerScreen(
   }, titleEnd + 180);
 
   winnerTimer = setTimeout(
-    async () => {
-      winnerTimer = null;
-      returningFromWinner = true;
-
-      // Hapus room terlebih dahulu. Setelah selesai, pemain yang baru saja bermain
-      // dipaksa kembali ke lobby, bukan masuk lagi ke game/winner.
-      await cleanupFinishedRoom(winnerCleanupStartedAt);
-
-      hideWinnerScreen();
-      gameData = null;
-      showLobby();
-
-      // Jika penghapusan Firebase tertunda, renderRoom akan tetap menganggap
-      // game finished sebagai lobby sementara sampai room benar-benar hilang.
-      updateLeaderboardVisibility();
+    () => {
+      cleanupFinishedRoom(
+        winnerCleanupStartedAt
+      );
     },
     7000
   );
@@ -7048,11 +6974,6 @@ async function cleanupFinishedRoom(
 ========================= */
 
 function renderShellInfo() {
-
-  if (isDeadBatteryActive()) {
-    document.querySelector(".random-shell")?.classList.add("dead-battery-hidden");
-    return;
-  }
 
   const total =
     Number(
@@ -7499,7 +7420,22 @@ async function finishPreparation() {
    CURRENT TURN
 ========================= */
 
+function isDeadBatteryActiveForMe() {
+  const me = gameData?.players?.[currentPlayerId];
+  if (!me?.deadBatteryActive) return false;
+  const expires = Number(me.deadBatteryExpiresTurn ?? -1);
+  return expires < 0 || Number(gameData?.turn?.counter ?? 0) < expires;
+}
+
+function updateDeadBatteryView() {
+  const active = isDeadBatteryActiveForMe();
+  [".game .header .list", ".game-panel .gp-top", ".game-panel .next", ".game > .gp-bottom", ".game-message", ".random-shell"].forEach(selector => {
+    document.querySelectorAll(selector).forEach(el => el.classList.toggle("dead-battery-hidden", active));
+  });
+}
+
 function updateCurrentTurn() {
+  updateDeadBatteryView();
 
   const currentElement =
     document.querySelector(
@@ -8556,7 +8492,6 @@ async function shoot(targetId) {
       let dynamiteRemoved = false;
       let dynamiteExpired = [];
       let aceExpired = [];
-      let clapperRepeat = players[currentPlayerId]?.clapperActive === true;
 
       const targetAceCard = targetPlayer.aceCardActive === true;
       const shooterAceCard = players[currentPlayerId]?.aceCardActive === true;
@@ -8616,17 +8551,16 @@ async function shoot(targetId) {
       }
 
       const originalShellType = currentGame.shells?.originalSequence?.[currentShell] || currentShellType;
-      if (!clapperRepeat) {
-        currentGame.shells.current = currentShell + 1;
-        if (originalShellType === "live") {
-          currentGame.shells.alive = Math.max(0, Number(currentGame.shells.alive ?? 0) - 1);
-        } else {
-          currentGame.shells.blank = Math.max(0, Number(currentGame.shells.blank ?? 0) - 1);
-        }
+      currentGame.shells.current = currentShell + 1;
+      if (originalShellType === "live") {
+        currentGame.shells.alive = Math.max(0, Number(currentGame.shells.alive ?? 0) - 1);
       } else {
-        /* Clapper Board: shell yang baru ditembak tetap menjadi shell berikutnya. */
-        currentGame.shells.current = currentShell;
-        players[currentPlayerId].clapperActive = false;
+        currentGame.shells.blank = Math.max(0, Number(currentGame.shells.blank ?? 0) - 1);
+      }
+      if (clapperboardUsed) {
+        currentGame.shells.current = Math.max(0, currentShell - 1);
+        if (originalShellType === "live") currentGame.shells.alive = Number(currentGame.shells.alive ?? 0) + 1;
+        else currentGame.shells.blank = Number(currentGame.shells.blank ?? 0) + 1;
       }
       currentGame.shotPending = null;
 
@@ -8680,7 +8614,7 @@ async function shoot(targetId) {
 
       let shellReloaded = false;
       let itemRewards = {};
-      if (!clapperRepeat && currentGame.shells.current >= Number(currentGame.shells.total || 0)) {
+      if (!clapperboardUsed && currentGame.shells.current >= Number(currentGame.shells.total || 0)) {
         currentGame.shells = createShellSet(playerIds.length, currentGame.settings || getGameSettings());
         playerIds.forEach(id => {
           if (players[id]) {
@@ -8695,11 +8629,10 @@ async function shoot(targetId) {
         shellReloaded = true;
       }
 
-      if (clapperRepeat) {
+      if (clapperboardUsed) {
         const currentIndex = playerIds.indexOf(currentPlayerId);
         currentGame.turn.current = currentPlayerId;
         currentGame.turn.index = currentIndex >= 0 ? currentIndex : 0;
-        /* Tidak menaikkan turn.counter: Clapper memberikan giliran ekstra pada ronde yang sama. */
       } else if (currentShellType === "blank" && isSelf) {
         const currentIndex = playerIds.indexOf(currentPlayerId);
         currentGame.turn.current = currentPlayerId;
@@ -8737,6 +8670,12 @@ async function shoot(targetId) {
 
         const activeAliveCount = Object.values(players).filter(p => p && Number(p.hp ?? 0) > 0).length;
         Object.entries(players).forEach(([id, p]) => {
+          if (!p) return;
+          if (p.deadBatteryActive && Number(p.deadBatteryExpiresTurn ?? 999999) <= Number(currentGame.turn.counter ?? 0)) {
+            p.deadBatteryActive = false;
+            p.deadBatteryTurn = null;
+            p.deadBatteryExpiresTurn = null;
+          }
           if (!p) return;
           if (p.dynamiteTrapped && Number(p.dynamiteActivatedTurn ?? -999999) + Math.max(1, activeAliveCount) <= Number(currentGame.turn.counter ?? 0)) {
             dynamiteExpired.push({ targetId: id, placerId: p.dynamiteTrappedById || null });
@@ -8776,8 +8715,8 @@ async function shoot(targetId) {
         skippedPlayerId,
         dynamiteExpired,
         aceExpired,
+        clapperboardUsed,
         reload: shellReloaded,
-        clapperRepeat,
         itemRewards: shellReloaded ? itemRewards : {},
         at: Date.now()
       };
