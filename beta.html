@@ -4712,7 +4712,8 @@ const DEFAULT_ITEM_RARITIES = {
   beer: "common", inverter: "rare", expired_medicine: "uncommon", adrenaline: "rare",
   burner_phone: "uncommon", remote: "rare", jammer: "rare", reflector_mirror: "rare",
   dynamite: "uncommon", dice: "rare", rewind_film: "legendary", coin_flip: "uncommon",
-  life_steal: "rare", megazine: "legendary", ace_card: "legendary", magnet: "uncommon"
+  life_steal: "rare", megazine: "legendary", ace_card: "legendary", magnet: "uncommon",
+  clapperboard: "rare", wrench: "rare", eraser: "uncommon", hook: "uncommon", future_mail: "uncommon"
 };
 
 const DEFAULT_GAME_SETTINGS = {
@@ -4990,6 +4991,12 @@ const ITEM_DEFINITIONS = {
     icon: "fishing-hook",
     info: "Mengambil 1 item secara acak dari inventory pemain lain.",
     target: true
+  },
+  future_mail: {
+    name: "Future Mail",
+    icon: "mail",
+    info: "Melihat 2 peluru berikutnya setelah peluru saat ini.",
+    target: false
   },
   beer: {
     name: "Beer",
@@ -5300,6 +5307,7 @@ async function useSelectedItem(targetId = null) {
   let magnetResult = null;
   let eraserRemovedItem = null;
   let hookTakenItem = null;
+  let futureMailResults = null;
   let adrenalineStolenFromId = null;
   let inventoryHandled = false;
 
@@ -5307,6 +5315,15 @@ async function useSelectedItem(targetId = null) {
     const index = Number(gameData.shells?.current || 0);
     const shellType = gameData.shells?.sequence?.[index];
     magnifyLabel = shellType === "live" ? "LIVE" : shellType === "blank" ? "BLANK" : "tidak diketahui";
+  }
+
+  if (type === "future_mail") {
+    const index = Number(gameData.shells?.current || 0);
+    const sequence = Array.isArray(gameData.shells?.sequence) ? gameData.shells.sequence : [];
+    const nextOne = sequence[index + 1] || null;
+    const nextTwo = sequence[index + 2] || null;
+    if (!nextOne || !nextTwo) return;
+    futureMailResults = [nextOne, nextTwo];
   }
 
   /* Adrenaline: pilih pemain terlebih dahulu, lalu pinjam 1 item dari inventory-nya. */
@@ -5600,6 +5617,13 @@ async function useSelectedItem(targetId = null) {
         Object.values(game.players || {}).forEach(p => {
           if (p) p.shellItemUses = {};
         });
+      } else if (type === "future_mail") {
+        const index = Number(game.shells?.current || 0);
+        const sequence = Array.isArray(game.shells?.sequence) ? game.shells.sequence : [];
+        const nextOne = sequence[index + 1] || null;
+        const nextTwo = sequence[index + 2] || null;
+        if (!nextOne || !nextTwo) return;
+        futureMailResults = [nextOne, nextTwo];
       } else if (type === "expired_medicine") {
         expiredResult = Math.random() < 0.5 ? "+2hp" : "-1hp";
         game.itemPending = {
@@ -5629,6 +5653,7 @@ async function useSelectedItem(targetId = null) {
         magnetResult,
         eraserRemovedItem,
         hookTakenItem,
+        futureMailResults,
         adrenalineStolenFromId: isBorrowed ? sourceId : null,
         at: Date.now()
       };
@@ -5672,6 +5697,20 @@ async function useSelectedItem(targetId = null) {
       itemInfoTitle.textContent = definition.name;
       itemInfoText.textContent = `Peluru saat ini: ${magnifyLabel}`;
       itemInfoText.style.color = magnifyLabel === "LIVE" ? "crimson" : magnifyLabel === "BLANK" ? "#999" : "#ddd";
+      itemInfoPopup.classList.remove("hidden");
+      lucide.createIcons();
+    }
+
+    if (type === "future_mail" && futureMailResults) {
+      const popupIcon = document.querySelector("#itemInfoIcon");
+      if (popupIcon) {
+        popupIcon.outerHTML = `<i id="itemInfoIcon" data-lucide="${definition.icon}"></i>`;
+        itemInfoIcon = document.querySelector("#itemInfoIcon");
+      }
+      const labels = futureMailResults.map(type => type === "live" ? `<span style="color:crimson">LIVE</span>` : `<span style="color:#999">BLANK</span>`);
+      itemInfoTitle.textContent = definition.name;
+      itemInfoText.innerHTML = `Peluru berikutnya ${labels[0]} ${labels[1]}`;
+      itemInfoText.style.color = "#ddd";
       itemInfoPopup.classList.remove("hidden");
       lucide.createIcons();
     }
@@ -6547,7 +6586,8 @@ function showGameEvent(eventData) {
       clapperboard: "get-item",
       wrench: "get-item",
       eraser: "get-item",
-      hook: "get-item"
+      hook: "get-item",
+      future_mail: "get-item"
     };
     playGameSound(soundMap[eventData.itemType] || "get-item");
 
@@ -6603,6 +6643,24 @@ function showGameEvent(eventData) {
         definition?.icon || "fishing-hook",
         3600
       );
+      return;
+    }
+
+    if (eventData.itemType === "future_mail") {
+      const labels = Array.isArray(eventData.futureMailResults)
+        ? eventData.futureMailResults.map(type => type === "live" ? "LIVE" : "BLANK")
+        : [];
+      const line = document.createElement("div");
+      line.className = "message-line info";
+      const icon = document.createElement("i");
+      icon.setAttribute("data-lucide", definition?.icon || "mail");
+      line.appendChild(icon);
+      const text = document.createElement("span");
+      text.innerHTML = `Peluru berikutnya ${labels[0] === "LIVE" ? '<span style="color:crimson">LIVE</span>' : '<span style="color:#999">BLANK</span>'} ${labels[1] === "LIVE" ? '<span style="color:crimson">LIVE</span>' : '<span style="color:#999">BLANK</span>'}`;
+      line.appendChild(text);
+      gameMessage.appendChild(line);
+      lucide.createIcons();
+      messageTimers.push(setTimeout(() => { line.classList.add("removing"); setTimeout(() => line.remove(), 250); }, 3600));
       return;
     }
 
@@ -8487,7 +8545,7 @@ playerContainer.addEventListener(
     selectedTarget =
       target;
 
-    if (itemMode && ["handcuff", "wrench", "adrenaline", "dynamite"].includes(selectedItemType)) {
+    if (itemMode && ITEM_DEFINITIONS[selectedItemType]?.target === true) {
       useSelectedItem(targetId);
       return;
     }
