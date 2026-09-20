@@ -566,137 +566,81 @@ body {
 ========================= */
 
 /* =========================
-   ITEM SPIN
+   ITEM SPIN / RELOAD REWARD
 ========================= */
 
-:root {
-  --spbg: #4A1620;
-}
-
-.item-spin {
-  display: none !important;
-  flex-direction: column;
-  justify-content: center;
-  align-items: center;
-  background: var(--spbg);
+.spin {
+  display: flex;
   position: absolute;
+  justify-content: space-evenly;
+  align-items: center;
   top: 44.5%;
   left: 0;
   transform: translateY(-60%);
+  background: #4a1620;
   width: 100%;
-  height: 140px;
-  gap: 16px;
-  z-index: 10;
-  overflow: hidden;
-}
-
-.item-spin.hidden {
-  display: none !important;
-}
-
-.spin-top, .spin-bottom {
-  background: #1f1f1f;
-  width: 100%;
-  height: 40px;
-  flex-shrink: 0;
-  z-index: 11;
-}
-
-.spin-top {
-  border-bottom: 4px solid crimson;
-  box-shadow: 0 16px 0 0 var(--spbg);
-}
-
-.spin-bottom {
-  border-top: 4px solid crimson;
-  box-shadow: 0 -16px 0 0 var(--spbg);
-}
-
-.bdr-spin {
-  display: flex;
-  width: 100%;
-  justify-content: space-evenly;
-  z-index: 11;
-}
-
-.bdr-spin span {
-  width: 52px;
-  height: 52px;
-  border: 4px solid crimson;
-  border-radius: 4px;
-}
-
-.it-sp {
-  display: flex;
-  justify-content: space-evenly;
-  position: absolute;
-  width: 100%;
-  color: white;
-  z-index: 12;
-}
-
-.it-sp svg {
-  width: 38px;
-  height: 38px;
-  padding: 9px;
-  background: #1f1f1f;
-}
-
-.it-sp {
-  height: 210px;
-  align-items: flex-start;
-  gap: 0;
-  overflow: hidden;
-}
-
-.spin-column {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
+  min-height: 100px;
+  height: 100px;
+  padding: 0 14px;
   gap: 12px;
-  width: 50%;
+  border-top: 4px solid crimson;
+  border-bottom: 4px solid crimson;
+  z-index: 12;
+  opacity: 1;
+  transition: opacity .28s ease;
 }
 
-.spin-column i {
+.spin.hidden {
+  display: flex !important;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.spin-slot {
   display: flex;
-  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  flex: 1 1 0;
+  min-width: 0;
+  max-width: 78px;
+  height: 68px;
 }
 
-.spin-column i svg {
-  width: 38px;
-  height: 38px;
-  padding: 9px;
-  background: #1f1f1f;
+.spin-slot svg {
+  display: block;
+  background: #2f2f2f;
+  color: white;
+  width: 36px;
+  height: 36px;
+  padding: 14px;
+  border: 4px solid crimson;
+  border-radius: 6px;
+  box-sizing: content-box;
 }
 
-.item-spin.spinning .it-sp {
-  animation: itemSpinRoll 1.6s cubic-bezier(.18,.72,.28,1) forwards;
+.spin-slot-final svg {
+  animation: spinFinal .35s cubic-bezier(.2,.9,.25,1) both;
 }
 
-.item-spin.spinning .bdr-spin span {
-  animation: itemSpinPulse .22s ease-in-out infinite alternate;
+@keyframes spinFinal {
+  0% { transform: scale(.72); opacity: .25; }
+  70% { transform: scale(1.12); opacity: 1; }
+  100% { transform: scale(1); opacity: 1; }
 }
 
-@keyframes itemSpinRoll {
-  0% { transform: translateY(-210px); opacity: .15; }
-  18% { opacity: .45; }
-  42% { opacity: .9; }
-  72% { opacity: 1; }
-  100% { transform: translateY(0); opacity: 1; }
-}
-
-@keyframes itemSpinPulse {
-  from { transform: translateY(-3px); }
-  to { transform: translateY(3px); }
-}
+/* =========================
+   SHOTGUN
+========================= */
 
 .shot {
   position: absolute;
   display: flex;
   left: 50%;
   top: 45%;
-  width: 112px;
-  height: 112px;
+  width: 76px !important;
+  height: 76px !important;
+  max-width: 76px;
+  max-height: 76px;
   align-items: center;
   justify-content: center;
   transform: translateX(-50%) translateY(-60%);
@@ -704,6 +648,8 @@ body {
   border-radius: 50%;
   cursor: pointer;
   transition: none;
+  overflow: hidden;
+  z-index: 1;
 }
 
 .shot:active {
@@ -720,13 +666,15 @@ body {
 
 .shot img {
   display: block;
-  width: 84px;
-  height: 84px;
+  width: 58px !important;
+  height: 58px !important;
+  max-width: 58px !important;
+  max-height: 58px !important;
   object-fit: contain;
 }
 
 .shot.shooting {
-  animation: shotDisappear .9s cubic-bezier(.22,.75,.28,1) forwards;
+  animation: shotDisappear .55s cubic-bezier(.16,.86,.24,1) forwards;
   pointer-events: none;
 }
 
@@ -735,16 +683,19 @@ body {
     opacity: 1;
     transform: translateX(-50%) translateY(-60%) rotate(0deg) scale(1);
   }
-  45% {
+  24% {
     opacity: 1;
-    transform: translateX(-50%) translateY(-60%) rotate(135deg) scale(.82);
+    transform: translateX(-50%) translateY(-60%) rotate(260deg) scale(.92);
+  }
+  55% {
+    opacity: .95;
+    transform: translateX(-50%) translateY(-60%) rotate(620deg) scale(.62);
   }
   100% {
     opacity: 0;
-    transform: translateX(-50%) translateY(-60%) rotate(360deg) scale(0);
+    transform: translateX(-50%) translateY(-60%) rotate(1080deg) scale(0);
   }
 }
-
 
 /* =========================
    BOTTOM
@@ -817,6 +768,10 @@ body {
 .item-info-popup.hidden,
 .handcuff-overlay.hidden {
   display: none !important;
+}
+
+.handcuff-overlay.coin-flipped {
+  color: #ffd43b;
 }
 
 .item-info-card {
@@ -1204,14 +1159,6 @@ body {
   stroke-width: 1.7;
 }
 
-.player-list .pl-wrench {
-  width: 16px;
-  height: 16px;
-  flex: 0 0 16px;
-  color: #999;
-  stroke-width: 1.7;
-}
-
 .player-list .pl-lock,
 .player-list .pl-shield,
 .player-list .pl-ace {
@@ -1469,6 +1416,65 @@ body {
 .leaderboard-wins { display:flex; align-items:center; gap:5px; flex-shrink:0; color:gold; font-size:15px; font-weight:bold; }
 .leaderboard-wins svg { width:17px; height:17px; }
 .leaderboard-empty { padding:10px 0 4px; color:#777; text-align:center; font-size:14px; }
+.winner-leaderboard {
+  width: min(92%, 430px);
+  max-height: 34dvh;
+  overflow: hidden;
+  margin-top: 12px;
+  padding: 10px 14px;
+  background: #2f2f2f;
+  border-radius: 6px;
+  color: white;
+  z-index: 2;
+}
+.winner-leaderboard-title {
+  padding-bottom: 6px;
+  color: #aaa;
+  font-size: 13px;
+  font-weight: bold;
+  text-transform: uppercase;
+}
+.winner-leaderboard-list .leaderboard-row {
+  min-height: 40px;
+  padding: 5px 0;
+}
+.winner-leaderboard-list .leaderboard-row .profile {
+  width: 30px;
+  height: 30px;
+  font-size: 15px;
+}
+.winner-leaderboard-list .leaderboard-name {
+  font-size: 14px;
+}
+.winner-leaderboard-list .leaderboard-wins {
+  font-size: 13px;
+}
+.winner-leaderboard-list .leaderboard-rank {
+  width: 26px;
+  flex-basis: 26px;
+}
+.leaderboard-row.rank-1 {
+  background: rgba(255, 215, 0, .13);
+  border-radius: 6px;
+  padding-left: 6px;
+  padding-right: 6px;
+}
+.leaderboard-row.rank-1 .leaderboard-rank { color: #ffd700; font-size: 19px; }
+.leaderboard-row.rank-2 {
+  background: rgba(192, 192, 192, .10);
+  border-radius: 6px;
+  padding-left: 6px;
+  padding-right: 6px;
+}
+.leaderboard-row.rank-2 .leaderboard-rank { color: #c0c0c0; font-size: 18px; }
+.leaderboard-row.rank-3 {
+  background: rgba(205, 127, 50, .10);
+  border-radius: 6px;
+  padding-left: 6px;
+  padding-right: 6px;
+}
+.leaderboard-row.rank-3 .leaderboard-rank { color: #cd7f32; font-size: 17px; }
+
 .shot-list .random-shot-btn {
   display: flex;
   align-items: center;
@@ -1479,7 +1485,7 @@ body {
   padding: 8px 12px;
   gap: 8px;
   border: 0;
-  border-radius: 8px;
+  border-radius: 6px;
   background: crimson !important;
   color: #fff;
   font-size: 14px;
@@ -2139,13 +2145,8 @@ body {
   display: none !important;
 }
 
-.dead-battery-hidden {
-  visibility: hidden !important;
-}
 
-.game-message.dead-battery-hidden {
-  visibility: hidden !important;
-}
+.dead-battery-hidden { display: none !important; }
 </style>
 
 
@@ -2608,18 +2609,7 @@ body {
 
   <!-- ITEM SPIN -->
 
-  <div class="item-spin hidden" id="itemSpin">
-    <span class="spin-top"></span>
-    <div class="bdr-spin">
-      <span></span>
-      <span></span>
-    </div>
-    <div class="it-sp">
-      <div class="spin-column"></div>
-      <div class="spin-column"></div>
-    </div>
-    <span class="spin-bottom"></span>
-  </div>
+  <div class="spin hidden" id="itemSpin"></div>
 
   <!-- SHOTGUN -->
 
@@ -2685,6 +2675,7 @@ body {
     <span class="winner-title"></span>
     <span class="winner-name"></span>
   </div>
+
 
 </div>
 
@@ -2826,6 +2817,7 @@ let lastWinnerId = null;
 let lastFinishedStartedAt = null;
 let winnerTimer = null;
 let winnerCleanupStartedAt = null;
+let returningFromWinner = false;
 let lobbyRenderToken = 0;
 let shellRenderId = null;
 let shellRevealTimer = null;
@@ -2919,6 +2911,9 @@ const leaderboardList =
 
 const leaderboardTotal =
   document.querySelector("#leaderboardTotal");
+
+const winnerLeaderboardList =
+  document.querySelector("#winnerLeaderboardList");
 
 const popup =
   document.querySelector(".shot-list");
@@ -3591,6 +3586,8 @@ function showLogin() {
 function showLobby() {
 
   if (handcuffOverlay) handcuffOverlay.classList.add("hidden");
+  const reloadSpin = document.querySelector("#itemSpin");
+  if (reloadSpin) { reloadSpin.classList.add("hidden"); reloadSpin.classList.remove("spinning"); }
   if (startCountdownTimer) { clearTimeout(startCountdownTimer); startCountdownTimer = null; }
   startBtn.textContent = "Mulai";
   startBtn.disabled = false;
@@ -3899,7 +3896,7 @@ function renderLeaderboard(playersData) {
   }
   topPlayers.forEach((player, index) => {
     const row = document.createElement("div");
-    row.className = "leaderboard-row";
+    row.className = `leaderboard-row rank-${index + 1}`;
     const rank = document.createElement("span"); rank.className = "leaderboard-rank"; rank.textContent = index + 1;
     const avatar = document.createElement("span"); avatar.className = "profile"; applyAvatarStyle(avatar, player);
     const firstLetter = (player.name || "?").charAt(0).toUpperCase();
@@ -3908,6 +3905,31 @@ function renderLeaderboard(playersData) {
     const wins = document.createElement("span"); wins.className = "leaderboard-wins"; wins.innerHTML = `<i data-lucide="trophy"></i><span>${player.wins}</span>`;
     row.append(rank, avatar, name, wins); leaderboardList.appendChild(row);
   });
+
+  if (winnerLeaderboardList) {
+    winnerLeaderboardList.innerHTML = "";
+    topPlayers.forEach((player, index) => {
+      const row = document.createElement("div");
+      row.className = `leaderboard-row rank-${index + 1}`;
+      const rank = document.createElement("span");
+      rank.className = "leaderboard-rank";
+      rank.textContent = index + 1;
+      const avatar = document.createElement("span");
+      avatar.className = "profile";
+      applyAvatarStyle(avatar, player);
+      const firstLetter = (player.name || "?").charAt(0).toUpperCase();
+      attachProfileImage(avatar, player.profile || "", firstLetter);
+      const name = document.createElement("span");
+      name.className = "leaderboard-name";
+      name.textContent = player.name || "Unknown";
+      const wins = document.createElement("span");
+      wins.className = "leaderboard-wins";
+      wins.innerHTML = `<i data-lucide="trophy"></i><span>${player.wins}</span>`;
+      row.append(rank, avatar, name, wins);
+      winnerLeaderboardList.appendChild(row);
+    });
+  }
+
   lucide.createIcons();
 }
 
@@ -3920,8 +3942,13 @@ function watchLeaderboard() {
 function updateLeaderboardVisibility() {
   if (!leaderboard) return;
   const joined = !!roomData?.players?.[currentPlayerId];
-  const roomBusy = roomData?.status === "playing" || roomData?.status === "starting";
-  leaderboard.classList.toggle("hidden", joined || roomBusy);
+  const starting = roomData?.status === "starting";
+  const finished = roomData?.status === "playing" && roomData?.game?.phase === "finished";
+  const activeGame = roomData?.status === "playing" && !finished;
+
+  // Pemain yang masih berada di game tidak melihat leaderboard.
+  // Pemain yang menunggu game selesai melihat leaderboard di lobby.
+  leaderboard.classList.toggle("hidden", joined && (starting || activeGame));
 }
 
 /* =========================
@@ -4051,6 +4078,20 @@ async function renderRoom() {
       startCountdownTimer = setTimeout(updateCountdown, 150);
     };
     updateCountdown();
+    return;
+  }
+
+  if (roomData.status === "playing" && roomData.game?.phase === "finished") {
+    // Game sudah selesai tetapi room belum sempat dihapus oleh client pemenang.
+    // Semua pemain dikembalikan ke lobby sementara dan leaderboard tetap tampil.
+    hideWinnerScreen();
+    showLobby();
+    createBtn.classList.add("hidden");
+    joinBtn.classList.add("hidden");
+    startLeft.classList.add("hidden");
+    roomMessage.textContent = "Game selesai. Menunggu kembali ke lobby...";
+    updateLeaderboardVisibility();
+    returningFromWinner = false;
     return;
   }
 
@@ -4626,9 +4667,8 @@ const DEFAULT_ITEM_RARITIES = {
   beer: "common", inverter: "rare", expired_medicine: "uncommon", adrenaline: "rare",
   burner_phone: "uncommon", remote: "rare", jammer: "rare", reflector_mirror: "rare",
   dynamite: "uncommon", dice: "rare", rewind_film: "legendary", coin_flip: "uncommon",
-  life_steal: "rare", megazine: "legendary", ace_card: "legendary", wrench: "rare", magnet: "uncommon",
-  clapper_board: "rare", dead_battery: "rare", eraser: "common", stamp: "rare", hook: "uncommon",
-  floppy_disk: "rare", hourglass: "rare", future_mail: "uncommon", overtake_ticket: "rare"
+  life_steal: "rare", megazine: "legendary", ace_card: "legendary", magnet: "uncommon",
+  clapper_board: "rare", dead_battery: "uncommon"
 };
 
 const DEFAULT_GAME_SETTINGS = {
@@ -4968,49 +5008,21 @@ const ITEM_DEFINITIONS = {
     name: "Ace Card", icon: "playing-card",
     info: "Menonaktifkan efek item pemain lain terhadap pemilik selama 1 ronde. Tidak dapat diborgol, dipengaruhi Hand Saw, Remote, Jammer, Dice, Shield, Dynamite, atau Adrenaline.", target: false
   },
-  wrench: {
-    name: "Wrench", icon: "wrench",
-    info: "Membuat pemain target tidak dapat menggunakan item selama 1 putaran.", target: true
-  },
   clapper_board: {
-    name: "Clapper Board", icon: "clapperboard",
-    info: "Mengulangi aksi tembakan terakhir: setelah selesai menembak, kembali ke shell sebelumnya dan mendapatkan giliran lagi.", target: false
+    name: "Clapper Board",
+    icon: "clapperboard",
+    info: "Mengulangi aksi tembakan: setelah menembak, kembali ke shell yang sama dan mendapatkan giliran lagi.",
+    target: false
   },
   dead_battery: {
-    name: "Dead Battery", icon: "battery-low",
-    info: "Menyembunyikan informasi shell, urutan pemain, dan pesan info selama 1 ronde. List Player tidak dapat dibuka.", target: false
-  },
-  eraser: {
-    name: "Eraser", icon: "eraser",
-    info: "Menghapus 1 item acak yang dimiliki pemain lain.", target: true
-  },
-  stamp: {
-    name: "Stamp", icon: "stamp",
-    info: "Menyalin 1 item yang dimiliki lalu langsung menggunakannya.", target: false
-  },
-  hook: {
-    name: "Hook", icon: "fishing-hook",
-    info: "Mengambil 1 item acak yang dimiliki pemain lain.", target: true
-  },
-  floppy_disk: {
-    name: "Floppy Disk", icon: "save",
-    info: "Menyimpan 1 peluru untuk digunakan kembali pada ronde berikutnya.", target: false
-  },
-  hourglass: {
-    name: "Hourglass", icon: "hourglass",
-    info: "Mengambil item yang seharusnya didapatkan nanti, sehingga item reward berikutnya tidak diterima.", target: false
+    name: "Dead Battery",
+    icon: "battery-low",
+    info: "Menghilangkan informasi shell, urutan pemain, info teks, tombol List Player, serta current dan next selama 1 ronde.",
+    target: false
   },
   magnet: {
     name: "Magnet", icon: "magnet",
     info: "Mengambil 1 item random yang dimiliki lalu mengubahnya menjadi +1 HP. Tidak berfungsi jika hanya memiliki Magnet.", target: false
-  },
-  future_mail: {
-    name: "Future Mail", icon: "mail",
-    info: "Memberikan informasi tentang peluru 2 shell setelah posisi saat ini.", target: false
-  },
-  overtake_ticket: {
-    name: "Overtake Ticket", icon: "tickets",
-    info: "Mendapatkan giliran lagi setelah pemain berikutnya selesai menjalankan gilirannya.", target: false
   }
 };
 
@@ -5079,25 +5091,15 @@ function renderMyItems() {
     gameData?.phase === "playing" &&
     !gameData?.itemPending &&
     !shootingLocked &&
-    gameData?.turn?.current === currentPlayerId &&
-    !gameData?.players?.[currentPlayerId]?.itemBlocked;
+    gameData?.turn?.current === currentPlayerId;
 
-  const visibleItems = [...items];
-
-  const spinEvent = gameData?.lastEvent;
-  const pendingSpinRewards = Array.isArray(spinEvent?.itemRewards?.[currentPlayerId])
-    ? spinEvent.itemRewards[currentPlayerId]
+  let visibleItems = [...items];
+  const reloadEvent = gameData?.lastEvent?.reload ? gameData.lastEvent : null;
+  const pendingRewards = reloadEvent && revealedItemSpinEventId !== reloadEvent.id
+    ? (Array.isArray(reloadEvent.itemRewards?.[currentPlayerId]) ? reloadEvent.itemRewards[currentPlayerId] : [])
     : [];
-  if (
-    spinEvent?.reload &&
-    spinEvent?.id &&
-    revealedItemSpinEventId !== spinEvent.id &&
-    pendingSpinRewards.length
-  ) {
-    for (const reward of [...pendingSpinRewards].reverse()) {
-      const idx = visibleItems.lastIndexOf(reward);
-      if (idx >= 0) visibleItems.splice(idx, 1);
-    }
+  if (pendingRewards.length) {
+    visibleItems = visibleItems.slice(0, Math.max(0, visibleItems.length - pendingRewards.length));
   }
 
   if (!canSelectItems && itemMode) {
@@ -5232,6 +5234,7 @@ async function useSelectedItem(targetId = null) {
   let coinFlipResult = null;
   let magnetResult = null;
   let adrenalineStolenFromId = null;
+  let deadBatteryResult = false;
   let inventoryHandled = false;
 
   if (type === "magnifying_glass") {
@@ -5331,7 +5334,6 @@ async function useSelectedItem(targetId = null) {
       const player = game.players?.[currentPlayerId];
       const sourcePlayer = game.players?.[sourceId];
       if (!player || Number(player.hp ?? 0) <= 0) return;
-      if (player.itemBlocked === true) return;
       if (!sourcePlayer || Number(sourcePlayer.hp ?? 0) <= 0) return;
 
       const inventory = Array.isArray(sourcePlayer.items) ? [...sourcePlayer.items] : [];
@@ -5448,6 +5450,7 @@ async function useSelectedItem(targetId = null) {
             if (id === currentPlayerId || !target || Number(target.hp ?? 0) <= 0 || target.aceCardActive === true) return;
             target.skipTurns = Number(target.skipTurns ?? 0) + 1;
             target.handcuffed = true;
+            target.coinFlipLocked = true;
           });
           game.turn.current = currentPlayerId;
           game.turn.index = Number(player.turnOrder ?? 0);
@@ -5455,6 +5458,7 @@ async function useSelectedItem(targetId = null) {
           /* Diri sendiri kehilangan 1 giliran, jadi giliran langsung diberikan ke pemain berikutnya. */
           player.skipTurns = Number(player.skipTurns ?? 0) + 1;
           player.handcuffed = true;
+          player.coinFlipLocked = true;
           const ids = Object.keys(game.players || {})
             .filter(id => game.players[id] && Number(game.players[id].hp ?? 0) > 0)
             .sort((a, b) => Number(game.players[a].turnOrder ?? 0) - Number(game.players[b].turnOrder ?? 0));
@@ -5471,118 +5475,42 @@ async function useSelectedItem(targetId = null) {
         player.aceCardActive = true;
         player.aceCardActivatedTurn = Number(game.turn?.counter ?? 0);
         player.aceCardExpiresTurn = Number(game.turn?.counter ?? 0) + Math.max(1, aliveCount);
-      } else if (type === "wrench") {
-        if (!targetId || targetId === currentPlayerId) return;
-        const target = game.players?.[targetId];
-        if (!target || Number(target.hp ?? 0) <= 0 || target.aceCardActive) return;
-        target.itemBlocked = true;
-        target.itemBlockedExpiresTurn = Number(game.turn?.counter ?? 0) + 1;
-        target.itemBlockedAppliedTurn = Number(game.turn?.counter ?? 0);
-        target.wrenched = true;
       } else if (type === "magnet") {
+        /* Magnet hanya bisa digunakan jika ada minimal 2 item di inventory,
+           sehingga setelah Magnet dipakai masih ada 1 item lain yang dapat dipilih. */
         const candidateIndexes = inventory
           .map((item, index) => ({ item, index }))
-          .filter(entry => entry.index !== slotIndex);
+          .filter(entry => entry.item !== "magnet");
         if (!candidateIndexes.length) return;
 
         const chosenEntry = candidateIndexes[Math.floor(Math.random() * candidateIndexes.length)];
         if (!chosenEntry) return;
 
         magnetResult = chosenEntry.item;
-        sourcePlayer.items = inventory.filter((_, index) => index !== slotIndex && index !== chosenEntry.index);
+
+        /* Hapus tepat 2 item: Magnet yang digunakan + 1 item random. */
+        sourcePlayer.items = inventory.filter(
+          (_, index) => index !== slotIndex && index !== chosenEntry.index
+        );
+
         player.hp = Math.min(
           Number(game.settings?.maxHealth ?? 4),
           Number(player.hp ?? 0) + 1
         );
         inventoryHandled = true;
-      } else if (type === "megazine") {
-        game.shells = createShellSet(Object.keys(game.players || {}).length, game.settings || getGameSettings());
-        if (Array.isArray(game.savedShells) && game.savedShells.length) {
-          const saved = game.savedShells.splice(0, Math.min(8, game.savedShells.length));
-          const savedTypes = saved.map(x => x.type);
-          const savedOriginals = saved.map(x => x.originalType || x.type);
-          game.shells.sequence = [...savedTypes, ...game.shells.sequence].slice(0, 20);
-          game.shells.originalSequence = [...savedOriginals, ...game.shells.originalSequence].slice(0, 20);
-          game.shells.total = game.shells.sequence.length;
-          game.shells.current = 0;
-          game.shells.alive = game.shells.sequence.filter(x => x === "live").length;
-          game.shells.blank = game.shells.sequence.filter(x => x === "blank").length;
-          game.shells.initialAlive = game.shells.alive;
-          game.shells.initialBlank = game.shells.blank;
-        }
-        Object.values(game.players || {}).forEach(p => {
-          if (p) p.shellItemUses = {};
-        });
       } else if (type === "clapper_board") {
         player.clapperActive = true;
       } else if (type === "dead_battery") {
-        game.deadBatteryUntilTurn = Number(game.turn?.counter ?? 0) + 1;
-        player.deadBatteryActive = true;
-        player.deadBatteryExpiresTurn = game.deadBatteryUntilTurn;
-      } else if (type === "eraser") {
-        if (!targetId || targetId === currentPlayerId) return;
-        const target = game.players?.[targetId];
-        if (!target || Number(target.hp ?? 0) <= 0 || target.aceCardActive) return;
-        const targetItems = Array.isArray(target.items) ? [...target.items] : [];
-        if (!targetItems.length) return;
-        const index = Math.floor(Math.random() * targetItems.length);
-        target.items = targetItems.filter((_, i) => i !== index);
-      } else if (type === "hook") {
-        if (!targetId || targetId === currentPlayerId) return;
-        const target = game.players?.[targetId];
-        if (!target || Number(target.hp ?? 0) <= 0 || target.aceCardActive) return;
-        const targetItems = Array.isArray(target.items) ? [...target.items] : [];
-        if (!targetItems.length || inventory.length >= 8) return;
-        const index = Math.floor(Math.random() * targetItems.length);
-        const stolen = targetItems[index];
-        target.items = targetItems.filter((_, i) => i !== index);
-        inventory.push(stolen);
-      } else if (type === "stamp") {
-        const candidates = inventory.filter((_, i) => i !== slotIndex);
-        if (!candidates.length) return;
-        const copied = candidates[Math.floor(Math.random() * candidates.length)];
-        /* Stamp berubah menjadi salinan item. Salinan itu kemudian digunakan
-           sekali tanpa menghilang. Setelah pemakaian pertama selesai, item
-           berikutnya kembali berperilaku normal. */
-        inventory[slotIndex] = copied;
-        sourcePlayer.items = inventory;
-        player.stampFreeUse = true;
-        inventoryHandled = true;
-        game.lastEvent = {
-          id: Date.now().toString(36) + Math.random().toString(36).slice(2, 8),
-          type: "stamp_copy", playerId: currentPlayerId, copiedType: copied, at: Date.now()
-        };
-      } else if (type === "floppy_disk") {
-        const shellIndex = Number(game.shells?.current ?? 0);
-        const shellType = game.shells?.sequence?.[shellIndex];
-        if (!shellType || player.floppySaved) return;
-        player.floppySaved = {
-          type: shellType,
-          originalType: game.shells?.originalSequence?.[shellIndex] || shellType,
-          shellIndex
-        };
-      } else if (type === "hourglass") {
-        const earlyReward = createItemRewards(2, game.settings || getGameSettings());
-        const rewardType = earlyReward[0];
-        if (!rewardType || inventory.length >= 8) return;
-        inventory.push(rewardType);
-        player.skipNextItemReward = true;
-      } else if (type === "future_mail") {
-        const shellIndex = Number(game.shells?.current ?? 0);
-        const firstIndex = shellIndex + 1;
-        const secondIndex = shellIndex + 2;
-        const firstType = game.shells?.sequence?.[firstIndex];
-        const secondType = game.shells?.sequence?.[secondIndex];
-        if (!firstType || !secondType) return;
-        burnerResult = {
-          futureMail: true,
-          shells: [
-            { shellNumber: firstIndex + 1, type: firstType },
-            { shellNumber: secondIndex + 1, type: secondType }
-          ]
-        };
-      } else if (type === "overtake_ticket") {
-        player.overtakeTicket = true;
+        const aliveCount = Object.values(game.players || {}).filter(p => p && Number(p.hp ?? 0) > 0).length;
+        const currentCounter = Number(game.turn?.counter ?? 0);
+        game.deadBatteryActivatedTurn = currentCounter;
+        game.deadBatteryUntilTurn = currentCounter + Math.max(1, aliveCount);
+        deadBatteryResult = true;
+      } else if (type === "megazine") {
+        game.shells = createShellSet(Object.keys(game.players || {}).length, game.settings || getGameSettings());
+        Object.values(game.players || {}).forEach(p => {
+          if (p) p.shellItemUses = {};
+        });
       } else if (type === "expired_medicine") {
         expiredResult = Math.random() < 0.5 ? "+2hp" : "-1hp";
         game.itemPending = {
@@ -5593,12 +5521,8 @@ async function useSelectedItem(targetId = null) {
         };
       }
 
-      const preserveStampedItem = player.stampFreeUse === true;
-      if (!inventoryHandled && !preserveStampedItem) {
+      if (!inventoryHandled) {
         inventory.splice(slotIndex, 1);
-        sourcePlayer.items = inventory;
-      } else if (preserveStampedItem) {
-        player.stampFreeUse = false;
         sourcePlayer.items = inventory;
       }
 
@@ -5614,7 +5538,6 @@ async function useSelectedItem(targetId = null) {
         rewindResult,
         coinFlipResult,
         magnetResult,
-        burnerResult,
         adrenalineStolenFromId: isBorrowed ? sourceId : null,
         at: Date.now()
       };
@@ -5639,19 +5562,6 @@ async function useSelectedItem(targetId = null) {
     if (wasBorrowed) {
       adrenalineTargetId = null;
       adrenalineActive = false;
-    }
-
-    if (type === "stamp") {
-      const copiedType = gameData?.lastEvent?.copiedType;
-      const copiedIndex = Number.isInteger(slotIndex) ? slotIndex : -1;
-      if (copiedType && copiedIndex >= 0) {
-        selectedItemType = copiedType;
-        selectedItemSlot = copiedIndex;
-        selectedItemSourceId = currentPlayerId;
-        itemMode = true;
-        await useSelectedItem();
-        return;
-      }
     }
 
     if (type === "magnet" && magnetResult) {
@@ -5757,6 +5667,7 @@ async function useSelectedItem(targetId = null) {
                   skippedPlayerId = candidateId;
                   game.players[candidateId].skipTurns = Number(game.players[candidateId].skipTurns) - 1;
                   game.players[candidateId].handcuffed = false;
+                  game.players[candidateId].coinFlipLocked = false;
                   nextIndex = (nextIndex + 1) % playerIds.length;
                   checked++;
                   continue;
@@ -5905,12 +5816,11 @@ function createGameState(
         sawActive: false,
         skipTurns: 0,
         handcuffed: false,
+        coinFlipLocked: false,
         shellItemUses: {},
         shieldActive: false, shieldActivatedTurn: null,
         dynamiteTrapped: false, dynamiteTrappedById: null, dynamiteActivatedTurn: null,
-        itemBlocked: false, itemBlockedExpiresTurn: null, itemBlockedAppliedTurn: null, wrenched: false,
-        floppySaved: null, floppyActiveType: null, stampFreeUse: false,
-        aceCardActive: false, aceCardActivatedTurn: null, aceCardExpiresTurn: null, lifeStealActive: false
+        aceCardActive: false, aceCardActivatedTurn: null, aceCardExpiresTurn: null, lifeStealActive: false, clapperActive: false
 
       };
 
@@ -6298,29 +6208,15 @@ function renderGamePlayerList() {
     nameStatus.className = "pl-name-status";
     nameStatus.appendChild(name);
 
-    if (gameData.lastEvent?.type === "item" &&
-        gameData.lastEvent?.itemType === "coin_flip" &&
-        gameData.lastEvent?.playerId === player.id) {
-      const coin = document.createElement("i");
-      coin.setAttribute("data-lucide", "coins");
-      coin.className = "pl-coin";
-      coin.setAttribute("title", "Coin Flip");
-      nameStatus.appendChild(coin);
-    }
+    const playerState = gameData.players?.[player.id];
+    const lockedByCoin = playerState?.coinFlipLocked === true;
+    const lockedByHandcuff = !lockedByCoin && (playerState?.handcuffed === true || Number(playerState?.skipTurns ?? 0) > 0);
 
-    if (gameData.players?.[player.id]?.itemBlocked) {
-      const wrench = document.createElement("i");
-      wrench.setAttribute("data-lucide", "wrench");
-      wrench.className = "pl-wrench";
-      wrench.setAttribute("title", "Wrenched");
-      nameStatus.appendChild(wrench);
-    }
-
-    if (gameData.players?.[player.id]?.handcuffed || Number(gameData.players?.[player.id]?.skipTurns ?? 0) > 0) {
+    if (lockedByCoin || lockedByHandcuff) {
       const lock = document.createElement("i");
-      lock.setAttribute("data-lucide", "lock");
-      lock.className = "pl-lock";
-      lock.setAttribute("title", "Handcuffed");
+      lock.setAttribute("data-lucide", lockedByCoin ? "circle-euro" : "lock");
+      lock.className = lockedByCoin ? "pl-coin" : "pl-lock";
+      lock.setAttribute("title", lockedByCoin ? "Coin Flipped" : "Handcuffed");
       nameStatus.appendChild(lock);
     }
 
@@ -6389,7 +6285,8 @@ function openPlayerList() {
 
   if (
     !gameData ||
-    gameData.phase !== "playing"
+    gameData.phase !== "playing" ||
+    isDeadBatteryActive()
   ) {
     return;
   }
@@ -6479,6 +6376,9 @@ function getPlayerNameById(id) {
 }
 
 function showGameEvent(eventData) {
+  if (isDeadBatteryActive() && eventData?.type !== "start") {
+    return;
+  }
   if (!eventData?.id) {
     return;
   }
@@ -6548,16 +6448,7 @@ function showGameEvent(eventData) {
       coin_flip: "coin-flip",
       megazine: "megazine",
       clapper_board: "clapper-board",
-      dead_battery: "dead-battery",
-      eraser: "eraser",
-      stamp: "stamp",
-      hook: "hook",
-      floppy_disk: "floppy-disk",
-      hourglass: "hourglass",
-      magnet: "magnet",
-      wrench: "wrench",
-      future_mail: "future-mail",
-      overtake_ticket: "overtake-ticket"
+      dead_battery: "dead-battery"
     };
     playGameSound(soundMap[eventData.itemType] || "get-item");
 
@@ -6601,59 +6492,18 @@ function showGameEvent(eventData) {
       return;
     }
 
-    if (eventData.itemType === "megazine") {
-      appendGameMessage(`${userName} menggunakan Megazine dan melakukan reload shell.`, "info", definition?.icon || "package-2", 3600);
+    if (eventData.itemType === "clapper_board") {
+      appendGameMessage(`${userName} menggunakan Clapper Board. Tembakan akan mengulang shell ini dan mendapat giliran lagi.`, "info", definition?.icon || "clapperboard", 3600);
       return;
     }
 
     if (eventData.itemType === "dead_battery") {
-      appendGameMessage(`${userName} menggunakan Dead Battery.`, "info", definition?.icon || "battery-low", 1800);
+      appendGameMessage(`${userName} menggunakan Dead Battery. Informasi disembunyikan selama 1 ronde.`, "info", definition?.icon || "battery-low", 3600);
       return;
     }
 
-    if (eventData.itemType === "stamp") {
-      appendGameMessage(`${userName} menggunakan Stamp.`, "info", definition?.icon || "stamp", 3000);
-      return;
-    }
-
-    if (eventData.itemType === "floppy_disk") {
-      appendGameMessage(`${userName} menyimpan peluru dengan Floppy Disk.`, "info", definition?.icon || "save", 3000);
-      return;
-    }
-
-    if (eventData.itemType === "hourglass") {
-      appendGameMessage(`${userName} mengambil item lebih awal dengan Hourglass.`, "info", definition?.icon || "hourglass", 3000);
-      return;
-    }
-
-    if (eventData.itemType === "magnet") {
-      appendGameMessage(`${userName} menggunakan Magnet.`, "info", definition?.icon || "magnet", 3000);
-      return;
-    }
-
-    if (eventData.itemType === "wrench") {
-      appendGameMessage(`${userName} menggunakan Wrench pada pemain.`, "info", definition?.icon || "wrench", 3000);
-      return;
-    }
-
-    if (eventData.itemType === "future_mail") {
-      const shells = Array.isArray(eventData.burnerResult?.shells) ? eventData.burnerResult.shells : [];
-      appendGameMessage(`${userName} menggunakan Future Mail.`, "info", definition?.icon || "mail", 2600);
-      shells.forEach((entry, index) => {
-        messageTimers.push(setTimeout(() => {
-          appendGameMessage(
-            `#${entry.shellNumber} ${entry.type === "live" ? "Live" : "Blank"}`,
-            entry.type === "live" ? "live" : "blank",
-            "test-tube",
-            3000
-          );
-        }, 500 + index * 500));
-      });
-      return;
-    }
-
-    if (eventData.itemType === "overtake_ticket") {
-      appendGameMessage(`${userName} menggunakan Overtake Ticket.`, "info", definition?.icon || "tickets", 3000);
+    if (eventData.itemType === "megazine") {
+      appendGameMessage(`${userName} menggunakan Megazine dan melakukan reload shell.`, "info", definition?.icon || "package-2", 3600);
       return;
     }
 
@@ -6669,7 +6519,7 @@ function showGameEvent(eventData) {
 
     if (eventData.itemType === "coin_flip") {
       appendGameMessage(
-        `${userName} Menggunakan Coin Flip (efeknya belum muncul).`,
+        `${userName} Menggunakan Coin Flip.`,
         "info",
         "coins",
         2200
@@ -6865,33 +6715,23 @@ function showGameEvent(eventData) {
       }
 
       if (eventData.reload) {
+        /* OUT + IN -> Random Shell -> hilang -> spin item -> item masuk inventory. */
         playGameSound("out");
+        playGameSound("in", 1, 120);
         appendGameMessage("Shell telah habis", "info", "refresh-cw", 2600);
 
-        messageTimers.push(
-          setTimeout(() => {
-            playGameSound("in");
-            showShellReveal();
-            appendGameMessage("Shell baru masuk", "info", "package-open", 2600);
-          }, 650)
-        );
+        messageTimers.push(setTimeout(() => {
+          showShellReveal();
+          appendGameMessage("Shell baru masuk", "info", "package-open", 2600);
+        }, 420));
 
-        messageTimers.push(
-          setTimeout(() => {
-            showItemSpin();
-          }, 4250)
-        );
+        messageTimers.push(setTimeout(() => {
+          showItemSpin(eventData);
+        }, 4050));
 
-        messageTimers.push(
-          setTimeout(() => {
-            appendGameMessage(
-              "Giliran lanjut ke " + getPlayerNameById(eventData.nextId),
-              "info",
-              "arrow-right",
-              3600
-            );
-          }, 2500)
-        );
+        messageTimers.push(setTimeout(() => {
+          appendGameMessage("Giliran lanjut ke " + getPlayerNameById(eventData.nextId), "info", "arrow-right", 3600);
+        }, 7600));
 
         return;
       }
@@ -6920,6 +6760,29 @@ function showGameEvent(eventData) {
    RENDER GAME STATE
 ========================= */
 
+async function isDeadBatteryActive() {
+  if (!gameData || gameData.phase !== "playing") return false;
+  const until = Number(gameData.deadBatteryUntilTurn ?? -1);
+  const counter = Number(gameData.turn?.counter ?? 0);
+  return until > counter;
+}
+
+function updateDeadBatteryUI() {
+  const active = isDeadBatteryActive();
+  const listButton = document.querySelector(".game .header .list");
+  const current = document.querySelector(".game-current-name");
+  const next = document.querySelector(".next");
+  const shellBottom = document.querySelector(".gp-bottom");
+  const randomShell = document.querySelector(".random-shell");
+  const message = document.querySelector(".game-message");
+
+  [listButton, current, next, shellBottom, randomShell].forEach(el => {
+    if (el) el.classList.toggle("dead-battery-hidden", active);
+  });
+  if (message) message.classList.toggle("dead-battery-hidden", active);
+  if (active && playerListPopup) playerListPopup.classList.remove("show");
+}
+
 async function renderGameState() {
 
   if (!gameData) {
@@ -6929,17 +6792,9 @@ async function renderGameState() {
   await loadGamePlayers();
 
   showGameEvent(gameData.lastEvent);
+  updateDeadBatteryUI();
 
   renderShellInfo();
-  const deadUntil = Number(gameData?.deadBatteryUntilTurn ?? -1);
-  const turnCounter = Number(gameData?.turn?.counter ?? 0);
-  const deadBatteryActive = deadUntil >= 0 && deadUntil >= turnCounter;
-  gameMessage.classList.toggle("dead-battery-hidden", deadBatteryActive);
-  document.querySelector(".game-current-name")?.classList.toggle("dead-battery-hidden", deadBatteryActive);
-  document.querySelector(".next-name")?.classList.toggle("dead-battery-hidden", deadBatteryActive);
-  if (deadUntil >= 0 && deadUntil < turnCounter) {
-    clearGameMessage();
-  }
   renderMyItems();
 
   if (playerListPopup.classList.contains("show")) {
@@ -7100,10 +6955,21 @@ function showWinnerScreen(
   }, titleEnd + 180);
 
   winnerTimer = setTimeout(
-    () => {
-      cleanupFinishedRoom(
-        winnerCleanupStartedAt
-      );
+    async () => {
+      winnerTimer = null;
+      returningFromWinner = true;
+
+      // Hapus room terlebih dahulu. Setelah selesai, pemain yang baru saja bermain
+      // dipaksa kembali ke lobby, bukan masuk lagi ke game/winner.
+      await cleanupFinishedRoom(winnerCleanupStartedAt);
+
+      hideWinnerScreen();
+      gameData = null;
+      showLobby();
+
+      // Jika penghapusan Firebase tertunda, renderRoom akan tetap menganggap
+      // game finished sebagai lobby sementara sampai room benar-benar hilang.
+      updateLeaderboardVisibility();
     },
     7000
   );
@@ -7127,6 +6993,7 @@ function hideWinnerScreen() {
   winnerTitle.style.color = "white";
   winnerName.style.transform =
     "scaleY(0)";
+  if (winnerLeaderboardList) winnerLeaderboardList.innerHTML = "";
   winnerCard.style.animation = "none";
   winnerTrophy.style.animation = "none";
   winnerTrophyIcon.style.animation =
@@ -7181,15 +7048,11 @@ async function cleanupFinishedRoom(
 ========================= */
 
 function renderShellInfo() {
-  const deadUntil = Number(gameData?.deadBatteryUntilTurn ?? -1);
-  const turnCounter = Number(gameData?.turn?.counter ?? 0);
-  if (deadUntil >= turnCounter && deadUntil >= 0) {
-    const shellInfo = document.querySelector(".gp-bottom");
-    if (shellInfo) shellInfo.classList.add("dead-battery-hidden");
+
+  if (isDeadBatteryActive()) {
+    document.querySelector(".random-shell")?.classList.add("dead-battery-hidden");
     return;
   }
-  const shellInfo = document.querySelector(".gp-bottom");
-  if (shellInfo) shellInfo.classList.remove("dead-battery-hidden");
 
   const total =
     Number(
@@ -7306,104 +7169,98 @@ function getItemSpinIcon(type) {
   return ITEM_DEFINITIONS[type]?.icon || "package";
 }
 
-function showItemSpin() {
+function showItemSpin(eventData = gameData?.lastEvent) {
   const spin = document.querySelector("#itemSpin");
-  if (!spin) return;
+  if (!spin || !eventData?.id) return;
 
   clearTimeout(itemSpinTimer);
   clearTimeout(itemSpinHideTimer);
-  if (window.itemSpinInterval) {
-    clearInterval(window.itemSpinInterval);
-    window.itemSpinInterval = null;
-  }
 
-  const rewards = Array.isArray(gameData?.lastEvent?.itemRewards?.[currentPlayerId])
-    ? gameData.lastEvent.itemRewards[currentPlayerId].slice(0, Math.min(8, Number(gameData.settings?.itemRewardCount ?? 2)))
+  const rewards = Array.isArray(eventData.itemRewards?.[currentPlayerId])
+    ? eventData.itemRewards[currentPlayerId].slice(0, 8)
     : [];
 
   if (!rewards.length) {
+    revealedItemSpinEventId = eventData.id;
     spin.classList.add("hidden");
-    spin.classList.remove("spinning");
+    spin.innerHTML = "";
+    renderMyItems();
     return;
   }
 
-  activeItemSpinEventId = gameData?.lastEvent?.id || null;
+  activeItemSpinEventId = eventData.id;
   revealedItemSpinEventId = null;
 
-  const itSp = spin.querySelector(".it-sp");
-  if (!itSp) return;
+  /* Jumlah slot selalu sama dengan jumlah item yang benar-benar akan didapat. */
+  spin.innerHTML = rewards.map(() => `
+    <span class="spin-slot">
+      <i data-lucide="package"></i>
+    </span>
+  `).join("");
 
-  itSp.innerHTML = "";
-  const columns = [];
-
-  rewards.forEach(() => {
-    const column = document.createElement("div");
-    column.className = "spin-column";
-    const icon = document.createElement("i");
-    icon.setAttribute("data-lucide", "package");
-    column.appendChild(icon);
-    itSp.appendChild(column);
-    columns.push({ column, icon });
-  });
-
-  spin.classList.remove("hidden");
-  spin.classList.remove("spinning");
-  void spin.offsetWidth;
-  spin.classList.add("spinning");
   lucide.createIcons();
 
-  const types = Object.keys(ITEM_DEFINITIONS).filter(type => getGameSettings().enabledItems[type] !== false);
-  const randomIcon = () => types.length
-    ? types[Math.floor(Math.random() * types.length)]
-    : rewards[0];
+  const slots = Array.from(spin.querySelectorAll(".spin-slot"));
+  const types = Object.keys(ITEM_DEFINITIONS);
 
-  let tick = 0;
-  window.itemSpinInterval = setInterval(() => {
-    tick++;
-    columns.forEach(({ icon }) => {
-      const type = randomIcon();
-      icon.setAttribute("data-lucide", getItemSpinIcon(type));
+  /* Ganti icon tanpa animasi/getaran. Posisi slot tetap, hanya icon yang berubah. */
+  const renderSlotIcons = (typesToShow, final = false) => {
+    slots.forEach((slot, index) => {
+      const type = typesToShow[index] || typesToShow[0];
+      const iconName = getItemSpinIcon(type);
+      slot.classList.toggle("spin-slot-final", final);
+      /* Render ulang <i> agar Lucide benar-benar mengganti icon.
+         Ini mencegah icon berhenti pada bentuk package/box setelah putaran pertama. */
+      slot.innerHTML = `<i data-lucide="${iconName}"></i>`;
     });
     lucide.createIcons();
+  };
 
-    if (tick >= 8) {
-      clearInterval(window.itemSpinInterval);
-      window.itemSpinInterval = null;
-    }
+  const renderRandomIcons = () => {
+    const randomTypes = slots.map(() =>
+      types[Math.floor(Math.random() * types.length)]
+    );
+    renderSlotIcons(randomTypes, false);
+  };
+
+  /* Saat selesai, baru tampilkan item yang benar-benar akan didapat. */
+  const renderFinalIcons = () => {
+    renderSlotIcons(rewards, true);
+  };
+
+  renderRandomIcons();
+  spin.classList.remove("hidden");
+  appendGameMessage("Mencari item...", "info", null, 3600);
+
+  /* Gaya gacha: icon stay di tempatnya, tetapi isinya berubah setiap click. */
+  const cycleTimer = setInterval(() => {
+    renderRandomIcons();
+    playGameSound("click", 0.72);
   }, 180);
 
-  [0, 320, 640, 960, 1280].forEach(delay => {
-    playGameSound("click", 0.72, delay);
-  });
-
-  appendGameMessage("Memutar mesin item...", "info", null, 1900);
-
+  /* Durasi spin. Tidak ada transform/animation selama randomisasi. */
   itemSpinTimer = setTimeout(() => {
-    columns.forEach(({ icon }, index) => {
-      icon.setAttribute("data-lucide", getItemSpinIcon(rewards[index]));
-    });
-    lucide.createIcons();
+    clearInterval(cycleTimer);
+    renderFinalIcons();
 
-    spin.classList.remove("spinning");
+    /* get-item diputar tepat ketika hasil asli mulai diperlihatkan. */
     playGameSound("get-item");
-    revealedItemSpinEventId = activeItemSpinEventId;
 
-    renderMyItems();
-    appendGameMessage(
-      rewards.length
-        ? `${rewards.length} item baru didapat`
-        : "Inventory penuh, item baru tidak ditambahkan",
-      "info",
-      rewards.length ? "package-plus" : "package-x",
-      3000
-    );
-  }, 1600);
-
-  itemSpinHideTimer = setTimeout(() => {
-    spin.classList.add("hidden");
-    renderMyItems();
-  }, 2250);
+    /* Inventory baru diperbarui secara visual setelah hasil gacha ditampilkan. */
+    itemSpinHideTimer = setTimeout(() => {
+      revealedItemSpinEventId = activeItemSpinEventId;
+      renderMyItems();
+      spin.classList.add("hidden");
+      appendGameMessage(
+        rewards.length > 1 ? `${rewards.length} item didapat!` : "Item didapat!",
+        "info",
+        "package-plus",
+        3000
+      );
+    }, 550);
+  }, 3000);
 }
+
 function showShellReveal() {
 
   const spin = document.querySelector("#itemSpin");
@@ -7892,7 +7749,6 @@ function updateShotVisibility() {
     currentPlayerId;
 
   if (gameData.shotPending) {
-    resetShotAnimation();
     shot.classList.remove("hidden");
     shot.classList.remove("reload-hidden");
     disableShotButtons();
@@ -8098,9 +7954,6 @@ if (gameListButton) {
   gameListButton.addEventListener(
     "click",
     () => {
-      const deadUntil = Number(gameData?.deadBatteryUntilTurn ?? -1);
-      const turnCounter = Number(gameData?.turn?.counter ?? 0);
-      if (deadUntil >= 0 && deadUntil >= turnCounter) return;
       openPlayerList();
     }
   );
@@ -8446,7 +8299,7 @@ function renderPlayerPopup() {
           ${itemMode && selectedItemType === "adrenaline" && (gameData?.players?.[player.id]?.aceCardActive || !(Array.isArray(gameData?.players?.[player.id]?.items) && gameData.players[player.id].items.length)) ? "disabled" : ""}
           ${itemMode && selectedItemType === "dynamite" && (gameData?.players?.[player.id]?.aceCardActive || gameData?.players?.[player.id]?.dynamiteTrapped) ? "disabled" : ""}>
 
-          ${itemMode && selectedItemType === "handcuff" ? "Lock" : itemMode && selectedItemType === "adrenaline" ? "Steal" : itemMode && selectedItemType === "dynamite" ? "Trap" : itemMode && ["eraser","hook"].includes(selectedItemType) ? "Take" : itemMode && selectedItemType === "wrench" ? "Block" : "Shot"}
+          ${itemMode && selectedItemType === "handcuff" ? "Lock" : itemMode && selectedItemType === "adrenaline" ? "Steal" : itemMode && selectedItemType === "dynamite" ? "Trap" : "Shot"}
 
         </button>
 
@@ -8535,7 +8388,7 @@ playerContainer.addEventListener(
     selectedTarget =
       target;
 
-    if (itemMode && ["handcuff", "adrenaline", "dynamite", "eraser", "hook", "wrench"].includes(selectedItemType)) {
+    if (itemMode && ["handcuff", "adrenaline", "dynamite"].includes(selectedItemType)) {
       useSelectedItem(targetId);
       return;
     }
@@ -8681,8 +8534,7 @@ async function shoot(targetId) {
         currentShell = 0;
       }
 
-      const floppyOverride = players[currentPlayerId]?.floppyActiveType || null;
-      const currentShellType = floppyOverride || shells.sequence[currentShell];
+      const currentShellType = shells.sequence[currentShell];
       if (!currentShellType) {
         return;
       }
@@ -8704,14 +8556,15 @@ async function shoot(targetId) {
       let dynamiteRemoved = false;
       let dynamiteExpired = [];
       let aceExpired = [];
-      let clapperRepeat = false;
+      let clapperRepeat = players[currentPlayerId]?.clapperActive === true;
 
       const targetAceCard = targetPlayer.aceCardActive === true;
+      const shooterAceCard = players[currentPlayerId]?.aceCardActive === true;
       const targetShielded = targetPlayer.shieldActive === true;
       const targetTrapped = targetPlayer.dynamiteTrapped === true;
 
       if (currentShellType === "live") {
-        if (targetShielded && !targetAceCard) {
+        if (targetShielded && !targetAceCard && !shooterAceCard) {
           if (isSelf) {
             damage = 2;
             targetPlayer.hp = Math.max(0, Number(targetPlayer.hp ?? 0) - damage);
@@ -8726,7 +8579,7 @@ async function shoot(targetId) {
           targetPlayer.hp = Math.max(0, Number(targetPlayer.hp ?? 0) - damage);
         }
 
-        if (targetTrapped && !targetAceCard && !isSelf) {
+        if (targetTrapped && !targetAceCard && !shooterAceCard && !isSelf) {
           shooterDamage += 1;
           dynamiteTriggered = true;
           targetPlayer.dynamiteTrapped = false;
@@ -8750,11 +8603,11 @@ async function shoot(targetId) {
       } else {
         players[currentPlayerId].sawActive = false;
         players[currentPlayerId].lifeStealActive = false;
-        if (targetShielded && !targetAceCard) {
+        if (targetShielded && !targetAceCard && !shooterAceCard) {
           targetPlayer.shieldActive = false;
           targetPlayer.shieldActivatedTurn = null;
         }
-        if (targetTrapped && !targetAceCard) {
+        if (targetTrapped && !targetAceCard && !shooterAceCard) {
           targetPlayer.dynamiteTrapped = false;
           targetPlayer.dynamiteTrappedById = null;
           dynamiteRemoved = true;
@@ -8763,27 +8616,19 @@ async function shoot(targetId) {
       }
 
       const originalShellType = currentGame.shells?.originalSequence?.[currentShell] || currentShellType;
-      currentGame.shells.current = currentShell + 1;
-      if (originalShellType === "live") {
-        currentGame.shells.alive = Math.max(0, Number(currentGame.shells.alive ?? 0) - 1);
+      if (!clapperRepeat) {
+        currentGame.shells.current = currentShell + 1;
+        if (originalShellType === "live") {
+          currentGame.shells.alive = Math.max(0, Number(currentGame.shells.alive ?? 0) - 1);
+        } else {
+          currentGame.shells.blank = Math.max(0, Number(currentGame.shells.blank ?? 0) - 1);
+        }
       } else {
-        currentGame.shells.blank = Math.max(0, Number(currentGame.shells.blank ?? 0) - 1);
-      }
-      if (players[currentPlayerId]?.floppyActiveType) {
-        players[currentPlayerId].floppyActiveType = null;
-        players[currentPlayerId].floppySaved = null;
+        /* Clapper Board: shell yang baru ditembak tetap menjadi shell berikutnya. */
+        currentGame.shells.current = currentShell;
+        players[currentPlayerId].clapperActive = false;
       }
       currentGame.shotPending = null;
-
-      /* Clapper Board: kembalikan shell yang baru ditembak dan pertahankan giliran. */
-      if (players[currentPlayerId]?.clapperActive) {
-        const original = currentGame.shells?.originalSequence?.[currentShell] || currentShellType;
-        currentGame.shells.current = Math.max(0, currentShell);
-        if (original === "live") currentGame.shells.alive = Number(currentGame.shells.alive ?? 0) + 1;
-        else currentGame.shells.blank = Number(currentGame.shells.blank ?? 0) + 1;
-        players[currentPlayerId].clapperActive = false;
-        clapperRepeat = true;
-      }
 
       currentGame.lastShot = {
         id: Date.now().toString(36) + Math.random().toString(36).slice(2, 8),
@@ -8837,25 +8682,9 @@ async function shoot(targetId) {
       let itemRewards = {};
       if (!clapperRepeat && currentGame.shells.current >= Number(currentGame.shells.total || 0)) {
         currentGame.shells = createShellSet(playerIds.length, currentGame.settings || getGameSettings());
-        if (Array.isArray(currentGame.savedShells) && currentGame.savedShells.length) {
-          const saved = currentGame.savedShells.splice(0, Math.min(8, currentGame.savedShells.length));
-          const savedTypes = saved.map(x => x.type);
-          const savedOriginals = saved.map(x => x.originalType || x.type);
-          currentGame.shells.sequence = [...savedTypes, ...currentGame.shells.sequence].slice(0, 20);
-          currentGame.shells.originalSequence = [...savedOriginals, ...currentGame.shells.originalSequence].slice(0, 20);
-          currentGame.shells.total = currentGame.shells.sequence.length;
-          currentGame.shells.current = 0;
-          currentGame.shells.alive = currentGame.shells.sequence.filter(x => x === "live").length;
-          currentGame.shells.blank = currentGame.shells.sequence.filter(x => x === "blank").length;
-          currentGame.shells.initialAlive = currentGame.shells.alive;
-          currentGame.shells.initialBlank = currentGame.shells.blank;
-        }
         playerIds.forEach(id => {
           if (players[id]) {
-            const rewards = players[id].skipNextItemReward
-              ? []
-              : createItemRewards(Number(currentGame.settings?.itemRewardCount ?? 2), currentGame.settings || getGameSettings());
-            players[id].skipNextItemReward = false;
+            const rewards = createItemRewards(Number(currentGame.settings?.itemRewardCount ?? 2), currentGame.settings || getGameSettings());
             const result = addItemRewards(players[id].items, rewards, 8);
             players[id].items = result.inventory;
             itemRewards[id] = result.added;
@@ -8867,8 +8696,10 @@ async function shoot(targetId) {
       }
 
       if (clapperRepeat) {
+        const currentIndex = playerIds.indexOf(currentPlayerId);
         currentGame.turn.current = currentPlayerId;
-        currentGame.turn.index = playerIds.indexOf(currentPlayerId);
+        currentGame.turn.index = currentIndex >= 0 ? currentIndex : 0;
+        /* Tidak menaikkan turn.counter: Clapper memberikan giliran ekstra pada ronde yang sama. */
       } else if (currentShellType === "blank" && isSelf) {
         const currentIndex = playerIds.indexOf(currentPlayerId);
         currentGame.turn.current = currentPlayerId;
@@ -8889,6 +8720,7 @@ async function shoot(targetId) {
               skippedPlayerId = candidateId;
               players[candidateId].skipTurns = Number(players[candidateId].skipTurns) - 1;
               players[candidateId].handcuffed = false;
+              players[candidateId].coinFlipLocked = false;
               nextIndex = (nextIndex + 1) % playerIds.length;
               checked++;
               continue;
@@ -8901,37 +8733,7 @@ async function shoot(targetId) {
 
         currentGame.turn.current = playerIds[nextIndex];
         currentGame.turn.index = nextIndex;
-
-        if (players[currentPlayerId]?.overtakeTicket) {
-          currentGame.overtakeReturnId = currentPlayerId;
-          players[currentPlayerId].overtakeTicket = false;
-        }
         currentGame.turn.counter = Number(currentGame.turn.counter ?? 0) + 1;
-
-        if (players[currentPlayerId]?.itemBlocked &&
-            Number(players[currentPlayerId]?.itemBlockedAppliedTurn ?? -999999) < Number(currentGame.turn.counter ?? 0)) {
-          players[currentPlayerId].itemBlocked = false;
-          players[currentPlayerId].itemBlockedExpiresTurn = null;
-          players[currentPlayerId].itemBlockedAppliedTurn = null;
-          players[currentPlayerId].wrenched = false;
-        }
-
-        if (currentGame.overtakeReturnId && currentPlayerId !== currentGame.overtakeReturnId) {
-          const returnId = currentGame.overtakeReturnId;
-          if (Number(players[returnId]?.hp ?? 0) > 0) {
-            currentGame.turn.current = returnId;
-            currentGame.turn.index = playerIds.indexOf(returnId);
-          }
-          currentGame.overtakeReturnId = null;
-        }
-
-        const nextPlayerState = players[currentGame.turn.current];
-        if (nextPlayerState?.floppySaved) {
-          nextPlayerState.floppyActiveType = nextPlayerState.floppySaved.type;
-        }
-        if (Number(currentGame.deadBatteryUntilTurn ?? -1) < Number(currentGame.turn.counter ?? 0)) {
-          currentGame.deadBatteryUntilTurn = null;
-        }
 
         const activeAliveCount = Object.values(players).filter(p => p && Number(p.hp ?? 0) > 0).length;
         Object.entries(players).forEach(([id, p]) => {
@@ -9050,24 +8852,24 @@ function updateHandcuffOverlay() {
   const myState = gameData?.players?.[currentPlayerId];
   const isPlaying = gameData?.phase === "playing";
   const isDead = Number(myState?.hp ?? 0) <= 0;
+  const isCoinFlipped = myState?.coinFlipLocked === true;
   const isHandcuffed =
     Number(myState?.skipTurns ?? 0) > 0 ||
     myState?.handcuffed === true;
-  const isWrenched = myState?.itemBlocked === true;
 
-  const showOverlay = isPlaying && (isDead || isHandcuffed || isWrenched);
+  const showOverlay = isPlaying && (isDead || isHandcuffed);
   handcuffOverlay.classList.toggle("hidden", !showOverlay);
+  handcuffOverlay.classList.toggle("coin-flipped", showOverlay && isCoinFlipped && !isDead);
 
   if (!showOverlay) return;
 
   const icon = handcuffOverlay.querySelector("svg, i");
   const text = handcuffOverlay.querySelector("span");
   if (icon) {
-    const overlayIcon = isDead ? "skull" : isWrenched ? "wrench" : "lock";
-    icon.outerHTML = `<i data-lucide="${overlayIcon}"></i>`;
+    icon.outerHTML = `<i data-lucide="${isDead ? "skull" : (isCoinFlipped ? "circle-euro" : "lock")}"></i>`;
   }
   if (text) {
-    text.textContent = isDead ? "DEAD" : isWrenched ? "WRENCHED" : "HANDCUFFED";
+    text.textContent = isDead ? "DEAD" : (isCoinFlipped ? "Coin Flipped" : "HANDCUFFED");
   }
   lucide.createIcons();
 }
