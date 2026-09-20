@@ -9,7 +9,7 @@
     name="viewport"
     content="width=device-width, initial-scale=1.0">
 
-  <title>Buckshot Roulette - BETA3</title>
+  <title>Buckshot Roulette</title>
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -27,6 +27,10 @@
 /* =========================
    GLOBAL
 ========================= */
+
+.dead-battery-hidden { display: none !important; }
+.game-list-disabled { opacity: .35 !important; pointer-events: none !important; }
+
 
 * {
   box-sizing: border-box;
@@ -4713,7 +4717,7 @@ const DEFAULT_ITEM_RARITIES = {
   burner_phone: "uncommon", remote: "rare", jammer: "rare", reflector_mirror: "rare",
   dynamite: "uncommon", dice: "rare", rewind_film: "legendary", coin_flip: "uncommon",
   life_steal: "rare", megazine: "legendary", ace_card: "legendary", magnet: "uncommon",
-  clapperboard: "rare", wrench: "rare", eraser: "uncommon", hook: "uncommon", future_mail: "uncommon", stamp: "rare", hourglass: "rare", overtake_ticket: "legendary"
+  clapperboard: "rare", wrench: "rare", eraser: "uncommon", hook: "uncommon", future_mail: "uncommon", stamp: "rare", hourglass: "rare", overtake_ticket: "legendary", dead_battery: "rare", floppy_disk: "uncommon"
 };
 
 const DEFAULT_GAME_SETTINGS = {
@@ -5008,6 +5012,18 @@ const ITEM_DEFINITIONS = {
     name: "Hourglass",
     icon: "hourglass",
     info: "Mendapatkan 2 item sekarang melalui item spin. Setelah reload shell tidak mendapatkan item lagi pada reload tersebut.",
+    target: false
+  },
+  dead_battery: {
+    name: "Dead Battery",
+    icon: "battery-low",
+    info: "Menghilangkan informasi game untuk 1 ronde. Pemain dengan Ace Card tidak terpengaruh.",
+    target: false
+  },
+  floppy_disk: {
+    name: "Floppy Disk",
+    icon: "save",
+    info: "Menyimpan jenis shell saat ini untuk digunakan pada giliran berikutnya.",
     target: false
   },
   overtake_ticket: {
@@ -5328,6 +5344,8 @@ async function useSelectedItem(targetId = null) {
   let futureMailResults = null;
   let hourglassRewards = null;
   let overtakeActivated = false;
+  let deadBatteryActivated = false;
+  let floppyStoredShell = null;
   let adrenalineStolenFromId = null;
   let inventoryHandled = false;
 
@@ -5504,7 +5522,23 @@ async function useSelectedItem(targetId = null) {
         if (!rewardResult.added.length) return;
         sourcePlayer.items = rewardResult.inventory;
         hourglassRewards = rewardResult.added;
+        player.skipNextReloadReward = true;
         inventoryHandled = true;
+      } else if (type === "dead_battery") {
+        if (player.aceCardActive === true) return;
+        const aliveCount = Object.values(game.players || {}).filter(p => p && Number(p.hp ?? 0) > 0).length;
+        player.deadBatteryActivatedAt = Number(game.turn?.counter ?? 0);
+        game.deadBatteryActive = true;
+        game.deadBatteryExpiresTurn = Number(game.turn?.counter ?? 0) + Math.max(1, aliveCount);
+        deadBatteryActivated = true;
+      } else if (type === "floppy_disk") {
+        const shellIndex = Number(game.shells?.current ?? 0);
+        const shellType = game.shells?.sequence?.[shellIndex];
+        if (!shellType) return;
+        player.floppyStoredShell = shellType;
+        player.floppyStoredAtTurn = Number(game.turn?.counter ?? 0);
+        player.floppyReady = false;
+        floppyStoredShell = shellType;
       } else if (type === "overtake_ticket") {
         player.overtakePending = true;
         overtakeActivated = true;
@@ -5696,6 +5730,8 @@ async function useSelectedItem(targetId = null) {
         hourglassRewards,
         itemRewards: hourglassRewards ? { [currentPlayerId]: hourglassRewards } : {},
         overtakeActivated,
+        deadBatteryActivated,
+        floppyStoredShell,
         adrenalineStolenFromId: isBorrowed ? sourceId : null,
         at: Date.now()
       };
@@ -5990,6 +6026,9 @@ function createGameState(
         handcuffed: false,
         coinFlipLocked: false,
         shellItemUses: {},
+        skipNextReloadReward: false,
+        floppyStoredShell: null, floppyStoredAtTurn: null, floppyReady: false,
+        deadBatteryActivatedAt: null,
         shieldActive: false, shieldActivatedTurn: null,
         dynamiteTrapped: false, dynamiteTrappedById: null, dynamiteActivatedTurn: null,
         aceCardActive: false, aceCardActivatedTurn: null, aceCardExpiresTurn: null, lifeStealActive: false,
@@ -6273,7 +6312,8 @@ function renderGamePlayerList() {
 
   if (
     !gameData ||
-    gameData.phase !== "playing"
+    gameData.phase !== "playing" ||
+    isDeadBatteryHiddenForCurrentPlayer()
   ) {
     return;
   }
@@ -6631,7 +6671,9 @@ function showGameEvent(eventData) {
       wrench: "get-item",
       eraser: "get-item",
       hook: "get-item",
-      future_mail: "get-item"
+      future_mail: "get-item",
+      dead_battery: "get-item",
+      floppy_disk: "get-item"
     };
     playGameSound(soundMap[eventData.itemType] || "get-item");
 
@@ -6687,6 +6729,18 @@ function showGameEvent(eventData) {
         definition?.icon || "fishing-hook",
         3600
       );
+      return;
+    }
+
+    if (eventData.itemType === "dead_battery") {
+      if (gameData?.players?.[currentPlayerId]?.aceCardActive === true) return;
+      appendGameMessage(`${userName} menggunakan Dead Battery. Informasi game disembunyikan 1 ronde.`, "info", definition?.icon || "battery-low", 3600);
+      return;
+    }
+
+    if (eventData.itemType === "floppy_disk") {
+      const shellLabel = eventData.floppyStoredShell === "live" ? "LIVE" : "BLANK";
+      appendGameMessage(`${userName} menyimpan shell ${shellLabel} untuk giliran berikutnya.`, "info", definition?.icon || "save", 3600);
       return;
     }
 
@@ -7000,6 +7054,24 @@ function showGameEvent(eventData) {
 }
 
 
+
+function isDeadBatteryHiddenForCurrentPlayer() {
+  const me = gameData?.players?.[currentPlayerId];
+  if (!gameData?.deadBatteryActive) return false;
+  if (me?.aceCardActive === true) return false;
+  return Number(gameData.turn?.counter ?? 0) <= Number(gameData.deadBatteryExpiresTurn ?? -1);
+}
+
+function updateDeadBatteryUI() {
+  const hidden = isDeadBatteryHiddenForCurrentPlayer();
+  document.querySelector(".game-panel")?.classList.toggle("dead-battery-hidden", hidden);
+  document.querySelector(".gp-bottom")?.classList.toggle("dead-battery-hidden", hidden);
+  document.querySelector(".random-shell")?.classList.toggle("dead-battery-hidden", hidden);
+  gameMessage?.classList.toggle("dead-battery-hidden", hidden);
+  gameListButton?.classList.toggle("game-list-disabled", hidden);
+  if (hidden) closeGamePlayerList();
+}
+
 /* =========================
    RENDER GAME STATE
 ========================= */
@@ -7033,6 +7105,7 @@ async function renderGameState() {
   updateGameHealth();
   updateHandcuffOverlay();
   updateWrenchOverlay();
+  updateDeadBatteryUI();
 
   updateNextPlayer();
 
@@ -8170,6 +8243,7 @@ if (gameListButton) {
   gameListButton.addEventListener(
     "click",
     () => {
+      if (isDeadBatteryHiddenForCurrentPlayer()) return;
       openPlayerList();
     }
   );
@@ -8752,7 +8826,9 @@ async function shoot(targetId) {
         currentShell = 0;
       }
 
-      const currentShellType = shells.sequence[currentShell];
+      const shooterStateBeforeShot = players[currentPlayerId];
+      const floppyShotActive = shooterStateBeforeShot?.floppyReady === true && !!shooterStateBeforeShot?.floppyStoredShell;
+      const currentShellType = floppyShotActive ? shooterStateBeforeShot.floppyStoredShell : shells.sequence[currentShell];
       if (!currentShellType) {
         return;
       }
@@ -8837,7 +8913,11 @@ async function shoot(targetId) {
       const shooterState = players[currentPlayerId];
       clapperboardRepeat = shooterState?.clapperboardActive === true;
 
-      if (!clapperboardRepeat) {
+      if (floppyShotActive) {
+        shooterState.floppyStoredShell = null;
+        shooterState.floppyStoredAtTurn = null;
+        shooterState.floppyReady = false;
+      } else if (!clapperboardRepeat) {
         currentGame.shells.current = currentShell + 1;
         if (originalShellType === "live") {
           currentGame.shells.alive = Math.max(0, Number(currentGame.shells.alive ?? 0) - 1);
@@ -8904,10 +8984,14 @@ async function shoot(targetId) {
         currentGame.shells = createShellSet(playerIds.length, currentGame.settings || getGameSettings());
         playerIds.forEach(id => {
           if (players[id]) {
-            const rewards = createItemRewards(Number(currentGame.settings?.itemRewardCount ?? 2), currentGame.settings || getGameSettings());
-            const result = addItemRewards(players[id].items, rewards, 8);
-            players[id].items = result.inventory;
-            itemRewards[id] = result.added;
+            const suppressReward = players[id].skipNextReloadReward === true;
+            if (!suppressReward) {
+              const rewards = createItemRewards(Number(currentGame.settings?.itemRewardCount ?? 2), currentGame.settings || getGameSettings());
+              const result = addItemRewards(players[id].items, rewards, 8);
+              players[id].items = result.inventory;
+              itemRewards[id] = result.added;
+            }
+            players[id].skipNextReloadReward = false;
             players[id].sawActive = false;
             players[id].shellItemUses = {};
           }
@@ -8922,6 +9006,10 @@ async function shoot(targetId) {
         currentGame.turn.current = overtakeOwnerId;
         currentGame.turn.index = playerIds.indexOf(overtakeOwnerId);
         currentGame.turn.counter = Number(currentGame.turn.counter ?? 0) + 1;
+        const overtakingPlayer = players[overtakeOwnerId];
+        if (overtakingPlayer?.floppyStoredShell && Number(overtakingPlayer.floppyStoredAtTurn ?? -1) < Number(currentGame.turn.counter ?? 0)) {
+          overtakingPlayer.floppyReady = true;
+        }
       } else if ((currentShellType === "blank" && isSelf) || clapperboardRepeat) {
         const currentIndex = playerIds.indexOf(currentPlayerId);
         currentGame.turn.current = currentPlayerId;
@@ -8957,8 +9045,16 @@ async function shoot(targetId) {
         currentGame.turn.current = playerIds[nextIndex];
         currentGame.turn.index = nextIndex;
         currentGame.turn.counter = Number(currentGame.turn.counter ?? 0) + 1;
+        const nextPlayerState = players[currentGame.turn.current];
+        if (nextPlayerState?.floppyStoredShell && Number(nextPlayerState.floppyStoredAtTurn ?? -1) < Number(currentGame.turn.counter ?? 0)) {
+          nextPlayerState.floppyReady = true;
+        }
 
         const activeAliveCount = Object.values(players).filter(p => p && Number(p.hp ?? 0) > 0).length;
+        if (currentGame.deadBatteryActive && Number(currentGame.turn.counter ?? 0) > Number(currentGame.deadBatteryExpiresTurn ?? -1)) {
+          currentGame.deadBatteryActive = false;
+          currentGame.deadBatteryExpiresTurn = null;
+        }
         Object.entries(players).forEach(([id, p]) => {
           if (!p) return;
           if (p.dynamiteTrapped && Number(p.dynamiteActivatedTurn ?? -999999) + Math.max(1, activeAliveCount) <= Number(currentGame.turn.counter ?? 0)) {
