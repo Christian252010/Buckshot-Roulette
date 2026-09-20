@@ -9,7 +9,7 @@
     name="viewport"
     content="width=device-width, initial-scale=1.0">
 
-  <title>Buckshot Roulette</title>
+  <title>Buckshot Roulette - BETA</title>
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -515,8 +515,6 @@ body {
   transition: opacity .45s ease;
 }
 
-.dead-battery-hidden { display: none !important; }
-
 .random-shell.hidden {
   display: flex !important;
   opacity: 0;
@@ -750,6 +748,7 @@ body {
 }
 
 .items-have {
+  position: relative;
   display: grid;
   grid-template-columns: repeat(4, 1fr);
   gap: 6px;
@@ -768,7 +767,8 @@ body {
 }
 
 .item-info-popup.hidden,
-.handcuff-overlay.hidden {
+.handcuff-overlay.hidden,
+.wrench-overlay.hidden {
   display: none !important;
 }
 
@@ -838,6 +838,38 @@ body {
   font-size: 14px;
   font-weight: bold;
   letter-spacing: 2px;
+}
+
+.wrench-overlay {
+  position: absolute;
+  inset: 8px;
+  z-index: 15;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  color: #888;
+  background: rgba(20, 20, 20, .88);
+  border-radius: 4px;
+  pointer-events: none;
+}
+
+.wrench-overlay.hidden {
+  display: none !important;
+}
+
+.wrench-overlay svg {
+  width: 34px;
+  height: 34px;
+  stroke-width: 1.8;
+}
+
+.wrench-overlay span {
+  color: #888;
+  font-size: 13px;
+  font-weight: bold;
+  letter-spacing: 1.5px;
 }
 
 .item {
@@ -1161,6 +1193,14 @@ body {
   stroke-width: 1.7;
 }
 
+.player-list .pl-wrench {
+  width: 16px;
+  height: 16px;
+  flex: 0 0 16px;
+  color: #888;
+  stroke-width: 1.7;
+}
+
 .player-list .pl-lock,
 .player-list .pl-shield,
 .player-list .pl-ace {
@@ -1457,21 +1497,21 @@ body {
 }
 .leaderboard-row.rank-1 {
   background: rgba(255, 215, 0, .13);
-  border-radius: 6px;
+  border-radius: 6px 6px 0 0;
   padding-left: 6px;
   padding-right: 6px;
 }
 .leaderboard-row.rank-1 .leaderboard-rank { color: #ffd700; font-size: 19px; }
 .leaderboard-row.rank-2 {
   background: rgba(192, 192, 192, .10);
-  border-radius: 6px;
+  border-radius: 0px;
   padding-left: 6px;
   padding-right: 6px;
 }
 .leaderboard-row.rank-2 .leaderboard-rank { color: #c0c0c0; font-size: 18px; }
 .leaderboard-row.rank-3 {
   background: rgba(205, 127, 50, .10);
-  border-radius: 6px;
+  border-radius: 0px;
   padding-left: 6px;
   padding-right: 6px;
 }
@@ -2631,6 +2671,10 @@ body {
     </div>
 
     <div class="items-have">
+      <div class="wrench-overlay hidden" id="wrenchOverlay">
+        <i data-lucide="wrench"></i>
+        <span>Wrenched</span>
+      </div>
       <div class="item"></div>
       <div class="item"></div>
       <div class="item"></div>
@@ -2676,10 +2720,6 @@ body {
     <span class="winner-name"></span>
   </div>
 
-  <div class="winner-leaderboard">
-    <div class="winner-leaderboard-title">Leaderboard</div>
-    <div class="winner-leaderboard-list" id="winnerLeaderboardList"></div>
-  </div>
 
 </div>
 
@@ -2713,10 +2753,10 @@ body {
 
   <div class="st-players"></div>
 
-  <button class="random-shot-btn" id="randomShotBtn" type="button" disabled>
+  <!--<button class="random-shot-btn" id="randomShotBtn" type="button" disabled>
     <i data-lucide="shuffle"></i>
     <span>Random Shot</span>
-  </button>
+  </button>-->
 
 </div>
 
@@ -2821,6 +2861,7 @@ let lastWinnerId = null;
 let lastFinishedStartedAt = null;
 let winnerTimer = null;
 let winnerCleanupStartedAt = null;
+let returningFromWinner = false;
 let lobbyRenderToken = 0;
 let shellRenderId = null;
 let shellRevealTimer = null;
@@ -3014,6 +3055,7 @@ const itemInfoTitle = document.querySelector("#itemInfoTitle");
 const itemInfoText = document.querySelector("#itemInfoText");
 const itemInfoClose = document.querySelector("#itemInfoClose");
 const handcuffOverlay = document.querySelector("#handcuffOverlay");
+const wrenchOverlay = document.querySelector("#wrenchOverlay");
 
 const lobbyExtraButtons = document.querySelector("#lobbyExtraButtons");
 const openSettingsBtn = document.querySelector("#openSettingsBtn");
@@ -3945,8 +3987,13 @@ function watchLeaderboard() {
 function updateLeaderboardVisibility() {
   if (!leaderboard) return;
   const joined = !!roomData?.players?.[currentPlayerId];
-  const roomBusy = roomData?.status === "playing" || roomData?.status === "starting";
-  leaderboard.classList.toggle("hidden", joined || roomBusy);
+  const starting = roomData?.status === "starting";
+  const finished = roomData?.status === "playing" && roomData?.game?.phase === "finished";
+  const activeGame = roomData?.status === "playing" && !finished;
+
+  // Pemain yang masih berada di game tidak melihat leaderboard.
+  // Pemain yang menunggu game selesai melihat leaderboard di lobby.
+  leaderboard.classList.toggle("hidden", joined && (starting || activeGame));
 }
 
 /* =========================
@@ -4076,6 +4123,20 @@ async function renderRoom() {
       startCountdownTimer = setTimeout(updateCountdown, 150);
     };
     updateCountdown();
+    return;
+  }
+
+  if (roomData.status === "playing" && roomData.game?.phase === "finished") {
+    // Game sudah selesai tetapi room belum sempat dihapus oleh client pemenang.
+    // Semua pemain dikembalikan ke lobby sementara dan leaderboard tetap tampil.
+    hideWinnerScreen();
+    showLobby();
+    createBtn.classList.add("hidden");
+    joinBtn.classList.add("hidden");
+    startLeft.classList.add("hidden");
+    roomMessage.textContent = "Game selesai. Menunggu kembali ke lobby...";
+    updateLeaderboardVisibility();
+    returningFromWinner = false;
     return;
   }
 
@@ -4651,7 +4712,7 @@ const DEFAULT_ITEM_RARITIES = {
   beer: "common", inverter: "rare", expired_medicine: "uncommon", adrenaline: "rare",
   burner_phone: "uncommon", remote: "rare", jammer: "rare", reflector_mirror: "rare",
   dynamite: "uncommon", dice: "rare", rewind_film: "legendary", coin_flip: "uncommon",
-  life_steal: "rare", megazine: "legendary", ace_card: "legendary", magnet: "uncommon", clapperboard: "rare", dead_battery: "uncommon"
+  life_steal: "rare", megazine: "legendary", ace_card: "legendary", magnet: "uncommon"
 };
 
 const DEFAULT_GAME_SETTINGS = {
@@ -4906,6 +4967,18 @@ const ITEM_DEFINITIONS = {
     info: "Membuat pemain yang terkena dilewati 1 giliran.",
     target: true
   },
+  clapperboard: {
+    name: "Clapperboard",
+    icon: "clapperboard",
+    info: "Mengulangi aksi: setelah selesai menembak, pemain mendapat giliran lagi dan menggunakan shell sebelumnya.",
+    target: false
+  },
+  wrench: {
+    name: "Wrench",
+    icon: "wrench",
+    info: "Mengunci inventory pemain yang terkena selama 1 giliran. Item tidak dapat digunakan selama Wrenched.",
+    target: true
+  },
   beer: {
     name: "Beer",
     icon: "can-soda",
@@ -4994,14 +5067,6 @@ const ITEM_DEFINITIONS = {
   magnet: {
     name: "Magnet", icon: "magnet",
     info: "Mengambil 1 item random yang dimiliki lalu mengubahnya menjadi +1 HP. Tidak berfungsi jika hanya memiliki Magnet.", target: false
-  },
-  clapperboard: {
-    name: "Clapperboard", icon: "clapperboard",
-    info: "Mengulangi aksi tembakan: setelah selesai menembak, kembali ke shell sebelumnya dan mendapatkan giliran lagi.", target: false
-  },
-  dead_battery: {
-    name: "Dead Battery", icon: "battery-low",
-    info: "Menyembunyikan informasi shell, urutan pemain, teks info, List Player, pemain saat ini, dan pemain berikutnya selama 1 putaran.", target: false
   }
 };
 
@@ -5066,11 +5131,15 @@ function renderMyItems() {
     ? gameData.players[sourceId].items
     : [];
 
+  const myState = gameData?.players?.[currentPlayerId];
+  const isWrenched = myState?.wrenched === true;
+
   const canSelectItems =
     gameData?.phase === "playing" &&
     !gameData?.itemPending &&
     !shootingLocked &&
-    gameData?.turn?.current === currentPlayerId;
+    gameData?.turn?.current === currentPlayerId &&
+    !isWrenched;
 
   let visibleItems = [...items];
   const reloadEvent = gameData?.lastEvent?.reload ? gameData.lastEvent : null;
@@ -5123,6 +5192,7 @@ function setItemMode(type, slotIndex) {
   if (!gameData || gameData.phase !== "playing") return;
   if (shootingLocked) return;
   if (gameData.turn?.current !== currentPlayerId) return;
+  if (gameData.players?.[currentPlayerId]?.wrenched === true) return;
 
   const sourceId = adrenalineActive && adrenalineTargetId
     ? adrenalineTargetId
@@ -5189,6 +5259,10 @@ function reorderNonAcePlayers(players, ids, mode = "shuffle") {
 async function useSelectedItem(targetId = null) {
   if (!selectedItemType || selectedItemSlot === null || shootingLocked || !gameData) return;
   if (gameData.phase !== "playing" || gameData.turn?.current !== currentPlayerId) {
+    resetItemSelection();
+    return;
+  }
+  if (gameData.players?.[currentPlayerId]?.wrenched === true) {
     resetItemSelection();
     return;
   }
@@ -5333,6 +5407,16 @@ async function useSelectedItem(targetId = null) {
         if (target.aceCardActive === true) return;
         target.skipTurns = Number(target.skipTurns ?? 0) + 1;
         target.handcuffed = true;
+      } else if (type === "clapperboard") {
+        player.clapperboardActive = true;
+      } else if (type === "wrench") {
+        if (!targetId || targetId === currentPlayerId) return;
+        const target = game.players?.[targetId];
+        if (!target || Number(target.hp ?? 0) <= 0) return;
+        if (target.aceCardActive === true || target.wrenched === true) return;
+        target.wrenched = true;
+        target.wrenchedById = currentPlayerId;
+        target.wrenchedActivatedTurn = Number(game.turn?.counter ?? 0);
       } else if (type === "beer") {
         const shellIndex = Number(game.shells?.current ?? 0);
         const shellType = game.shells?.sequence?.[shellIndex];
@@ -5476,13 +5560,6 @@ async function useSelectedItem(targetId = null) {
           Number(player.hp ?? 0) + 1
         );
         inventoryHandled = true;
-      } else if (type === "clapperboard") {
-        player.clapperboardActive = true;
-      } else if (type === "dead_battery") {
-        player.deadBatteryActive = true;
-        player.deadBatteryTurn = Number(game.turn?.counter ?? 0);
-        const aliveCountForBattery = Object.values(game.players || {}).filter(p => p && Number(p.hp ?? 0) > 0).length;
-        player.deadBatteryExpiresTurn = Number(game.turn?.counter ?? 0) + Math.max(1, aliveCountForBattery);
       } else if (type === "megazine") {
         game.shells = createShellSet(Object.keys(game.players || {}).length, game.settings || getGameSettings());
         Object.values(game.players || {}).forEach(p => {
@@ -5797,7 +5874,9 @@ function createGameState(
         shellItemUses: {},
         shieldActive: false, shieldActivatedTurn: null,
         dynamiteTrapped: false, dynamiteTrappedById: null, dynamiteActivatedTurn: null,
-        aceCardActive: false, aceCardActivatedTurn: null, aceCardExpiresTurn: null, lifeStealActive: false
+        aceCardActive: false, aceCardActivatedTurn: null, aceCardExpiresTurn: null, lifeStealActive: false,
+        clapperboardActive: false,
+        wrenched: false, wrenchedById: null, wrenchedActivatedTurn: null
 
       };
 
@@ -6197,6 +6276,14 @@ function renderGamePlayerList() {
       nameStatus.appendChild(lock);
     }
 
+    if (gameData.players?.[player.id]?.wrenched) {
+      const wrench = document.createElement("i");
+      wrench.setAttribute("data-lucide", "wrench");
+      wrench.className = "pl-wrench";
+      wrench.setAttribute("title", "Wrenched");
+      nameStatus.appendChild(wrench);
+    }
+
     if (gameData.players?.[player.id]?.shieldActive) {
       const shield = document.createElement("i");
       shield.setAttribute("data-lucide", "mirror-rectangular");
@@ -6419,7 +6506,9 @@ function showGameEvent(eventData) {
       dice: "dice",
       rewind_film: "rewind-film",
       coin_flip: "coin-flip",
-      megazine: "megazine"
+      megazine: "megazine",
+      clapperboard: "get-item",
+      wrench: "get-item"
     };
     playGameSound(soundMap[eventData.itemType] || "get-item");
 
@@ -6465,6 +6554,16 @@ function showGameEvent(eventData) {
 
     if (eventData.itemType === "megazine") {
       appendGameMessage(`${userName} menggunakan Megazine dan melakukan reload shell.`, "info", definition?.icon || "package-2", 3600);
+      return;
+    }
+
+    if (eventData.itemType === "clapperboard") {
+      appendGameMessage(`${userName} menggunakan Clapperboard. Aksi berikutnya akan diulang.`, "info", definition?.icon || "clapperboard", 3600);
+      return;
+    }
+
+    if (eventData.itemType === "wrench") {
+      appendGameMessage(`${userName} menggunakan Wrench pada ${getPlayerNameById(eventData.targetId)}.`, "info", definition?.icon || "wrench", 3600);
       return;
     }
 
@@ -6663,8 +6762,8 @@ function showGameEvent(eventData) {
           getPlayerNameById(eventData.winnerId);
 
         /* Kemenangan: kedua suara diputar bersamaan. */
-        playGameSound("levelup");
         playGameSound("winner");
+        playGameSound("levelup");
 
         appendGameMessage(
           winnerName + " pemenangnya",
@@ -6696,7 +6795,14 @@ function showGameEvent(eventData) {
 
         return;
       }
-      if (eventData.result === "blank" && eventData.isSelf) {
+      if (eventData.clapperboardRepeat) {
+        appendGameMessage(
+          "Clapperboard: aksi diulang, shell sebelumnya digunakan lagi. Giliran tetap " + shooterName,
+          "info",
+          "clapperboard",
+          4200
+        );
+      } else if (eventData.result === "blank" && eventData.isSelf) {
         appendGameMessage(
           "Giliran lanjut ke " + shooterName,
           "info",
@@ -6749,6 +6855,7 @@ async function renderGameState() {
 
   updateGameHealth();
   updateHandcuffOverlay();
+  updateWrenchOverlay();
 
   updateNextPlayer();
 
@@ -6892,10 +6999,21 @@ function showWinnerScreen(
   }, titleEnd + 180);
 
   winnerTimer = setTimeout(
-    () => {
-      cleanupFinishedRoom(
-        winnerCleanupStartedAt
-      );
+    async () => {
+      winnerTimer = null;
+      returningFromWinner = true;
+
+      // Hapus room terlebih dahulu. Setelah selesai, pemain yang baru saja bermain
+      // dipaksa kembali ke lobby, bukan masuk lagi ke game/winner.
+      await cleanupFinishedRoom(winnerCleanupStartedAt);
+
+      hideWinnerScreen();
+      gameData = null;
+      showLobby();
+
+      // Jika penghapusan Firebase tertunda, renderRoom akan tetap menganggap
+      // game finished sebagai lobby sementara sampai room benar-benar hilang.
+      updateLeaderboardVisibility();
     },
     7000
   );
@@ -7420,22 +7538,7 @@ async function finishPreparation() {
    CURRENT TURN
 ========================= */
 
-function isDeadBatteryActiveForMe() {
-  const me = gameData?.players?.[currentPlayerId];
-  if (!me?.deadBatteryActive) return false;
-  const expires = Number(me.deadBatteryExpiresTurn ?? -1);
-  return expires < 0 || Number(gameData?.turn?.counter ?? 0) < expires;
-}
-
-function updateDeadBatteryView() {
-  const active = isDeadBatteryActiveForMe();
-  [".game .header .list", ".game-panel .gp-top", ".game-panel .next", ".game > .gp-bottom", ".game-message", ".random-shell"].forEach(selector => {
-    document.querySelectorAll(selector).forEach(el => el.classList.toggle("dead-battery-hidden", active));
-  });
-}
-
 function updateCurrentTurn() {
-  updateDeadBatteryView();
 
   const currentElement =
     document.querySelector(
@@ -8233,9 +8336,10 @@ function renderPlayerPopup() {
           data-id="${player.id}"
           ${itemMode && ["handcuff", "adrenaline"].includes(selectedItemType) && gameData?.turn?.current !== currentPlayerId ? "disabled" : ""}
           ${itemMode && selectedItemType === "adrenaline" && (gameData?.players?.[player.id]?.aceCardActive || !(Array.isArray(gameData?.players?.[player.id]?.items) && gameData.players[player.id].items.length)) ? "disabled" : ""}
-          ${itemMode && selectedItemType === "dynamite" && (gameData?.players?.[player.id]?.aceCardActive || gameData?.players?.[player.id]?.dynamiteTrapped) ? "disabled" : ""}>
+          ${itemMode && selectedItemType === "dynamite" && (gameData?.players?.[player.id]?.aceCardActive || gameData?.players?.[player.id]?.dynamiteTrapped) ? "disabled" : ""}
+          ${itemMode && selectedItemType === "wrench" && (gameData?.players?.[player.id]?.aceCardActive || gameData?.players?.[player.id]?.wrenched) ? "disabled" : ""}>
 
-          ${itemMode && selectedItemType === "handcuff" ? "Lock" : itemMode && selectedItemType === "adrenaline" ? "Steal" : itemMode && selectedItemType === "dynamite" ? "Trap" : "Shot"}
+          ${itemMode && selectedItemType === "handcuff" ? "Lock" : itemMode && selectedItemType === "wrench" ? "Wrench" : itemMode && selectedItemType === "adrenaline" ? "Steal" : itemMode && selectedItemType === "dynamite" ? "Trap" : "Shot"}
 
         </button>
 
@@ -8324,7 +8428,7 @@ playerContainer.addEventListener(
     selectedTarget =
       target;
 
-    if (itemMode && ["handcuff", "adrenaline", "dynamite"].includes(selectedItemType)) {
+    if (itemMode && ["handcuff", "wrench", "adrenaline", "dynamite"].includes(selectedItemType)) {
       useSelectedItem(targetId);
       return;
     }
@@ -8492,6 +8596,7 @@ async function shoot(targetId) {
       let dynamiteRemoved = false;
       let dynamiteExpired = [];
       let aceExpired = [];
+      let clapperboardRepeat = false;
 
       const targetAceCard = targetPlayer.aceCardActive === true;
       const shooterAceCard = players[currentPlayerId]?.aceCardActive === true;
@@ -8551,17 +8656,20 @@ async function shoot(targetId) {
       }
 
       const originalShellType = currentGame.shells?.originalSequence?.[currentShell] || currentShellType;
-      currentGame.shells.current = currentShell + 1;
-      if (originalShellType === "live") {
-        currentGame.shells.alive = Math.max(0, Number(currentGame.shells.alive ?? 0) - 1);
+      const shooterState = players[currentPlayerId];
+      clapperboardRepeat = shooterState?.clapperboardActive === true;
+
+      if (!clapperboardRepeat) {
+        currentGame.shells.current = currentShell + 1;
+        if (originalShellType === "live") {
+          currentGame.shells.alive = Math.max(0, Number(currentGame.shells.alive ?? 0) - 1);
+        } else {
+          currentGame.shells.blank = Math.max(0, Number(currentGame.shells.blank ?? 0) - 1);
+        }
       } else {
-        currentGame.shells.blank = Math.max(0, Number(currentGame.shells.blank ?? 0) - 1);
+        shooterState.clapperboardActive = false;
       }
-      if (clapperboardUsed) {
-        currentGame.shells.current = Math.max(0, currentShell - 1);
-        if (originalShellType === "live") currentGame.shells.alive = Number(currentGame.shells.alive ?? 0) + 1;
-        else currentGame.shells.blank = Number(currentGame.shells.blank ?? 0) + 1;
-      }
+
       currentGame.shotPending = null;
 
       currentGame.lastShot = {
@@ -8614,7 +8722,7 @@ async function shoot(targetId) {
 
       let shellReloaded = false;
       let itemRewards = {};
-      if (!clapperboardUsed && currentGame.shells.current >= Number(currentGame.shells.total || 0)) {
+      if (!clapperboardRepeat && currentGame.shells.current >= Number(currentGame.shells.total || 0)) {
         currentGame.shells = createShellSet(playerIds.length, currentGame.settings || getGameSettings());
         playerIds.forEach(id => {
           if (players[id]) {
@@ -8629,14 +8737,11 @@ async function shoot(targetId) {
         shellReloaded = true;
       }
 
-      if (clapperboardUsed) {
+      if ((currentShellType === "blank" && isSelf) || clapperboardRepeat) {
         const currentIndex = playerIds.indexOf(currentPlayerId);
         currentGame.turn.current = currentPlayerId;
         currentGame.turn.index = currentIndex >= 0 ? currentIndex : 0;
-      } else if (currentShellType === "blank" && isSelf) {
-        const currentIndex = playerIds.indexOf(currentPlayerId);
-        currentGame.turn.current = currentPlayerId;
-        currentGame.turn.index = currentIndex >= 0 ? currentIndex : 0;
+        currentGame.turn.counter = Number(currentGame.turn.counter ?? 0) + 1;
       } else {
         const currentIndex = playerIds.indexOf(currentPlayerId);
         if (currentIndex < 0) {
@@ -8671,12 +8776,6 @@ async function shoot(targetId) {
         const activeAliveCount = Object.values(players).filter(p => p && Number(p.hp ?? 0) > 0).length;
         Object.entries(players).forEach(([id, p]) => {
           if (!p) return;
-          if (p.deadBatteryActive && Number(p.deadBatteryExpiresTurn ?? 999999) <= Number(currentGame.turn.counter ?? 0)) {
-            p.deadBatteryActive = false;
-            p.deadBatteryTurn = null;
-            p.deadBatteryExpiresTurn = null;
-          }
-          if (!p) return;
           if (p.dynamiteTrapped && Number(p.dynamiteActivatedTurn ?? -999999) + Math.max(1, activeAliveCount) <= Number(currentGame.turn.counter ?? 0)) {
             dynamiteExpired.push({ targetId: id, placerId: p.dynamiteTrappedById || null });
             p.dynamiteTrapped = false; p.dynamiteTrappedById = null; p.dynamiteActivatedTurn = null;
@@ -8688,6 +8787,11 @@ async function shoot(targetId) {
         });
 
         const finishedPlayer = players[currentPlayerId];
+        if (finishedPlayer?.wrenched) {
+          finishedPlayer.wrenched = false;
+          finishedPlayer.wrenchedById = null;
+          finishedPlayer.wrenchedActivatedTurn = null;
+        }
         if (finishedPlayer?.shieldActive && Number(finishedPlayer.shieldActivatedTurn ?? -1) + 2 <= Number(currentGame.turn.counter ?? 0)) {
           finishedPlayer.shieldActive = false;
           finishedPlayer.shieldActivatedTurn = null;
@@ -8715,7 +8819,7 @@ async function shoot(targetId) {
         skippedPlayerId,
         dynamiteExpired,
         aceExpired,
-        clapperboardUsed,
+        clapperboardRepeat,
         reload: shellReloaded,
         itemRewards: shellReloaded ? itemRewards : {},
         at: Date.now()
@@ -8811,6 +8915,28 @@ function updateHandcuffOverlay() {
     text.textContent = isDead ? "DEAD" : (isCoinFlipped ? "Coin Flipped" : "HANDCUFFED");
   }
   lucide.createIcons();
+}
+
+
+function updateWrenchOverlay() {
+  if (!wrenchOverlay) return;
+
+  const myState = gameData?.players?.[currentPlayerId];
+  const showOverlay =
+    gameData?.phase === "playing" &&
+    myState?.wrenched === true &&
+    Number(myState?.hp ?? 0) > 0;
+
+  wrenchOverlay.classList.toggle("hidden", !showOverlay);
+  if (showOverlay) {
+    const icon = wrenchOverlay.querySelector("svg, i");
+    if (icon) {
+      icon.outerHTML = `<i data-lucide="wrench"></i>`;
+    }
+    const text = wrenchOverlay.querySelector("span");
+    if (text) text.textContent = "Wrenched";
+    lucide.createIcons();
+  }
 }
 
 function enableShotButtons() {
