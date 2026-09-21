@@ -9,7 +9,7 @@
     name="viewport"
     content="width=device-width, initial-scale=1.0">
 
-  <title>Buckshot Roulette - BETA6</title>
+  <title>Buckshot Roulette</title>
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -657,6 +657,7 @@ body {
 
 .shot:active { transform: translateX(-50%) translateY(-60%); }
 .shot.active { background: #333; }
+.shot.shooting { background: #333; }
 .shot.reload-hidden { display: none !important; }
 
 .shot img {
@@ -1446,7 +1447,7 @@ body {
 .leaderboard-rank { width:24px; flex:0 0 24px; color:#888; text-align:center; font-weight:bold; }
 .leaderboard-row .profile { width:36px; height:36px; font-size:18px; }
 .leaderboard-name { min-width:0; flex:1; overflow:hidden; color:#ddd; font-size:17px; text-overflow:ellipsis; white-space:nowrap; }
-.leaderboard-wins { display:flex; align-items:center; gap:5px; flex-shrink:0; color:gold; font-size:15px; font-weight:bold; }
+.leaderboard-wins { display:flex; align-items:center; gap:5px; min-width:42px; justify-content:flex-end; flex-shrink:0; color:gold; font-size:15px; font-weight:bold; }
 .leaderboard-wins svg { width:17px; height:17px; }
 .leaderboard-empty { padding:10px 0 4px; color:#777; text-align:center; font-size:14px; }
 .winner-leaderboard {
@@ -4603,6 +4604,7 @@ leftBtn.addEventListener(
 settingsClose.addEventListener("click", closeSettings);
 settingsCancel.addEventListener("click", closeSettings);
 settingsSave.addEventListener("click", saveSettings);
+if (openSettingsBtn) openSettingsBtn.disabled = true;
 
 /*
    Semua kontrol Settings disimpan otomatis saat berubah. Jadi pemain lain
@@ -4966,66 +4968,6 @@ const ITEM_DEFINITIONS = {
     info: "Membuat pemain yang terkena dilewati 1 giliran.",
     target: true
   },
-  clapperboard: {
-    name: "Clapperboard",
-    icon: "clapperboard",
-    info: "Mengulangi aksi: setelah selesai menembak, pemain mendapat giliran lagi dan menggunakan shell sebelumnya.",
-    target: false
-  },
-  wrench: {
-    name: "Wrench",
-    icon: "wrench",
-    info: "Mengunci inventory pemain yang terkena selama 1 giliran. Item tidak dapat digunakan selama Wrenched.",
-    target: true
-  },
-  eraser: {
-    name: "Eraser",
-    icon: "eraser",
-    info: "Menghapus 1 item secara acak dari inventory pemain lain.",
-    target: true
-  },
-  hook: {
-    name: "Hook",
-    icon: "fishing-hook",
-    info: "Mengambil 1 item secara acak dari inventory pemain lain.",
-    target: true
-  },
-  future_mail: {
-    name: "Future Mail",
-    icon: "mail",
-    info: "Melihat 2 peluru berikutnya setelah peluru saat ini.",
-    target: false
-  },
-  stamp: {
-    name: "Stamp",
-    icon: "stamp",
-    info: "Membuat penggunaan 1 item berikutnya tidak menghilangkan item tersebut dari inventory.",
-    target: false
-  },
-  hourglass: {
-    name: "Hourglass",
-    icon: "hourglass",
-    info: "Mendapatkan 2 item sekarang melalui item spin. Setelah reload shell tidak mendapatkan item lagi pada reload tersebut.",
-    target: false
-  },
-  dead_battery: {
-    name: "Dead Battery",
-    icon: "battery-low",
-    info: "Menghilangkan informasi game untuk 1 ronde. Pemain dengan Ace Card tidak terpengaruh.",
-    target: false
-  },
-  floppy_disk: {
-    name: "Floppy Disk",
-    icon: "save",
-    info: "Menyimpan jenis shell saat ini untuk digunakan pada giliran berikutnya.",
-    target: false
-  },
-  overtake_ticket: {
-    name: "Overtake Ticket",
-    icon: "tickets",
-    info: "Setelah pemain berikutnya menyelesaikan gilirannya, pengguna mendapatkan 1 giliran tambahan sebelum urutan kembali normal.",
-    target: false
-  },
   beer: {
     name: "Beer",
     icon: "can-soda",
@@ -5114,7 +5056,68 @@ const ITEM_DEFINITIONS = {
   magnet: {
     name: "Magnet", icon: "magnet",
     info: "Mengambil 1 item random yang dimiliki lalu mengubahnya menjadi +1 HP. Tidak berfungsi jika hanya memiliki Magnet.", target: false
+  },
+  clapperboard: {
+    name: "Clapperboard",
+    icon: "clapperboard",
+    info: "Mengulangi aksi: setelah selesai menembak, pemain mendapat giliran lagi dan menggunakan shell sebelumnya.",
+    target: false
+  },
+  wrench: {
+    name: "Wrench",
+    icon: "wrench",
+    info: "Mengunci inventory pemain yang terkena selama 1 giliran. Item tidak dapat digunakan selama Wrenched.",
+    target: true
+  },
+  eraser: {
+    name: "Eraser",
+    icon: "eraser",
+    info: "Menghapus 1 item secara acak dari inventory pemain lain.",
+    target: true
+  },
+  hook: {
+    name: "Hook",
+    icon: "fishing-hook",
+    info: "Mengambil 1 item secara acak dari inventory pemain lain.",
+    target: true
+  },
+  future_mail: {
+    name: "Future Mail",
+    icon: "mail",
+    info: "Melihat 2 peluru berikutnya setelah peluru saat ini.",
+    target: false
+  },
+  stamp: {
+    name: "Stamp",
+    icon: "stamp",
+    info: "Membuat penggunaan 1 item berikutnya tidak menghilangkan item tersebut dari inventory.",
+    target: false
+  },
+  hourglass: {
+    name: "Hourglass",
+    icon: "hourglass",
+    info: "Mendapatkan 2 item sekarang melalui item spin. Setelah reload shell tidak mendapatkan item lagi pada reload tersebut.",
+    target: false
+  },
+  dead_battery: {
+    name: "Dead Battery",
+    icon: "battery-low",
+    info: "Menghilangkan informasi game untuk 1 ronde. Pemain dengan Ace Card tidak terpengaruh.",
+    target: false
+  },
+  floppy_disk: {
+    name: "Floppy Disk",
+    icon: "save",
+    info: "Menyimpan jenis shell saat ini untuk digunakan pada giliran berikutnya.",
+    target: false
+  },
+  overtake_ticket: {
+    name: "Overtake Ticket",
+    icon: "tickets",
+    info: "Setelah pemain berikutnya menyelesaikan gilirannya, pengguna mendapatkan 1 giliran tambahan sebelum urutan kembali normal.",
+    target: false
   }
+
 };
 
 function createPlayerItems(playerCount) {
@@ -6860,7 +6863,11 @@ function showGameEvent(eventData) {
   }
 
   if (eventData.type === "shot_pending") {
-    /* Pesan tembakan tampil terlebih dahulu. Animasi shotgun dimulai saat hasil shell muncul. */
+    /* Animasi dimulai segera setelah tombol Shoot benar-benar diproses.
+       Hanya shooter lokal yang melihat animasi ini. */
+    if (eventData.playerId === currentPlayerId && gameData?.turn?.current === currentPlayerId) {
+      triggerShotAnimation();
+    }
 
     /* Chat "X menembak Y..." menjadi titik mulai charge-shot. */
     playGameSound("charge-shot");
@@ -6882,6 +6889,7 @@ function showGameEvent(eventData) {
   }
 
   if (eventData.result === "live") {
+    if (eventData.playerId === currentPlayerId) triggerShotAnimation();
     const damageText = Number(eventData.damage || 1);
 
     /* Suara ledakan ditembakkan tepat bersamaan dengan teks hasil. */
@@ -6931,10 +6939,6 @@ function showGameEvent(eventData) {
         playGameSound("death", 1, 220);
       }
     }
-    if (eventData.playerId === currentPlayerId) {
-      // Pesan hasil sudah ditambahkan; baru setelah itu shotgun menyusut dan hilang.
-      setTimeout(collapseShotAnimation, 80);
-    }
   } else {
     playGameSound("shot-blank");
     appendGameMessage(
@@ -6945,9 +6949,6 @@ function showGameEvent(eventData) {
       "test-tube",
       3600
     );
-    if (eventData.playerId === currentPlayerId) {
-      setTimeout(collapseShotAnimation, 80);
-    }
     if (eventData.dynamiteRemoved) {
       messageTimers.push(setTimeout(() => {
         appendGameMessage(
@@ -6958,6 +6959,11 @@ function showGameEvent(eventData) {
         );
       }, 450));
     }
+  }
+
+  /* Setelah pesan Peluru Live/Blank sudah ditampilkan, baru shotgun menyusut. */
+  if (eventData.playerId === currentPlayerId) {
+    finishShotAnimation();
   }
 
   if (Array.isArray(eventData.dynamiteExpired)) {
@@ -7620,19 +7626,21 @@ function triggerDamageFlash() {
 function triggerShotAnimation() {
   if (!shot) return;
   clearTimeout(window.__shotFadeTimer);
-  clearTimeout(window.__shotCollapseTimer);
+  clearTimeout(window.__shotHideTimer);
   shot.classList.remove("hidden", "reload-hidden", "shooting-fade");
+  shot.classList.add("active");
   void shot.offsetWidth;
   shot.classList.add("shooting");
 }
 
-function collapseShotAnimation() {
+function finishShotAnimation() {
   if (!shot) return;
-  clearTimeout(window.__shotCollapseTimer);
+  clearTimeout(window.__shotFadeTimer);
+  clearTimeout(window.__shotHideTimer);
   shot.classList.add("shooting-fade");
-  window.__shotCollapseTimer = setTimeout(() => {
+  window.__shotHideTimer = setTimeout(() => {
     if (!shot) return;
-    shot.classList.remove("shooting", "shooting-fade");
+    shot.classList.remove("shooting", "shooting-fade", "active");
     shot.classList.add("hidden");
   }, 450);
 }
@@ -7640,7 +7648,7 @@ function collapseShotAnimation() {
 function resetShotAnimation() {
   if (!shot) return;
   clearTimeout(window.__shotFadeTimer);
-  clearTimeout(window.__shotCollapseTimer);
+  clearTimeout(window.__shotHideTimer);
   shot.classList.remove("shooting", "shooting-fade");
   shot.style.opacity = "";
   shot.style.transform = "";
@@ -8065,70 +8073,31 @@ function updateShotVisibility() {
   }
 
 
-  const myTurn =
-    gameData.turn.current ===
-    currentPlayerId;
-
-  /* Setelah hasil tembakan, shooter tetap melihat shotgun selama animasi
-     meskipun turn Firebase sudah berpindah ke pemain berikutnya. */
-  const recentOwnShot = gameData.lastEvent?.type === "shot" &&
-    gameData.lastEvent?.playerId === currentPlayerId &&
-    Date.now() - Number(gameData.lastEvent?.at || 0) < 4200;
-  if (recentOwnShot) {
-    shot.classList.remove("hidden", "reload-hidden");
+  /* Shotgun hanya boleh terlihat pada pemain yang benar-benar mendapat giliran.
+     shotPending tidak lagi membuat pemain non-turn ikut melihat shotgun. */
+  const myTurn = gameData.turn.current === currentPlayerId;
+  if (!myTurn) {
+    shot.classList.add("hidden");
+    shot.classList.remove("active", "shooting", "shooting-fade");
     disableShotButtons();
     return;
   }
 
   if (gameData.shotPending) {
-    shot.classList.remove("hidden");
-    shot.classList.remove("reload-hidden");
+    shot.classList.remove("hidden", "reload-hidden");
+    shot.classList.add("active");
     disableShotButtons();
     return;
   }
 
-  if (gameData.lastEvent?.reload && gameData.lastEvent.id) {
-    if (lastReloadEventId !== gameData.lastEvent.id) {
-      lastReloadEventId = gameData.lastEvent.id;
-      reloadShotHiddenUntil = Date.now() + 2500;
-      clearTimeout(reloadShotTimer);
-      reloadShotTimer = setTimeout(() => {
-        if (gameData?.lastEvent?.id === lastReloadEventId) {
-          reloadShotHiddenUntil = 0;
-          updateShotVisibility();
-        }
-      }, 2500);
-    }
+  /* Pemain yang sedang mendapat giliran selalu melihat shotgun.
+     Efek reload hanya mengatur random-shell, bukan menyembunyikan shot. */
+  clearTimeout(reloadShotTimer);
+  reloadShotTimer = null;
+  reloadShotHiddenUntil = 0;
+  lastReloadEventId = null;
 
-    shot.classList.toggle(
-      "reload-hidden",
-      Date.now() < reloadShotHiddenUntil
-    );
-  } else {
-    clearTimeout(reloadShotTimer);
-    reloadShotTimer = null;
-    reloadShotHiddenUntil = 0;
-    lastReloadEventId = null;
-    shot.classList.remove("reload-hidden");
-  }
-
-  if (myTurn) {
-    resetShotAnimation();
-  }
-
-  shot.classList.toggle(
-    "hidden",
-    !myTurn
-  );
-
-
-  if (!myTurn) {
-
-    resetShot();
-
-    return;
-
-  }
+  shot.classList.remove("hidden");
 
 
   const myPlayer =
@@ -8765,9 +8734,6 @@ async function shoot(targetId) {
   }
 
   shootingLocked = true;
-
-  // Animasi dimulai tepat saat tombol Shoot dikonfirmasi, sebelum hasil shell muncul.
-  triggerShotAnimation();
 
   const gameRef = ref(db, "room/game");
   let pendingId = null;
