@@ -656,8 +656,7 @@ body {
 }
 
 .shot:active { transform: translateX(-50%) translateY(-60%); }
-.shot.active { background: transparent; }
-.shot.shooting { background: #333; }
+.shot.active { background: #333; }
 .shot.reload-hidden { display: none !important; }
 
 .shot img {
@@ -677,7 +676,6 @@ body {
 .shot.shooting {
   width: 94px !important;
   height: 94px !important;
-  background: #333;
   transition: width .8s ease, height .8s ease, opacity .45s ease, transform .45s ease;
 }
 
@@ -6183,18 +6181,6 @@ function watchGame() {
       const nextShot =
         nextGameData?.lastShot;
 
-      /* Only the player who clicked Shoot gets the shotgun animation.
-         It starts immediately when shotPending is created, before the shell result. */
-      const nextPendingShot = nextGameData?.shotPending;
-      if (
-        nextPendingShot?.id &&
-        nextPendingShot.playerId === currentPlayerId &&
-        nextPendingShot.id !== window.__lastRenderedShotPendingId
-      ) {
-        window.__lastRenderedShotPendingId = nextPendingShot.id;
-        triggerShotAnimation();
-      }
-
       if (
         nextShot?.id &&
         nextShot.id !== lastRenderedShotId &&
@@ -6204,13 +6190,6 @@ function watchGame() {
       ) {
         lastRenderedShotId = nextShot.id;
         triggerDamageFlash();
-      }
-
-      if (
-        nextShot?.id &&
-        nextShot.shooterId === currentPlayerId
-      ) {
-        finishShotAnimation();
       }
 
       gameData =
@@ -6904,7 +6883,6 @@ function showGameEvent(eventData) {
   }
 
   if (eventData.result === "live") {
-    if (eventData.playerId === currentPlayerId) triggerShotAnimation();
     const damageText = Number(eventData.damage || 1);
 
     /* Suara ledakan ditembakkan tepat bersamaan dengan teks hasil. */
@@ -6954,6 +6932,10 @@ function showGameEvent(eventData) {
         playGameSound("death", 1, 220);
       }
     }
+    if (eventData.playerId === currentPlayerId) {
+      // Pesan hasil sudah ditambahkan; baru setelah itu shotgun menyusut dan hilang.
+      setTimeout(collapseShotAnimation, 80);
+    }
   } else {
     playGameSound("shot-blank");
     appendGameMessage(
@@ -6964,6 +6946,9 @@ function showGameEvent(eventData) {
       "test-tube",
       3600
     );
+    if (eventData.playerId === currentPlayerId) {
+      setTimeout(collapseShotAnimation, 80);
+    }
     if (eventData.dynamiteRemoved) {
       messageTimers.push(setTimeout(() => {
         appendGameMessage(
@@ -7635,29 +7620,18 @@ function triggerDamageFlash() {
 
 function triggerShotAnimation() {
   if (!shot) return;
-
   clearTimeout(window.__shotFadeTimer);
-  clearTimeout(window.__shotHideTimer);
-
-  shot.classList.remove("hidden", "reload-hidden", "shooting", "shooting-fade");
-  shot.style.opacity = "";
-  shot.style.transform = "";
-
-  /* Force a fresh transition every time the shooter clicks. */
+  clearTimeout(window.__shotCollapseTimer);
+  shot.classList.remove("hidden", "reload-hidden", "shooting-fade");
   void shot.offsetWidth;
   shot.classList.add("shooting");
 }
 
-function finishShotAnimation() {
+function collapseShotAnimation() {
   if (!shot) return;
-
-  clearTimeout(window.__shotFadeTimer);
-  clearTimeout(window.__shotHideTimer);
-
-  /* The shell result has already appeared: now shrink and hide the shotgun. */
+  clearTimeout(window.__shotCollapseTimer);
   shot.classList.add("shooting-fade");
-
-  window.__shotHideTimer = setTimeout(() => {
+  window.__shotCollapseTimer = setTimeout(() => {
     if (!shot) return;
     shot.classList.remove("shooting", "shooting-fade");
     shot.classList.add("hidden");
@@ -7667,12 +7641,11 @@ function finishShotAnimation() {
 function resetShotAnimation() {
   if (!shot) return;
   clearTimeout(window.__shotFadeTimer);
-  clearTimeout(window.__shotHideTimer);
+  clearTimeout(window.__shotCollapseTimer);
   shot.classList.remove("shooting", "shooting-fade");
   shot.style.opacity = "";
   shot.style.transform = "";
 }
-
 function renderShotEffects() {
   const shotData = gameData?.lastShot;
 
@@ -8793,6 +8766,9 @@ async function shoot(targetId) {
   }
 
   shootingLocked = true;
+
+  // Animasi dimulai tepat saat tombol Shoot dikonfirmasi, sebelum hasil shell muncul.
+  triggerShotAnimation();
 
   const gameRef = ref(db, "room/game");
   let pendingId = null;
