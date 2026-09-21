@@ -9,7 +9,7 @@
     name="viewport"
     content="width=device-width, initial-scale=1.0">
 
-  <title>Buckshot Roulette - BETA5</title>
+  <title>Buckshot Roulette</title>
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -54,14 +54,6 @@ body {
   min-height: 100dvh;
   overflow: hidden;
   background: #1f1f1f;
-}
-
-.lobby {
-  height: 100dvh;
-  min-height: 100dvh;
-  overflow-x: hidden;
-  overflow-y: auto;
-  -webkit-overflow-scrolling: touch;
 }
 
 
@@ -647,66 +639,53 @@ body {
 .shot {
   position: absolute;
   display: flex;
+  background: #333;
   left: 50%;
   top: 45%;
-  width: 76px !important;
-  height: 76px !important;
-  max-width: 76px;
-  max-height: 76px;
+  width: 84px !important;
+  height: 84px !important;
   align-items: center;
   justify-content: center;
+  border-radius: 50%;
   transform: translateX(-50%) translateY(-60%);
   padding: 0;
-  border-radius: 50%;
   cursor: pointer;
-  transition: none;
   overflow: hidden;
   z-index: 1;
+  transition: width .8s ease, height .8s ease, opacity .45s ease, transform .45s ease;
 }
 
-.shot:active {
-  transform: translateX(-50%) translateY(-60%);
-}
-
-.shot.active {
-  background: #333;
-}
-
-.shot.reload-hidden {
-  display: none !important;
-}
+.shot:active { transform: translateX(-50%) translateY(-60%); }
+.shot.active { background: #333; }
+.shot.reload-hidden { display: none !important; }
 
 .shot img {
-  display: block;
-  width: 58px !important;
-  height: 58px !important;
-  max-width: 58px !important;
-  max-height: 58px !important;
+  width: 84px;
+  height: 84px;
+  padding: 14px;
+  box-sizing: border-box;
   object-fit: contain;
 }
 
-.shot.shooting {
-  animation: shotDisappear .55s cubic-bezier(.16,.86,.24,1) forwards;
-  pointer-events: none;
+.shot-out {
+  position: absolute;
+  transition: transform .8s ease, width .8s ease, height .8s ease;
+  transform: rotate(0deg) scale(1);
 }
 
-@keyframes shotDisappear {
-  0% {
-    opacity: 1;
-    transform: translateX(-50%) translateY(-60%) rotate(0deg) scale(1);
-  }
-  24% {
-    opacity: 1;
-    transform: translateX(-50%) translateY(-60%) rotate(260deg) scale(.92);
-  }
-  55% {
-    opacity: .95;
-    transform: translateX(-50%) translateY(-60%) rotate(620deg) scale(.62);
-  }
-  100% {
-    opacity: 0;
-    transform: translateX(-50%) translateY(-60%) rotate(1080deg) scale(0);
-  }
+.shot.shooting {
+  width: 94px !important;
+  height: 94px !important;
+  transition: width .8s ease, height .8s ease, opacity .45s ease, transform .45s ease;
+}
+
+.shot.shooting .shot-out {
+  transform: rotate(360deg) scale(1.2);
+}
+
+.shot.shooting.shooting-fade {
+  opacity: 0;
+  transform: translateX(-50%) translateY(-60%) scale(.35);
 }
 
 /* =========================
@@ -1529,6 +1508,12 @@ body {
 }
 .leaderboard-row.rank-3 .leaderboard-rank { color: #cd7f32; font-size: 17px; }
 
+
+.leaderboard-row.rank-1 .leaderboard-name, .leaderboard-row.rank-1 .leaderboard-wins { color:#ffd700; }
+.leaderboard-row.rank-2 .leaderboard-name, .leaderboard-row.rank-2 .leaderboard-wins { color:#c0c0c0; }
+.leaderboard-row.rank-3 .leaderboard-name, .leaderboard-row.rank-3 .leaderboard-wins { color:#cd7f32; }
+.leaderboard-row.rank-4 .leaderboard-name, .leaderboard-row.rank-4 .leaderboard-wins,
+.leaderboard-row.rank-5 .leaderboard-name, .leaderboard-row.rank-5 .leaderboard-wins { color:#b8b8b8; }
 .shot-list .random-shot-btn {
   display: flex;
   align-items: center;
@@ -2666,7 +2651,8 @@ body {
   <!-- SHOTGUN -->
 
   <div class="shot hidden">
-    <img src="shot.png" alt="Shotgun">
+    <img class="shot-out" src="shot2.png" alt="Shotgun out">
+    <img src="crosshair.png" alt="Crosshair">
   </div>
 
 
@@ -4713,19 +4699,20 @@ function shuffleArray(array) {
 ========================= */
 
 const RARITY_DEFINITIONS = {
-  common: { name: "Common", weight: 60 },
+  common: { name: "Common", weight: 55 },
   uncommon: { name: "Uncommon", weight: 25 },
-  rare: { name: "Rare", weight: 10 },
-  legendary: { name: "Legendary", weight: 5 }
+  rare: { name: "Rare", weight: 12 },
+  epic: { name: "Epic", weight: 6 },
+  legend: { name: "Legend", weight: 2 }
 };
 
 const DEFAULT_ITEM_RARITIES = {
   magnifying_glass: "common", hand_saw: "uncommon", cigarette: "common", handcuff: "rare",
   beer: "common", inverter: "rare", expired_medicine: "uncommon", adrenaline: "rare",
   burner_phone: "uncommon", remote: "rare", jammer: "rare", reflector_mirror: "rare",
-  dynamite: "uncommon", dice: "rare", rewind_film: "legendary", coin_flip: "uncommon",
-  life_steal: "rare", megazine: "legendary", ace_card: "legendary", magnet: "uncommon",
-  clapperboard: "rare", wrench: "rare", eraser: "uncommon", hook: "uncommon", future_mail: "uncommon", stamp: "rare", hourglass: "rare", overtake_ticket: "legendary", dead_battery: "rare", floppy_disk: "uncommon"
+  dynamite: "uncommon", dice: "rare", rewind_film: "legend", coin_flip: "uncommon",
+  life_steal: "rare", megazine: "legend", ace_card: "legend", magnet: "uncommon",
+  clapperboard: "rare", wrench: "rare", eraser: "uncommon", hook: "uncommon", future_mail: "uncommon", stamp: "rare", hourglass: "rare", overtake_ticket: "legend", dead_battery: "rare", floppy_disk: "uncommon"
 };
 
 const DEFAULT_GAME_SETTINGS = {
@@ -5263,8 +5250,6 @@ function setItemMode(type, slotIndex) {
   if (adrenalineActive && sourceId !== currentPlayerId && type === "adrenaline") return;
   if (type === "expired_medicine" && Number(gameData.players?.[currentPlayerId]?.hp ?? 0) >= Number(gameData.settings?.maxHealth ?? 4)) return;
 
-  shotMode = false;
-  selectedTarget = null;
   selectedItemType = type;
   selectedItemSlot = slotIndex;
   selectedItemSourceId = sourceId;
@@ -5533,7 +5518,6 @@ async function useSelectedItem(targetId = null) {
         sourcePlayer.items = rewardResult.inventory;
         hourglassRewards = rewardResult.added;
         player.skipNextReloadReward = true;
-        player.skipNextReloadRewardSetId = null;
         inventoryHandled = true;
       } else if (type === "dead_battery") {
         if (player.aceCardActive === true) return;
@@ -5751,6 +5735,7 @@ async function useSelectedItem(targetId = null) {
     });
 
     if (!result.committed) {
+      await clearStaleShotPending(pendingId);
       const snapshot = await get(gameRef);
       if (snapshot.exists()) {
         gameData = snapshot.val();
@@ -6038,7 +6023,6 @@ function createGameState(
         coinFlipLocked: false,
         shellItemUses: {},
         skipNextReloadReward: false,
-        skipNextReloadRewardSetId: null,
         floppyStoredShell: null, floppyStoredAtTurn: null, floppyReady: false,
         deadBatteryActivatedAt: null,
         shieldActive: false, shieldActivatedTurn: null,
@@ -6665,17 +6649,7 @@ function showGameEvent(eventData) {
       magnifying_glass: "magnify-glass",
       handcuff: "handcuff",
       hand_saw: "hand-saw",
-      cigarette: "cigarette",
-      clapperboard: "clapperboard",
-      wrench: "wrench",
-      eraser: "eraser",
-      hook: "hook",
-      future_mail: "future-mail",
-      stamp: "stamp",
-      hourglass: "hourglass",
-      overtake_ticket: "overtake-ticket",
-      dead_battery: "dead-battery",
-      floppy_disk: "floppy-disk",
+      cigarette: "cigeratte",
       beer: "beer",
       inverter: "inverter",
       expired_medicine: "expired-medicine",
@@ -6689,8 +6663,13 @@ function showGameEvent(eventData) {
       rewind_film: "rewind-film",
       coin_flip: "coin-flip",
       megazine: "megazine",
-      ace_card: "ace-card",
-      magnet: "magnet"
+      clapperboard: "clapperboard",
+      wrench: "wrench",
+      eraser: "eraser",
+      hook: "hook",
+      future_mail: "future-mail",
+      dead_battery: "dead-battery",
+      floppy_disk: "floppy-disk"
     };
     playGameSound(soundMap[eventData.itemType] || "get-item");
 
@@ -6756,8 +6735,7 @@ function showGameEvent(eventData) {
     }
 
     if (eventData.itemType === "floppy_disk") {
-      const shellLabel = eventData.floppyStoredShell === "live" ? "LIVE" : "BLANK";
-      appendGameMessage(`${userName} menyimpan shell ${shellLabel} untuk giliran berikutnya.`, "info", definition?.icon || "save", 3600);
+      appendGameMessage(`${userName} menyimpan shell untuk giliran berikutnya.`, "info", definition?.icon || "save", 3600);
       return;
     }
 
@@ -6883,8 +6861,7 @@ function showGameEvent(eventData) {
   }
 
   if (eventData.type === "shot_pending") {
-    /* Animasi senjata dimulai tepat ketika aksi menembak dimulai. */
-    triggerShotAnimation();
+    /* Pesan tembakan tampil terlebih dahulu. Animasi shotgun dimulai saat hasil shell muncul. */
 
     /* Chat "X menembak Y..." menjadi titik mulai charge-shot. */
     playGameSound("charge-shot");
@@ -6906,6 +6883,7 @@ function showGameEvent(eventData) {
   }
 
   if (eventData.result === "live") {
+    if (eventData.playerId === currentPlayerId) triggerShotAnimation();
     const damageText = Number(eventData.damage || 1);
 
     /* Suara ledakan ditembakkan tepat bersamaan dengan teks hasil. */
@@ -7023,8 +7001,9 @@ function showGameEvent(eventData) {
       }
 
       if (eventData.reload) {
-        /* Random Shell muncul: IN langsung, lalu OUT tepat setelah IN selesai. */
-        playGameSoundSequence(["in", "out"]);
+        /* OUT + IN -> Random Shell -> hilang -> spin item -> item masuk inventory. */
+        playGameSound("out");
+        playGameSound("in", 1, 120);
         appendGameMessage("Shell telah habis", "info", "refresh-cw", 2600);
 
         messageTimers.push(setTimeout(() => {
@@ -7081,12 +7060,23 @@ function isDeadBatteryHiddenForCurrentPlayer() {
 function updateDeadBatteryUI() {
   const hidden = isDeadBatteryHiddenForCurrentPlayer();
   document.querySelector(".game-panel")?.classList.toggle("dead-battery-hidden", hidden);
-  document.querySelector(".shot-player-health")?.classList.toggle("dead-battery-hidden", hidden);
   document.querySelector(".gp-bottom")?.classList.toggle("dead-battery-hidden", hidden);
   document.querySelector(".random-shell")?.classList.toggle("dead-battery-hidden", hidden);
   gameMessage?.classList.toggle("dead-battery-hidden", hidden);
   gameListButton?.classList.toggle("game-list-disabled", hidden);
   if (hidden) closeGamePlayerList();
+}
+
+async function clearStaleShotPending(pendingId) {
+  if (!pendingId) return;
+  try {
+    await runTransaction(ref(db, "room/game"), game => {
+      if (!game?.shotPending || game.shotPending.id !== pendingId) return;
+      return { ...game, shotPending: null, itemPending: null };
+    });
+  } catch (error) {
+    console.debug("Gagal membersihkan shotPending lama:", error);
+  }
 }
 
 /* =========================
@@ -7100,7 +7090,6 @@ async function renderGameState() {
   }
 
   await loadGamePlayers();
-  updateDeadBatteryUI();
 
   showGameEvent(gameData.lastEvent);
 
@@ -7126,6 +7115,11 @@ async function renderGameState() {
   updateDeadBatteryUI();
 
   updateNextPlayer();
+
+  /* Jangan biarkan shotPending lama membuat game stuck. */
+  if (gameData.shotPending && Number(gameData.shotPending.at || 0) > 0 && Date.now() - Number(gameData.shotPending.at) > 6500) {
+    clearStaleShotPending(gameData.shotPending.id);
+  }
 
   updateShotVisibility();
 
@@ -7620,9 +7614,16 @@ function triggerDamageFlash() {
 
 function triggerShotAnimation() {
   if (!shot) return;
-  shot.classList.remove("hidden", "reload-hidden", "shooting");
+  shot.classList.remove("hidden", "reload-hidden", "shooting", "shooting-fade");
   void shot.offsetWidth;
   shot.classList.add("shooting");
+  clearTimeout(window.__shotFadeTimer);
+  window.__shotFadeTimer = setTimeout(() => {
+    shot.classList.add("shooting-fade");
+    setTimeout(() => {
+      if (shot) { shot.classList.remove("shooting", "shooting-fade"); shot.classList.add("hidden"); }
+    }, 450);
+  }, 3600);
 }
 
 function resetShotAnimation() {
@@ -8055,6 +8056,17 @@ function updateShotVisibility() {
     gameData.turn.current ===
     currentPlayerId;
 
+  /* Setelah hasil tembakan, shooter tetap melihat shotgun selama animasi
+     meskipun turn Firebase sudah berpindah ke pemain berikutnya. */
+  const recentOwnShot = gameData.lastEvent?.type === "shot" &&
+    gameData.lastEvent?.playerId === currentPlayerId &&
+    Date.now() - Number(gameData.lastEvent?.at || 0) < 4200;
+  if (recentOwnShot) {
+    shot.classList.remove("hidden", "reload-hidden");
+    disableShotButtons();
+    return;
+  }
+
   if (gameData.shotPending) {
     shot.classList.remove("hidden");
     shot.classList.remove("reload-hidden");
@@ -8191,8 +8203,6 @@ function closeGameProfile() {
 
 async function leaveGame() {
   if (!currentPlayerId || !roomData || roomData.status !== "playing") return;
-  if (!confirm("Leave Game? Kamu akan keluar dari permainan ini.")) return;
-
   gameProfileLeave.disabled = true;
   gameProfileLeave.textContent = "Leaving...";
 
@@ -8366,12 +8376,6 @@ playerBtn.addEventListener(
 
     if (itemMode && selectedItemType) {
       if (gameData?.turn?.current !== currentPlayerId) return;
-      if (ITEM_DEFINITIONS[selectedItemType]?.target === true) {
-        renderPlayerPopup();
-        popup.classList.remove("hidden");
-        overlay.classList.remove("hidden");
-        return;
-      }
       useSelectedItem();
       return;
     }
@@ -8599,7 +8603,7 @@ function renderPlayerPopup() {
             ${player.name}
           </span>
 
-          <span class="st-healt shot-player-health ${isDeadBatteryHiddenForCurrentPlayer() ? "dead-battery-hidden" : ""}">
+          <span class="st-healt">
             (${player.hp})
           </span>
 
@@ -9014,12 +9018,8 @@ async function shoot(targetId) {
               const result = addItemRewards(players[id].items, rewards, 8);
               players[id].items = result.inventory;
               itemRewards[id] = result.added;
-            } else {
-              /* Hourglass sudah memberi 2 item saat dipakai; reload berikutnya tidak memberi item lagi. */
-              itemRewards[id] = [];
             }
             players[id].skipNextReloadReward = false;
-            players[id].skipNextReloadRewardSetId = null;
             players[id].sawActive = false;
             players[id].shellItemUses = {};
           }
