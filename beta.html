@@ -5,8 +5,6 @@
 
   <meta charset="UTF-8">
 
-  <meta name="theme-color" content="#1a1a1a">
-
   <meta
     name="viewport"
     content="width=device-width, initial-scale=1.0">
@@ -790,15 +788,15 @@ body {
   font-weight: bold;
 }
 
-.item-info-heading {
+.item-info-actions {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 10px;
 }
 
-.item-info-top > svg {
-  cursor: pointer;
-}
+.item-info-actions svg { width: 18px; height: 18px; }
+.item-info-actions #itemInfoIcon { cursor: default; }
+.item-info-actions #itemInfoClose { cursor: pointer; }
 
 .item-info-body {
   padding: 12px 12px;
@@ -1434,6 +1432,7 @@ body {
   cursor: not-allowed;
   pointer-events: none;
 }
+.lobby-settings-btn.settings-owner-visible { opacity: 1 !important; }
 
 .leaderboard {
   display: flex; flex-direction: column; gap: 0;
@@ -1443,13 +1442,13 @@ body {
   display:flex; align-items:center; justify-content:space-between; padding-bottom:8px; color:white; font-size:18px; font-weight:bold;
 }
 .leaderboard-row {
-  display:flex; align-items:center; gap:9px; min-height:48px; padding:7px 6px; box-sizing:border-box; border-bottom:1.5px solid #555;
+  display:grid; grid-template-columns:24px 36px minmax(0,1fr) 58px; align-items:center; column-gap:9px; min-height:48px; padding:7px 10px; box-sizing:border-box; border-bottom:1.5px solid #555;
 }
 .leaderboard-row:last-child { border-bottom:none; }
-.leaderboard-rank { width:24px; flex:0 0 24px; color:#888; text-align:center; font-weight:bold; line-height:1; }
-.leaderboard-row .profile { width:36px; height:36px; flex:0 0 36px; font-size:18px; }
-.leaderboard-name { min-width:0; flex:1 1 auto; overflow:hidden; color:#ddd; font-size:17px; line-height:36px; text-overflow:ellipsis; white-space:nowrap; }
-.leaderboard-wins { display:grid; grid-template-columns:20px 28px; align-items:center; column-gap:4px; width:52px; min-width:52px; flex:0 0 52px; justify-content:normal; color:gold; font-size:15px; font-weight:bold; line-height:1; }
+.leaderboard-rank { width:24px; color:#888; text-align:center; font-weight:bold; line-height:1; }
+.leaderboard-row .profile { width:36px; height:36px; font-size:18px; }
+.leaderboard-name { min-width:0; overflow:hidden; color:#ddd; font-size:17px; line-height:36px; text-overflow:ellipsis; white-space:nowrap; }
+.leaderboard-wins { display:grid; grid-template-columns:20px 32px; align-items:center; column-gap:6px; width:58px; min-width:58px; justify-content:end; color:gold; font-size:15px; font-weight:bold; line-height:1; }
 .leaderboard-wins svg { width:17px; height:17px; justify-self:center; }
 .leaderboard-wins span { text-align:right; min-width:28px; }
 .leaderboard-wins svg { width:17px; height:17px; }
@@ -1494,22 +1493,22 @@ body {
 .leaderboard-row.rank-1 {
   background: rgba(255, 215, 0, .13);
   border-radius: 6px 6px 0 0;
-  padding-left: 6px;
-  padding-right: 6px;
+  padding-left: 10px;
+  padding-right: 10px;
 }
 .leaderboard-row.rank-1 .leaderboard-rank { color: #ffd700; font-size: 19px; }
 .leaderboard-row.rank-2 {
   background: rgba(192, 192, 192, .10);
   border-radius: 0px;
-  padding-left: 6px;
-  padding-right: 6px;
+  padding-left: 10px;
+  padding-right: 10px;
 }
 .leaderboard-row.rank-2 .leaderboard-rank { color: #c0c0c0; font-size: 18px; }
 .leaderboard-row.rank-3 {
   background: rgba(205, 127, 50, .10);
   border-radius: 0px;
-  padding-left: 6px;
-  padding-right: 6px;
+  padding-left: 10px;
+  padding-right: 10px;
 }
 .leaderboard-row.rank-3 .leaderboard-rank { color: #cd7f32; font-size: 17px; }
 
@@ -1549,7 +1548,7 @@ body {
   height: 18px;
   stroke-width: 2;
 }
-.settings-save { display:none !important; }
+.settings-save { display:flex; }
 
 /* =========================
    GAME SETTINGS / ITEM LIST
@@ -2196,8 +2195,8 @@ body {
 .leaderboard-row.rank-4,
 .leaderboard-row.rank-5 {
   box-sizing: border-box;
-  padding-left: 6px;
-  padding-right: 6px;
+  padding-left: 10px;
+  padding-right: 10px;
 }
 
 </style>
@@ -2707,11 +2706,11 @@ body {
 <div class="item-info-popup hidden" id="itemInfoPopup">
   <div class="item-info-card">
     <div class="item-info-top">
-      <div class="item-info-heading">
-        <i id="itemInfoIcon" data-lucide="package"></i>
-        <span id="itemInfoTitle">Item</span>
+      <span id="itemInfoTitle">Item</span>
+      <div class="item-info-actions">
+        <i id="itemInfoIcon" data-lucide="package" title="Item"></i>
+        <i id="itemInfoClose" data-lucide="x" title="Tutup"></i>
       </div>
-      <i id="itemInfoClose" data-lucide="x"></i>
     </div>
     <div class="item-info-body" id="itemInfoText"></div>
   </div>
@@ -4033,26 +4032,6 @@ function watchRoom() {
           ? snapshot.val()
           : null;
 
-      /*
-         Settings diambil dari /room secara realtime. Jika popup Settings
-         sedang terbuka, perubahan dari pemain lain langsung masuk ke UI
-         tanpa perlu menutup atau membuka popup lagi.
-      */
-      const nextSettings = roomData?.settings;
-      if (
-        settingsPopup &&
-        !settingsPopup.classList.contains("hidden") &&
-        JSON.stringify(previousSettings || null) !== JSON.stringify(nextSettings || null)
-      ) {
-        populateSettingsUI(getGameSettings(nextSettings));
-        settingsMessage.textContent = "Settings diperbarui dari pemain lain.";
-        setTimeout(() => {
-          if (settingsPopup && !settingsPopup.classList.contains("hidden")) {
-            settingsMessage.textContent = "";
-          }
-        }, 1200);
-      }
-
       await renderRoom();
 
     }
@@ -4624,33 +4603,6 @@ settingsCancel.addEventListener("click", closeSettings);
 settingsSave.addEventListener("click", saveSettings);
 if (openSettingsBtn) openSettingsBtn.disabled = true;
 
-/*
-   Semua kontrol Settings disimpan otomatis saat berubah. Jadi pemain lain
-   yang sedang membuka Settings akan menerima perubahan melalui onValue(room).
-*/
-[
-  settingMaxHealth, settingMinShell, settingMaxShell, settingMinEach,
-  settingStartingItems, settingItemReward, settingRarity,
-  settingRealtimeShell, settingShowShellNumber
-].forEach(input => {
-  input.addEventListener("change", queueRealtimeSettingsSave);
-  if (input.type === "number") {
-    input.addEventListener("input", queueRealtimeSettingsSave);
-  }
-});
-
-settingsItemGrid.addEventListener("change", event => {
-  if (event.target.matches("[data-setting-item]")) {
-    queueRealtimeSettingsSave();
-  }
-});
-
-settingsRarityGrid.addEventListener("change", event => {
-  if (event.target.matches("[data-setting-rarity]")) {
-    queueRealtimeSettingsSave();
-  }
-});
-
 let raritySettingsExpanded = false;
 
 function updateRarityPanelVisibility() {
@@ -4897,14 +4849,8 @@ function collectSettingsFromUI() {
   };
 }
 
-let settingsAutoSaveTimer = null;
-let settingsAutoSaveRunning = false;
-let settingsAutoSavePending = false;
-
 async function persistSettings(settings, closeAfter = false) {
-  if (!roomData || roomData.status !== "lobby" || !roomData.players?.[currentPlayerId]) return false;
-  settingsAutoSavePending = false;
-  settingsAutoSaveRunning = true;
+  if (!roomData || roomData.status !== "lobby" || !roomData.players?.[currentPlayerId] || currentPlayerId !== "-P1MkNRzd5pPinl1IEeP") return false;
   settingsMessage.textContent = "Menyimpan...";
   try {
     const result = await runTransaction(ref(db, "room"), room => {
@@ -4913,34 +4859,18 @@ async function persistSettings(settings, closeAfter = false) {
     });
     if (!result.committed) { settingsMessage.textContent = "Gagal menyimpan settings."; return false; }
     await set(ref(db, "gameSettings"), settings);
-    if (closeAfter) closeSettings();
-    else {
-      settingsMessage.textContent = "Tersimpan realtime.";
-      setTimeout(() => { if (settingsPopup && !settingsPopup.classList.contains("hidden")) settingsMessage.textContent = ""; }, 700);
-    }
+    settingsMessage.textContent = "Settings tersimpan.";
+    if (closeAfter) setTimeout(closeSettings, 250);
     return true;
   } catch (error) {
     console.error("Save settings error:", error);
     settingsMessage.textContent = "Gagal menyimpan settings.";
     return false;
-  } finally {
-    settingsAutoSaveRunning = false;
-    if (settingsAutoSavePending) queueRealtimeSettingsSave();
   }
 }
 
-function queueRealtimeSettingsSave() {
-  clearTimeout(settingsAutoSaveTimer);
-  settingsAutoSaveTimer = setTimeout(async () => {
-    if (!roomData || roomData.status !== "lobby" || !roomData.players?.[currentPlayerId]) return;
-    const result = collectSettingsFromUI();
-    if (result.error) { settingsMessage.textContent = result.error; return; }
-    if (settingsAutoSaveRunning) { settingsAutoSavePending = true; return; }
-    await persistSettings(result.settings, false);
-  }, 300);
-}
-
 async function saveSettings() {
+  if (currentPlayerId !== "-P1MkNRzd5pPinl1IEeP") return;
   const result = collectSettingsFromUI();
   if (result.error) { settingsMessage.textContent = result.error; return; }
   await persistSettings(result.settings, true);
@@ -4958,6 +4888,7 @@ function renderLobbySettingsButton() {
   /* Settings hanya tersedia setelah masuk ke room lobby. */
   openSettingsBtn.classList.toggle("hidden", !(joined && isSettingsOwner));
   openSettingsBtn.disabled = !(joined && isSettingsOwner);
+  openSettingsBtn.classList.toggle("settings-owner-visible", joined && isSettingsOwner);
 }
 
 /* =========================
@@ -5293,24 +5224,32 @@ function setItemMode(type, slotIndex) {
 }
 
 async function showSelectedItemInfo() {
-  if (!selectedItemType) return;
-
+  if (!selectedItemType || !gameData) return;
   const definition = ITEM_DEFINITIONS[selectedItemType];
   if (!definition || !itemInfoPopup) return;
 
-  let text = definition.info;
+  let html = definition.info;
+  const index = Number(gameData.shells?.current || 0);
+  const sequence = Array.isArray(gameData.shells?.sequence) ? gameData.shells.sequence : [];
 
   if (selectedItemType === "magnifying_glass") {
-    const index = Number(gameData.shells?.current || 0);
-    const type = gameData.shells?.sequence?.[index];
-    const label = type === "live" ? "LIVE" : type === "blank" ? "BLANK" : "tidak diketahui";
-    text = `Peluru saat ini: ${label}`;
+    const type = sequence[index];
+    const label = type === "live" ? '<span style="color:crimson">LIVE</span>' : type === "blank" ? '<span style="color:#999">BLANK</span>' : 'tidak diketahui';
+    html = `Peluru saat ini: ${label}`;
+  } else if (selectedItemType === "future_mail") {
+    const nextOne = sequence[index + 1] || null;
+    const nextTwo = sequence[index + 2] || null;
+    if (nextOne && nextTwo) {
+      const a = nextOne === "live" ? '<span style="color:crimson">LIVE</span>' : '<span style="color:#999">BLANK</span>';
+      const b = nextTwo === "live" ? '<span style="color:crimson">LIVE</span>' : '<span style="color:#999">BLANK</span>';
+      html = `Peluru berikutnya ${a} ${b}`;
+    }
   }
 
-  itemInfoIcon.outerHTML = `<i id="itemInfoIcon" data-lucide="${definition.icon}"></i>`;
+  itemInfoIcon.outerHTML = `<i id="itemInfoIcon" data-lucide="${definition.icon}" title="${definition.name}"></i>`;
   itemInfoIcon = document.querySelector("#itemInfoIcon");
   itemInfoTitle.textContent = definition.name;
-  itemInfoText.textContent = text;
+  itemInfoText.innerHTML = html;
   itemInfoText.style.color = "#ddd";
   itemInfoPopup.classList.remove("hidden");
   lucide.createIcons();
