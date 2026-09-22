@@ -1441,13 +1441,15 @@ body {
   display:flex; align-items:center; justify-content:space-between; padding-bottom:8px; color:white; font-size:18px; font-weight:bold;
 }
 .leaderboard-row {
-  display:flex; align-items:center; gap:9px; min-height:48px; padding:7px 0; border-bottom:1.5px solid #555;
+  display:flex; align-items:center; gap:9px; min-height:48px; padding:7px 6px; box-sizing:border-box; border-bottom:1.5px solid #555;
 }
 .leaderboard-row:last-child { border-bottom:none; }
-.leaderboard-rank { width:24px; flex:0 0 24px; color:#888; text-align:center; font-weight:bold; }
-.leaderboard-row .profile { width:36px; height:36px; font-size:18px; }
-.leaderboard-name { min-width:0; flex:1; overflow:hidden; color:#ddd; font-size:17px; text-overflow:ellipsis; white-space:nowrap; }
-.leaderboard-wins { display:flex; align-items:center; gap:5px; min-width:42px; justify-content:flex-end; flex-shrink:0; color:gold; font-size:15px; font-weight:bold; }
+.leaderboard-rank { width:24px; flex:0 0 24px; color:#888; text-align:center; font-weight:bold; line-height:1; }
+.leaderboard-row .profile { width:36px; height:36px; flex:0 0 36px; font-size:18px; }
+.leaderboard-name { min-width:0; flex:1 1 auto; overflow:hidden; color:#ddd; font-size:17px; line-height:36px; text-overflow:ellipsis; white-space:nowrap; }
+.leaderboard-wins { display:grid; grid-template-columns:20px 28px; align-items:center; column-gap:4px; width:52px; min-width:52px; flex:0 0 52px; justify-content:normal; color:gold; font-size:15px; font-weight:bold; line-height:1; }
+.leaderboard-wins svg { width:17px; height:17px; justify-self:center; }
+.leaderboard-wins span { text-align:right; min-width:28px; }
 .leaderboard-wins svg { width:17px; height:17px; }
 .leaderboard-empty { padding:10px 0 4px; color:#777; text-align:center; font-size:14px; }
 .winner-leaderboard {
@@ -1484,8 +1486,8 @@ body {
   font-size: 13px;
 }
 .winner-leaderboard-list .leaderboard-rank {
-  width: 26px;
-  flex-basis: 26px;
+  width: 24px;
+  flex-basis: 24px;
 }
 .leaderboard-row.rank-1 {
   background: rgba(255, 215, 0, .13);
@@ -2183,6 +2185,17 @@ body {
 
 .hidden {
   display: none !important;
+}
+
+/* Leaderboard alignment: every rank uses the same columns. */
+.leaderboard-row.rank-1,
+.leaderboard-row.rank-2,
+.leaderboard-row.rank-3,
+.leaderboard-row.rank-4,
+.leaderboard-row.rank-5 {
+  box-sizing: border-box;
+  padding-left: 6px;
+  padding-right: 6px;
 }
 
 </style>
@@ -4600,7 +4613,10 @@ leftBtn.addEventListener(
    LOBBY SETTINGS / ITEM LIST
 ========================= */
 
-//SETTINGS DISABLE SEMENTARA openSettingsBtn.addEventListener("click", openSettings);
+openSettingsBtn.addEventListener("click", () => {
+  if (currentPlayerId !== "-P1MkNRzd5pPinl1IEeP") return;
+  openSettings();
+});
 settingsClose.addEventListener("click", closeSettings);
 settingsCancel.addEventListener("click", closeSettings);
 settingsSave.addEventListener("click", saveSettings);
@@ -4929,6 +4945,8 @@ async function saveSettings() {
 }
 
 function renderLobbySettingsButton() {
+  const SETTINGS_OWNER_ID = "-P1MkNRzd5pPinl1IEeP";
+  const isSettingsOwner = currentPlayerId === SETTINGS_OWNER_ID;
   const joined = !!roomData?.players?.[currentPlayerId] && roomData?.status === "lobby";
 
   /* Tombol List item selalu tersedia, termasuk sebelum Join dan saat menunggu game selesai. */
@@ -4936,7 +4954,8 @@ function renderLobbySettingsButton() {
   openItemListBtn.classList.remove("hidden");
 
   /* Settings hanya tersedia setelah masuk ke room lobby. */
-  openSettingsBtn.classList.toggle("hidden", !joined);
+  openSettingsBtn.classList.toggle("hidden", !(joined && isSettingsOwner));
+  openSettingsBtn.disabled = !(joined && isSettingsOwner);
 }
 
 /* =========================
@@ -7642,6 +7661,13 @@ function finishShotAnimation() {
     if (!shot) return;
     shot.classList.remove("shooting", "shooting-fade", "active");
     shot.classList.add("hidden");
+
+    // Jika tembakan Blank ke diri sendiri memberi giliran lagi,
+    // shotgun harus langsung kembali terlihat pada pemain yang sama.
+    // Jika giliran sudah berpindah, updateShotVisibility akan tetap menyembunyikannya.
+    if (typeof updateShotVisibility === "function") {
+      updateShotVisibility();
+    }
   }, 450);
 }
 
