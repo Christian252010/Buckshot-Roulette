@@ -5,13 +5,11 @@
 
   <meta charset="UTF-8">
 
-  <meta name="theme-color" content="#1a1a1a">
-
   <meta
     name="viewport"
     content="width=device-width, initial-scale=1.0">
 
-  <title>Buckshot Roulette - Beta Fix</title>
+  <title>Buckshot Roulette</title>
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -1831,6 +1829,16 @@ body {
   gap: 6px;
 }
 
+.settings-item-grid {
+  max-height: 280px;
+  overflow-y: auto;
+  padding-right: 2px;
+}
+
+.settings-item-toggle {
+  min-height: 38px;
+}
+
 .settings-item-toggle {
   display: flex;
   align-items: center;
@@ -2863,6 +2871,7 @@ let selectedItemSourceId = null;
 let adrenalineTargetId = null;
 let adrenalineActive = false;
 let itemMode = false;
+let itemInfoMode = false;
 
 let gameWatcherStarted = false;
 let roomWatcherStarted = false;
@@ -4345,8 +4354,10 @@ async function renderLobbyPlayers(
 
 async function loadPersistentSettings() {
   try {
-    const snapshot = await get(ref(db, "gameSettings"));
-    return snapshot.exists() ? getGameSettings(snapshot.val()) : buildDefaultSettings();
+    const primary = await get(ref(db, "settings"));
+    if (primary.exists()) return getGameSettings(primary.val());
+    const legacy = await get(ref(db, "gameSettings"));
+    return legacy.exists() ? getGameSettings(legacy.val()) : buildDefaultSettings();
   } catch (error) {
     console.error("Load persistent settings error:", error);
     return buildDefaultSettings();
@@ -4764,6 +4775,7 @@ function populateSettingsUI(settings = getGameSettings()) {
   settingShowShellNumber.checked = settings.showShellNumber;
   settingsMessage.textContent = "";
   settingsItemGrid.innerHTML = "";
+  settingsItemGrid.scrollTop = 0;
 
   Object.entries(ITEM_DEFINITIONS).forEach(([type, definition]) => {
     const row = document.createElement("div");
@@ -4860,6 +4872,7 @@ async function persistSettings(settings, closeAfter = false) {
       return { ...room, settings };
     });
     if (!result.committed) { settingsMessage.textContent = "Gagal menyimpan settings."; return false; }
+    await set(ref(db, "settings"), settings);
     await set(ref(db, "gameSettings"), settings);
     settingsMessage.textContent = "Settings tersimpan.";
     if (closeAfter) setTimeout(closeSettings, 250);
@@ -5120,6 +5133,7 @@ function resetItemSelection() {
   adrenalineTargetId = null;
   adrenalineActive = false;
   itemMode = false;
+  itemInfoMode = false;
   itemElements.forEach(item => item.classList.remove("selected"));
   playerBtn.textContent = "Player";
   selfBtn.textContent = "Self";
@@ -5210,6 +5224,7 @@ function setItemMode(type, slotIndex) {
   selectedItemSlot = slotIndex;
   selectedItemSourceId = sourceId;
   itemMode = true;
+  itemInfoMode = false;
 
   itemElements.forEach(item => {
     item.classList.toggle(
@@ -5225,18 +5240,22 @@ function setItemMode(type, slotIndex) {
   enableShotButtons();
 }
 
-async function showSelectedItemInfo() {
-  if (!selectedItemType || !gameData) return;
+function showSelectedItemInfo() {
+  if (!selectedItemType || !gameData || !itemInfoPopup) return;
   const definition = ITEM_DEFINITIONS[selectedItemType];
-  if (!definition || !itemInfoPopup) return;
+  if (!definition) return;
 
-  let html = definition.info;
   const index = Number(gameData.shells?.current || 0);
   const sequence = Array.isArray(gameData.shells?.sequence) ? gameData.shells.sequence : [];
+  let html = definition.info || "";
 
   if (selectedItemType === "magnifying_glass") {
     const type = sequence[index];
-    const label = type === "live" ? '<span style="color:crimson">LIVE</span>' : type === "blank" ? '<span style="color:#999">BLANK</span>' : 'tidak diketahui';
+    const label = type === "live"
+      ? '<span style="color:crimson">LIVE</span>'
+      : type === "blank"
+        ? '<span style="color:#999">BLANK</span>'
+        : 'tidak diketahui';
     html = `Peluru saat ini: ${label}`;
   } else if (selectedItemType === "future_mail") {
     const nextOne = sequence[index + 1] || null;
@@ -5248,8 +5267,17 @@ async function showSelectedItemInfo() {
     }
   }
 
-  itemInfoIcon.outerHTML = `<i id="itemInfoIcon" data-lucide="${definition.icon}" title="${definition.name}"></i>`;
-  itemInfoIcon = document.querySelector("#itemInfoIcon");
+  itemInfoIcon?.remove();
+  const actions = document.querySelector(".item-info-actions");
+  if (actions) {
+    const icon = document.createElement("i");
+    icon.id = "itemInfoIcon";
+    icon.dataset.lucide = definition.icon;
+    icon.title = definition.name;
+    actions.insertBefore(icon, itemInfoClose);
+    itemInfoIcon = icon;
+  }
+
   itemInfoTitle.textContent = definition.name;
   itemInfoText.innerHTML = html;
   itemInfoText.style.color = "#ddd";
@@ -8367,6 +8395,7 @@ selfBtn.addEventListener(
     }
 
     if (itemMode && selectedItemType) {
+      itemInfoMode = true;
       showSelectedItemInfo();
       return;
     }
