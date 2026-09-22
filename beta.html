@@ -6455,9 +6455,24 @@ function renderGamePlayerList() {
 
     userTop.replaceChildren(identity, health);
 
-    const items = Array.isArray(gameData.players?.[player.id]?.items)
-      ? gameData.players[player.id].items
+    let items = Array.isArray(gameData.players?.[player.id]?.items)
+      ? [...gameData.players[player.id].items]
       : [];
+
+    /* Reward hasil item spin baru ditampilkan di List Player setelah
+       animasi spin lokal selesai. */
+    const spinEvent = gameData?.lastEvent &&
+      (gameData.lastEvent.reload || gameData.lastEvent.itemType === "hourglass")
+      ? gameData.lastEvent
+      : null;
+    if (spinEvent && revealedItemSpinEventId !== spinEvent.id && player.id === currentPlayerId) {
+      const pending = Array.isArray(spinEvent.itemRewards?.[currentPlayerId])
+        ? spinEvent.itemRewards[currentPlayerId]
+        : [];
+      if (pending.length) {
+        items.splice(Math.max(0, items.length - pending.length), pending.length);
+      }
+    }
 
     const itemSlots = document.createElement("div");
     itemSlots.className = "pl-items";
@@ -8390,7 +8405,9 @@ selfBtn.addEventListener(
   "click",
   () => {
 
-    if (shootingLocked) {
+    /* Info item tetap dapat dibuka walaupun animasi/item spin sedang
+       mengunci tombol aksi. Info tidak mengonsumsi item. */
+    if (shootingLocked && !(itemMode && selectedItemType)) {
       return;
     }
 
@@ -9230,16 +9247,32 @@ function updateWrenchOverlay() {
 
 function enableShotButtons() {
 
-  if (shootingLocked) {
-    return;
-  }
-
   const playing =
     gameData?.phase === "playing";
   const myTurn =
     playing &&
     !gameData?.itemPending &&
     gameData?.turn?.current === currentPlayerId;
+
+  /* Saat item sedang dipilih, tombol Info harus tetap dapat dipakai.
+     Tombol Use tetap mengikuti lock normal. */
+  if (itemMode && selectedItemType) {
+    playerBtn.textContent = "Use";
+    selfBtn.textContent = "Info";
+    selfBtn.classList.add("info-mode");
+    playerBtn.classList.add("use-mode");
+    playerBtn.disabled = !myTurn || shootingLocked;
+    selfBtn.disabled = false;
+    if (randomShotBtn) randomShotBtn.disabled = true;
+    return;
+  }
+
+  if (shootingLocked) {
+    playerBtn.disabled = true;
+    selfBtn.disabled = true;
+    if (randomShotBtn) randomShotBtn.disabled = true;
+    return;
+  }
 
   if (adrenalineActive && !itemMode) {
     playerBtn.textContent = "Use";
@@ -9252,18 +9285,8 @@ function enableShotButtons() {
     return;
   }
 
-  if (itemMode && selectedItemType) {
-    playerBtn.textContent = "Use";
-    selfBtn.textContent = "Info";
-    selfBtn.classList.add("info-mode");
-    playerBtn.classList.add("use-mode");
-    playerBtn.disabled = !myTurn;
-    selfBtn.disabled = false;
-    if (randomShotBtn) randomShotBtn.disabled = true;
-    return;
-  }
-
   const canShootInteract = myTurn && (shotMode || itemMode);
+
   playerBtn.disabled = !canShootInteract;
   selfBtn.disabled = !canShootInteract;
   if (randomShotBtn) {
@@ -9506,3 +9529,4 @@ initialize();
 
 </body>
 </html>
+  const canShootInteract = myTurn && (shotMode || itemMode);
