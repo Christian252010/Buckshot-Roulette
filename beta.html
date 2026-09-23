@@ -5775,6 +5775,7 @@ async function useSelectedItem(targetId = null) {
       }
       const labels = futureMailResults.map(type => type === "live" ? `<span style="color:crimson">LIVE</span>` : `<span style="color:#999">BLANK</span>`);
       itemInfoTitle.textContent = definition.name;
+      itemInfoText.innerHTML = `Peluru berikutnya ${labels[0]} ${labels[1]}`;
       itemInfoText.style.color = "#ddd";
       itemInfoPopup.classList.remove("hidden");
       lucide.createIcons();
