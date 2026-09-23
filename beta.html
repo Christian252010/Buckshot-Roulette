@@ -708,11 +708,6 @@ body {
   gap: 6px;
 }
 
-.shot-btn .other {
-  flex: 1 1 100%;
-  width: 100%;
-}
-
 .shot-btn button {
   display: flex;
   width: 100%;
@@ -2695,7 +2690,7 @@ body {
 
     <div class="shot-btn">
       <button class="other" disabled>Player</button>
-      
+      <button class="self" disabled>Self</button>
     </div>
 
     <div class="items-have">
@@ -5141,10 +5136,8 @@ function resetItemSelection() {
   itemInfoMode = false;
   itemElements.forEach(item => item.classList.remove("selected"));
   playerBtn.textContent = "Player";
-  if (selfBtn) {
-    selfBtn.textContent = "Self";
-    selfBtn.classList.remove("info-mode");
-  }
+  selfBtn.textContent = "Self";
+  selfBtn.classList.remove("info-mode");
   playerBtn.classList.remove("use-mode");
 }
 
@@ -5241,6 +5234,8 @@ function setItemMode(type, slotIndex) {
   });
 
   playerBtn.textContent = "Use";
+  selfBtn.textContent = "Info";
+  selfBtn.classList.add("info-mode");
   playerBtn.classList.add("use-mode");
   enableShotButtons();
 }
@@ -7507,7 +7502,6 @@ function showItemSpin(eventData = gameData?.lastEvent) {
     spin.classList.add("hidden");
     spin.innerHTML = "";
     renderMyItems();
-    renderGamePlayerList();
     return;
   }
 
@@ -8407,7 +8401,7 @@ playerBtn.addEventListener(
    SELF BUTTON
 ========================= */
 
-selfBtn?.addEventListener(
+selfBtn.addEventListener(
   "click",
   () => {
 
@@ -9264,15 +9258,18 @@ function enableShotButtons() {
      Tombol Use tetap mengikuti lock normal. */
   if (itemMode && selectedItemType) {
     playerBtn.textContent = "Use";
+    selfBtn.textContent = "Info";
+    selfBtn.classList.add("info-mode");
     playerBtn.classList.add("use-mode");
     playerBtn.disabled = !myTurn || shootingLocked;
+    selfBtn.disabled = false;
     if (randomShotBtn) randomShotBtn.disabled = true;
     return;
   }
 
   if (shootingLocked) {
     playerBtn.disabled = true;
-    if (selfBtn) selfBtn.disabled = true;
+    selfBtn.disabled = true;
     if (randomShotBtn) randomShotBtn.disabled = true;
     return;
   }
@@ -9283,7 +9280,7 @@ function enableShotButtons() {
     selfBtn.classList.add("info-mode");
     playerBtn.classList.add("use-mode");
     playerBtn.disabled = true;
-    if (selfBtn) selfBtn.disabled = true;
+    selfBtn.disabled = true;
     if (randomShotBtn) randomShotBtn.disabled = true;
     return;
   }
@@ -9296,10 +9293,8 @@ function enableShotButtons() {
     randomShotBtn.disabled = true;
   }
   playerBtn.textContent = "Player";
-  if (selfBtn) {
-    selfBtn.textContent = "Self";
-    selfBtn.classList.remove("info-mode");
-  }
+  selfBtn.textContent = "Self";
+  selfBtn.classList.remove("info-mode");
 
 }
 
@@ -9534,3 +9529,4 @@ initialize();
 
 </body>
 </html>
+  const canShootInteract = myTurn && (shotMode || itemMode);
