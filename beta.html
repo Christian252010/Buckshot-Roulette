@@ -6762,7 +6762,6 @@ function showGameEvent(eventData) {
       icon.setAttribute("data-lucide", definition?.icon || "mail");
       line.appendChild(icon);
       const text = document.createElement("span");
-      text.innerHTML = `Peluru berikutnya ${labels[0] === "LIVE" ? '<span style="color:crimson">LIVE</span>' : '<span style="color:#999">BLANK</span>'} ${labels[1] === "LIVE" ? '<span style="color:crimson">LIVE</span>' : '<span style="color:#999">BLANK</span>'}`;
       line.appendChild(text);
       gameMessage.appendChild(line);
       lucide.createIcons();
