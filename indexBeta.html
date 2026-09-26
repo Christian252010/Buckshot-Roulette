@@ -2212,6 +2212,10 @@ body {
   padding-right: 10px;
 }
 
+
+.target-action-item { display:inline-flex; align-items:center; gap:5px; font-weight:600; }
+.target-action-item svg { width:16px; height:16px; flex:none; }
+.shot-btn button.floppy-unavailable { background:#666 !important; color:#bbb !important; }
 </style>
 
 
@@ -5313,6 +5317,60 @@ function reorderNonAcePlayers(players, ids, mode = "shuffle") {
 }
 
 async function useSelectedItem(targetId = null) {
+  /* Floppy Disk — implementasi baru, terpisah dari sistem item lama.
+     Shell internal memakai index 0-based: #1=0, #4=3.
+     Floppy selalu kembali tepat satu shell, selama bukan #1. */
+  if (selectedItemType === "floppy_disk") {
+    if (!gameData || gameData.phase !== "playing" || shootingLocked) return;
+    const slot = Number(selectedItemSlot);
+    const localShell = Number(gameData.shells?.current);
+    if (!Number.isInteger(localShell) || localShell <= 0) return;
+
+    const floppyResult = await runTransaction(gameRef, game => {
+      if (!game || game.phase !== "playing") return;
+      if (game.turn?.current !== currentPlayerId) return;
+      if (game.shotPending || game.itemPending) return;
+      const player = game.players?.[currentPlayerId];
+      if (!player || Number(player.hp ?? 0) <= 0 || player.wrenched === true) return;
+      const items = Array.isArray(player.items) ? [...player.items] : [];
+      if (items[slot] !== "floppy_disk") return;
+
+      const current = Number(game.shells?.current);
+      const sequence = Array.isArray(game.shells?.sequence) ? game.shells.sequence : [];
+      if (!Number.isInteger(current) || current <= 0 || current >= sequence.length) return;
+
+      const previous = sequence[current - 1];
+      if (previous !== "live" && previous !== "blank") return;
+
+      game.shells.current = current - 1;
+      if (previous === "live") game.shells.alive = Number(game.shells.alive ?? 0) + 1;
+      else game.shells.blank = Number(game.shells.blank ?? 0) + 1;
+
+      items.splice(slot, 1);
+      player.items = items;
+      game.lastEvent = {
+        id: Date.now().toString(36) + Math.random().toString(36).slice(2, 8),
+        type: "item",
+        itemType: "floppy_disk",
+        playerId: currentPlayerId,
+        previousShell: current,
+        restoredShell: current - 1,
+        at: Date.now()
+      };
+      return game;
+    });
+
+    if (floppyResult.committed) {
+      playItemSound("floppy_disk");
+      resetItemSelection();
+      const snapshot = await get(gameRef);
+      if (snapshot.exists()) {
+        gameData = snapshot.val();
+        await renderGameState();
+      }
+    }
+    return;
+  }
   if (!selectedItemType || selectedItemSlot === null || shootingLocked || !gameData) return;
   if (gameData.phase !== "playing" || gameData.turn?.current !== currentPlayerId) {
     resetItemSelection();
@@ -5331,61 +5389,6 @@ async function useSelectedItem(targetId = null) {
   if (!definition) return;
   if (gameData?.settings?.enabledItems?.[type] === false) {
     resetItemSelection();
-    return;
-  }
-
-  /* Floppy Disk: fungsi khusus baru.
-     Shell #N di UI adalah index internal current + 1.
-     Jadi #4 -> current 3 -> kembali ke index 2 (#3). */
-  if (type === "floppy_disk") {
-    const floppyResult = await runTransaction(gameRef, game => {
-      if (!game || game.phase !== "playing") return;
-      if (game.turn?.current !== currentPlayerId || game.shotPending || game.itemPending) return;
-      if (game.players?.[currentPlayerId]?.wrenched === true) return;
-      if (game.settings?.enabledItems?.floppy_disk === false) return;
-
-      const shellIndex = Number(game.shells?.current);
-      const sequence = Array.isArray(game.shells?.sequence) ? game.shells.sequence : [];
-      const total = Number(game.shells?.total ?? sequence.length);
-      if (!Number.isInteger(shellIndex) || shellIndex <= 0 || shellIndex >= total) return;
-
-      const previousIndex = shellIndex - 1;
-      const previousType = sequence[previousIndex];
-      if (previousType !== "live" && previousType !== "blank") return;
-
-      game.shells.current = previousIndex;
-      if (previousType === "live") {
-        game.shells.alive = Number(game.shells.alive ?? 0) + 1;
-      } else {
-        game.shells.blank = Number(game.shells.blank ?? 0) + 1;
-      }
-
-      const player = game.players[currentPlayerId];
-      if (Array.isArray(player?.items) && player.items[slotIndex] === type) {
-        player.items = player.items.filter((_, index) => index !== slotIndex);
-      } else {
-        return;
-      }
-
-      game.lastEvent = {
-        id: Date.now().toString(36) + Math.random().toString(36).slice(2, 8),
-        type: "item",
-        itemType: "floppy_disk",
-        playerId: currentPlayerId,
-        at: Date.now()
-      };
-      return game;
-    });
-
-    if (floppyResult.committed) {
-      playItemSound("floppy_disk");
-      resetItemSelection();
-      const snapshot = await get(gameRef);
-      if (snapshot.exists()) {
-        gameData = snapshot.val();
-        await renderGameState();
-      }
-    }
     return;
   }
 
@@ -5845,6 +5848,7 @@ async function useSelectedItem(targetId = null) {
         overtakeActivated,
         deadBatteryActivated,
         adrenalineStolenFromId: isBorrowed ? sourceId : null,
+        usedItemType: isBorrowed ? type : null,
         at: Date.now()
       };
 
@@ -6725,6 +6729,59 @@ function getPlayerNameById(id) {
   )?.name || "Unknown";
 }
 
+function showTargetActionPopup(eventData) {
+  if (!eventData) return false;
+  const effectiveTargetId = eventData.targetId || eventData.adrenalineStolenFromId || null;
+  if (effectiveTargetId !== currentPlayerId) return false;
+
+  let title = null;
+  let titleIcon = "circle-help";
+  let body = null;
+
+  if (eventData.itemType === "adrenaline" && eventData.adrenalineStolenFromId === currentPlayerId) {
+    const user = getPlayerNameById(eventData.playerId);
+    const itemDef = ITEM_DEFINITIONS[eventData.itemType];
+    const stolenDef = ITEM_DEFINITIONS[eventData.usedItemType || eventData.hookTakenItem || eventData.eraserRemovedItem];
+    title = itemDef?.name || "Adrenaline";
+    titleIcon = itemDef?.icon || "syringe";
+    body = `${user} mengambil <span class="target-action-item"><i data-lucide="${stolenDef?.icon || "package"}"></i>${stolenDef?.name || "item"}</span> dari mu`;
+  } else if (eventData.itemType === "hook" && eventData.targetId === currentPlayerId) {
+    const user = getPlayerNameById(eventData.playerId);
+    const itemDef = ITEM_DEFINITIONS[eventData.hookTakenItem];
+    title = "Hook";
+    titleIcon = "fishing-hook";
+    body = `${user} mengambil <span class="target-action-item"><i data-lucide="${itemDef?.icon || "package"}"></i>${itemDef?.name || "item"}</span> dari mu`;
+  } else if (eventData.itemType === "eraser" && eventData.targetId === currentPlayerId) {
+    const user = getPlayerNameById(eventData.playerId);
+    const itemDef = ITEM_DEFINITIONS[eventData.eraserRemovedItem];
+    title = "Eraser";
+    titleIcon = "eraser";
+    body = `${user} menghapus <span class="target-action-item"><i data-lucide="${itemDef?.icon || "package"}"></i>${itemDef?.name || "item"}</span> dari mu`;
+  } else if (eventData.type === "shot" && eventData.targetId === currentPlayerId && Number(eventData.targetHp ?? 1) <= 0 && eventData.result === "live" && !eventData.isSelf) {
+    const user = getPlayerNameById(eventData.playerId);
+    title = "Death";
+    titleIcon = "skull";
+    body = `${user} telah membunuh mu`;
+  }
+
+  if (!title || !body || !itemInfoPopup || !itemInfoTitle || !itemInfoText) return false;
+
+  itemInfoTitle.textContent = title;
+  itemInfoText.innerHTML = body;
+  itemInfoText.style.color = "#ddd";
+  const iconHolder = document.querySelector("#itemInfoIcon");
+  if (iconHolder) {
+    iconHolder.outerHTML = `<i id="itemInfoIcon" data-lucide="${titleIcon}"></i>`;
+  }
+  itemInfoPopup.classList.remove("hidden");
+  itemInfoPopup.style.display = "flex";
+  itemInfoPopup.style.pointerEvents = "auto";
+  lucide.createIcons();
+  clearTimeout(window.__targetActionPopupTimer);
+  window.__targetActionPopupTimer = setTimeout(() => closeItemInfoPopup(), 3600);
+  return true;
+}
+
 function showGameEvent(eventData) {
   if (!eventData?.id) {
     return;
@@ -6735,6 +6792,8 @@ function showGameEvent(eventData) {
   }
 
   messageSequenceId = eventData.id;
+
+  showTargetActionPopup(eventData);
 
   const shooterName =
     getPlayerNameById(eventData.playerId);
@@ -9407,14 +9466,18 @@ function enableShotButtons() {
        Jangan gunakan myTurn lama yang juga bergantung pada itemPending. */
     const floppyCurrentIndex = Number(gameData?.shells?.current);
     const floppyHasPreviousShell = Number.isInteger(floppyCurrentIndex) && floppyCurrentIndex > 0;
-    const floppyCanUse = selectedItemType === "floppy_disk"
+    const floppyOwnsSelected = selectedItemType === "floppy_disk"
+      && Array.isArray(gameData?.players?.[currentPlayerId]?.items)
+      && gameData.players[currentPlayerId].items[selectedItemSlot] === "floppy_disk";
+    const floppyCanUse = floppyOwnsSelected
       && gameData?.phase === "playing"
       && gameData?.turn?.current === currentPlayerId
       && !shootingLocked
       && floppyHasPreviousShell
       && gameData?.players?.[currentPlayerId]?.wrenched !== true
       && gameData?.settings?.enabledItems?.floppy_disk !== false;
-    playerBtn.disabled = selectedItemType === "floppy_disk" ? !floppyCanUse : !selectedCanUse;
+    playerBtn.disabled = selectedItemType === "floppy_disk" ? false : !selectedCanUse;
+    playerBtn.classList.toggle("floppy-unavailable", selectedItemType === "floppy_disk" && !floppyCanUse);
     if (selectedItemType === "floppy_disk" && floppyCanUse) {
       playerBtn.disabled = false;
       playerBtn.removeAttribute("disabled");
@@ -9689,4 +9752,3 @@ initialize();
 
 </body>
 </html>
-  const canShootInteract = myTurn && (shotMode || itemMode);
