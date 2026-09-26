@@ -758,7 +758,7 @@ body {
   align-items: center;
   justify-content: center;
   z-index: 40;
-  pointer-events: none;
+  pointer-events: auto;
 }
 
 .item-info-popup.hidden,
@@ -5078,7 +5078,7 @@ const ITEM_DEFINITIONS = {
   floppy_disk: {
     name: "Floppy Disk",
     icon: "save",
-    info: "Mengembalikan posisi ke peluru sebelumnya. Contoh: #4 kembali ke #3.",
+    info: "Menggunakan Floppy Disk akan mengembalikan posisi magazine ke peluru sebelumnya. Contoh: jika sekarang #4, kembali ke #3.",
     target: false
   },
   overtake_ticket: {
@@ -5222,9 +5222,6 @@ function setItemMode(type, slotIndex) {
   const items = gameData.players?.[sourceId]?.items || [];
   if (items[slotIndex] !== type || !ITEM_DEFINITIONS[type]) return;
   if (adrenalineActive && sourceId !== currentPlayerId && type === "adrenaline") return;
-  const canUseSelectedItem =
-    gameData?.turn?.current === currentPlayerId &&
-    gameData?.players?.[currentPlayerId]?.wrenched !== true;
   selectedItemType = type;
   selectedItemSlot = slotIndex;
   selectedItemSourceId = sourceId;
@@ -5252,48 +5249,56 @@ function setItemMode(type, slotIndex) {
 }
 
 function showSelectedItemInfo() {
-  if (!selectedItemType || !gameData || !itemInfoPopup) return;
-  const definition = ITEM_DEFINITIONS[selectedItemType];
-  if (!definition) return;
+  const type = selectedItemType;
+  if (!type || !gameData) return false;
 
-  const index = Number(gameData.shells?.current || 0);
-  const sequence = Array.isArray(gameData.shells?.sequence) ? gameData.shells.sequence : [];
+  const popup = document.querySelector("#itemInfoPopup");
+  const title = document.querySelector("#itemInfoTitle");
+  const text = document.querySelector("#itemInfoText");
+  if (!popup || !title || !text) return false;
+
+  const definition = ITEM_DEFINITIONS[type];
+  if (!definition) return false;
+
   let html = definition.info || "";
+  const index = Number(gameData.shells?.current ?? 0);
+  const sequence = Array.isArray(gameData.shells?.sequence) ? gameData.shells.sequence : [];
 
-  if (selectedItemType === "magnifying_glass") {
-    const type = sequence[index];
-    const label = type === "live"
-      ? '<span style="color:crimson">LIVE</span>'
-      : type === "blank"
-        ? '<span style="color:#999">BLANK</span>'
-        : 'tidak diketahui';
-    html = `Peluru saat ini: ${label}`;
-  } else if (selectedItemType === "future_mail") {
-    const nextOne = sequence[index + 1] || null;
-    const nextTwo = sequence[index + 2] || null;
-    if (nextOne && nextTwo) {
-      const a = nextOne === "live" ? '<span style="color:crimson">LIVE</span>' : '<span style="color:#999">BLANK</span>';
-      const b = nextTwo === "live" ? '<span style="color:crimson">LIVE</span>' : '<span style="color:#999">BLANK</span>';
-      html = `Peluru berikutnya ${a} ${b}`;
+  if (type === "magnifying_glass") {
+    const shell = sequence[index];
+    html = shell === "live"
+      ? 'Peluru saat ini: <span style="color:crimson;font-weight:bold">LIVE</span>'
+      : shell === "blank"
+        ? 'Peluru saat ini: <span style="color:#aaa;font-weight:bold">BLANK</span>'
+        : "Peluru saat ini belum diketahui.";
+  } else if (type === "future_mail") {
+    const a = sequence[index + 1];
+    const b = sequence[index + 2];
+    if (a && b) {
+      const la = a === "live" ? '<span style="color:crimson;font-weight:bold">LIVE</span>' : '<span style="color:#aaa;font-weight:bold">BLANK</span>';
+      const lb = b === "live" ? '<span style="color:crimson;font-weight:bold">LIVE</span>' : '<span style="color:#aaa;font-weight:bold">BLANK</span>';
+      html = `Peluru berikutnya: ${la} ${lb}`;
     }
   }
 
-  itemInfoIcon?.remove();
-  const actions = document.querySelector(".item-info-actions");
-  if (actions) {
+  title.textContent = definition.name;
+  text.innerHTML = html;
+  text.style.color = "#ddd";
+  popup.classList.remove("hidden");
+  popup.style.display = "flex";
+  popup.style.pointerEvents = "auto";
+
+  const iconHolder = document.querySelector("#itemInfoIcon");
+  if (iconHolder) iconHolder.remove();
+  const actions = popup.querySelector(".item-info-actions");
+  if (actions && itemInfoClose) {
     const icon = document.createElement("i");
     icon.id = "itemInfoIcon";
-    icon.dataset.lucide = definition.icon;
-    icon.title = definition.name;
+    icon.dataset.lucide = definition.icon || "circle-help";
     actions.insertBefore(icon, itemInfoClose);
-    itemInfoIcon = icon;
   }
-
-  itemInfoTitle.textContent = definition.name;
-  itemInfoText.innerHTML = html;
-  itemInfoText.style.color = "#ddd";
-  itemInfoPopup.classList.remove("hidden");
-  lucide.createIcons();
+  if (window.lucide) lucide.createIcons();
+  return true;
 }
 
 function reorderNonAcePlayers(players, ids, mode = "shuffle") {
@@ -5329,6 +5334,61 @@ async function useSelectedItem(targetId = null) {
     return;
   }
 
+  /* Floppy Disk: fungsi khusus baru.
+     Shell #N di UI adalah index internal current + 1.
+     Jadi #4 -> current 3 -> kembali ke index 2 (#3). */
+  if (type === "floppy_disk") {
+    const floppyResult = await runTransaction(gameRef, game => {
+      if (!game || game.phase !== "playing") return;
+      if (game.turn?.current !== currentPlayerId || game.shotPending || game.itemPending) return;
+      if (game.players?.[currentPlayerId]?.wrenched === true) return;
+      if (game.settings?.enabledItems?.floppy_disk === false) return;
+
+      const shellIndex = Number(game.shells?.current);
+      const sequence = Array.isArray(game.shells?.sequence) ? game.shells.sequence : [];
+      const total = Number(game.shells?.total ?? sequence.length);
+      if (!Number.isInteger(shellIndex) || shellIndex <= 0 || shellIndex >= total) return;
+
+      const previousIndex = shellIndex - 1;
+      const previousType = sequence[previousIndex];
+      if (previousType !== "live" && previousType !== "blank") return;
+
+      game.shells.current = previousIndex;
+      if (previousType === "live") {
+        game.shells.alive = Number(game.shells.alive ?? 0) + 1;
+      } else {
+        game.shells.blank = Number(game.shells.blank ?? 0) + 1;
+      }
+
+      const player = game.players[currentPlayerId];
+      if (Array.isArray(player?.items) && player.items[slotIndex] === type) {
+        player.items = player.items.filter((_, index) => index !== slotIndex);
+      } else {
+        return;
+      }
+
+      game.lastEvent = {
+        id: Date.now().toString(36) + Math.random().toString(36).slice(2, 8),
+        type: "item",
+        itemType: "floppy_disk",
+        playerId: currentPlayerId,
+        at: Date.now()
+      };
+      return game;
+    });
+
+    if (floppyResult.committed) {
+      playItemSound("floppy_disk");
+      resetItemSelection();
+      const snapshot = await get(gameRef);
+      if (snapshot.exists()) {
+        gameData = snapshot.val();
+        await renderGameState();
+      }
+    }
+    return;
+  }
+
   let magnifyLabel = null;
   let expiredResult = null;
   let beerDiscardedType = null;
@@ -5345,7 +5405,6 @@ async function useSelectedItem(targetId = null) {
   let deadBatteryActivated = false;
   let itemRewards = {};
   let reload = false;
-  let floppyStoredShell = null;
   let adrenalineStolenFromId = null;
   let inventoryHandled = false;
 
@@ -5545,23 +5604,22 @@ async function useSelectedItem(targetId = null) {
         game.deadBatteryExpiresTurn = Number(game.turn?.counter ?? 0) + Math.max(1, aliveCount);
         deadBatteryActivated = true;
       } else if (type === "floppy_disk") {
+        // Floppy Disk versi baru: langsung memundurkan posisi ke shell sebelumnya.
+        // Tidak ada lagi mekanisme floppyStoredShell/floppyReady.
         const shellIndex = Number(game.shells?.current ?? 0);
         const sequence = Array.isArray(game.shells?.sequence) ? game.shells.sequence : [];
-        const previousIndex = shellIndex - 1;
-        if (shellIndex <= 0 || previousIndex < 0 || previousIndex >= sequence.length) return;
+        if (shellIndex <= 0) return;
 
+        const previousIndex = shellIndex - 1;
         const previousShellType = sequence[previousIndex];
         if (previousShellType !== "live" && previousShellType !== "blank") return;
 
-        /* Floppy Disk mengembalikan posisi ke peluru tepat sebelumnya.
-           Contoh: current #4 (index 3) -> #3 (index 2). */
         game.shells.current = previousIndex;
         if (previousShellType === "live") {
           game.shells.alive = Number(game.shells.alive ?? 0) + 1;
         } else {
           game.shells.blank = Number(game.shells.blank ?? 0) + 1;
         }
-        floppyStoredShell = previousShellType;
       } else if (type === "overtake_ticket") {
         player.overtakePending = true;
         overtakeActivated = true;
@@ -5786,7 +5844,6 @@ async function useSelectedItem(targetId = null) {
         reload,
         overtakeActivated,
         deadBatteryActivated,
-        floppyStoredShell,
         adrenalineStolenFromId: isBorrowed ? sourceId : null,
         at: Date.now()
       };
@@ -6083,7 +6140,6 @@ function createGameState(
         coinFlipLocked: false,
         shellItemUses: {},
         skipNextReloadReward: false,
-        floppyStoredShell: null, floppyStoredAtTurn: null, floppyReady: false,
         deadBatteryActivatedAt: null,
         shieldActive: false, shieldActivatedTurn: null,
         dynamiteTrapped: false, dynamiteTrappedById: null, dynamiteActivatedTurn: null,
@@ -8474,9 +8530,7 @@ selfBtn.addEventListener("click", event => {
   if (itemMode && selectedItemType) {
     event.preventDefault();
     event.stopPropagation();
-    selfBtn.disabled = false;
-    selfBtn.removeAttribute("disabled");
-    selfBtn.classList.add("info-mode");
+    event.stopImmediatePropagation();
     showSelectedItemInfo();
     return;
   }
@@ -8490,17 +8544,13 @@ selfBtn.addEventListener("click", event => {
 });
 
 selfBtn.addEventListener("pointerdown", event => {
-  if (itemMode && selectedItemType) {
-    event.preventDefault();
-    event.stopPropagation();
-    selfBtn.disabled = false;
-    selfBtn.removeAttribute("disabled");
-    selfBtn.classList.add("info-mode");
-    showSelectedItemInfo();
-  }
+  if (!itemMode || !selectedItemType) return;
+  event.preventDefault();
+  event.stopPropagation();
+  event.stopImmediatePropagation();
 });
 
-
+// Jangan gunakan document-level handler untuk Info. Tombol sendiri menangani event.
 
 
 
@@ -8908,8 +8958,7 @@ async function shoot(targetId) {
       }
 
       const shooterStateBeforeShot = players[currentPlayerId];
-      const floppyShotActive = shooterStateBeforeShot?.floppyReady === true && !!shooterStateBeforeShot?.floppyStoredShell;
-      const currentShellType = floppyShotActive ? shooterStateBeforeShot.floppyStoredShell : shells.sequence[currentShell];
+      const currentShellType = shells.sequence[currentShell];
       if (!currentShellType) {
         return;
       }
@@ -8994,11 +9043,7 @@ async function shoot(targetId) {
       const shooterState = players[currentPlayerId];
       clapperboardRepeat = shooterState?.clapperboardActive === true;
 
-      if (floppyShotActive) {
-        shooterState.floppyStoredShell = null;
-        shooterState.floppyStoredAtTurn = null;
-        shooterState.floppyReady = false;
-      } else if (!clapperboardRepeat) {
+      if (!clapperboardRepeat) {
         currentGame.shells.current = currentShell + 1;
         if (originalShellType === "live") {
           currentGame.shells.alive = Math.max(0, Number(currentGame.shells.alive ?? 0) - 1);
@@ -9119,10 +9164,6 @@ async function shoot(targetId) {
         currentGame.turn.current = overtakeOwnerId;
         currentGame.turn.index = playerIds.indexOf(overtakeOwnerId);
         currentGame.turn.counter = Number(currentGame.turn.counter ?? 0) + 1;
-        const overtakingPlayer = players[overtakeOwnerId];
-        if (overtakingPlayer?.floppyStoredShell && Number(overtakingPlayer.floppyStoredAtTurn ?? -1) < Number(currentGame.turn.counter ?? 0)) {
-          overtakingPlayer.floppyReady = true;
-        }
       } else if ((currentShellType === "blank" && isSelf) || clapperboardRepeat) {
         const currentIndex = playerIds.indexOf(currentPlayerId);
         currentGame.turn.current = currentPlayerId;
@@ -9158,10 +9199,6 @@ async function shoot(targetId) {
         currentGame.turn.current = playerIds[nextIndex];
         currentGame.turn.index = nextIndex;
         currentGame.turn.counter = Number(currentGame.turn.counter ?? 0) + 1;
-        const nextPlayerState = players[currentGame.turn.current];
-        if (nextPlayerState?.floppyStoredShell && Number(nextPlayerState.floppyStoredAtTurn ?? -1) < Number(currentGame.turn.counter ?? 0)) {
-          nextPlayerState.floppyReady = true;
-        }
 
         const activeAliveCount = Object.values(players).filter(p => p && Number(p.hp ?? 0) > 0).length;
         if (currentGame.deadBatteryActive && Number(currentGame.turn.counter ?? 0) > Number(currentGame.deadBatteryExpiresTurn ?? -1)) {
@@ -9267,13 +9304,19 @@ async function shoot(targetId) {
 ========================= */
 
 function closeItemInfoPopup() {
-  if (itemInfoPopup) itemInfoPopup.classList.add("hidden");
+  if (itemInfoPopup) {
+    itemInfoPopup.classList.add("hidden");
+    itemInfoPopup.style.display = "";
+    itemInfoPopup.style.pointerEvents = "";
+  }
 }
 
 /* Lucide mengganti <i> menjadi <svg>, jadi gunakan event delegation. */
 if (itemInfoPopup) {
   itemInfoPopup.addEventListener("click", event => {
     if (event.target.closest("#itemInfoClose")) {
+      event.preventDefault();
+      event.stopPropagation();
       closeItemInfoPopup();
       return;
     }
@@ -9355,13 +9398,28 @@ function enableShotButtons() {
     const selectedExpiredFull = selectedItemType === "expired_medicine"
       && Number(gameData?.players?.[currentPlayerId]?.hp ?? 0) >= Number(gameData?.settings?.maxHealth ?? 4);
     const selectedDisabledBySettings = gameData?.settings?.enabledItems?.[selectedItemType] === false;
-    const selectedFloppyInvalid = selectedItemType === "floppy_disk"
-      && Number(gameData?.shells?.current ?? 0) <= 0;
     const selectedCanUse = !!selectedDefinition && myTurn && !shootingLocked
       && gameData?.players?.[currentPlayerId]?.wrenched !== true
-      && !selectedUsedThisShell && !selectedExpiredFull && !selectedDisabledBySettings
-      && !selectedFloppyInvalid;
-    playerBtn.disabled = !selectedCanUse;
+      && !selectedUsedThisShell && !selectedExpiredFull && !selectedDisabledBySettings;
+    // Floppy Disk hanya membutuhkan shell sebelumnya.
+    /* Floppy Disk memakai index shell internal secara langsung.
+       UI menampilkan current + 1, jadi Shell #4 berarti current === 3.
+       Jangan gunakan myTurn lama yang juga bergantung pada itemPending. */
+    const floppyCurrentIndex = Number(gameData?.shells?.current);
+    const floppyHasPreviousShell = Number.isInteger(floppyCurrentIndex) && floppyCurrentIndex > 0;
+    const floppyCanUse = selectedItemType === "floppy_disk"
+      && gameData?.phase === "playing"
+      && gameData?.turn?.current === currentPlayerId
+      && !shootingLocked
+      && floppyHasPreviousShell
+      && gameData?.players?.[currentPlayerId]?.wrenched !== true
+      && gameData?.settings?.enabledItems?.floppy_disk !== false;
+    playerBtn.disabled = selectedItemType === "floppy_disk" ? !floppyCanUse : !selectedCanUse;
+    if (selectedItemType === "floppy_disk" && floppyCanUse) {
+      playerBtn.disabled = false;
+      playerBtn.removeAttribute("disabled");
+      playerBtn.classList.add("use-mode");
+    }
     selfBtn.disabled = false;
     selfBtn.removeAttribute("disabled");
     selfBtn.classList.add("info-mode");
