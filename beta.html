@@ -195,7 +195,9 @@ body {
 .lobby {
   display: flex;
   min-height: 100dvh;
+  height: 100dvh;
   flex-direction: column;
+  overflow-y: auto;
 }
 
 .btns-top {
@@ -728,9 +730,12 @@ body {
   background: #666 !important;
 }
 
-.shot-btn button.self.info-mode {
-  background: #d4af37 !important;
+.shot-btn button.self.info-mode,
+.shot-btn button.self.info-mode:disabled {
+  background: dodgerblue !important;
   color: white !important;
+  opacity: 1 !important;
+  cursor: pointer !important;
 }
 
 .shot-btn button:disabled {
@@ -755,12 +760,13 @@ body {
   align-items: center;
   justify-content: center;
   z-index: 40;
-  pointer-events: none;
+  pointer-events: auto;
 }
 
 .item-info-popup.hidden,
 .handcuff-overlay.hidden,
-.wrench-overlay.hidden {
+.wrench-overlay.hidden,
+.coffee-overlay.hidden {
   display: none !important;
 }
 
@@ -786,6 +792,20 @@ body {
   border-bottom: 1.5px solid #555;
   color: white;
   font-weight: bold;
+}
+
+.item-info-title-wrap {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.item-info-title-wrap svg,
+.item-info-title-wrap i {
+  width: 19px;
+  height: 19px;
+  flex-shrink: 0;
 }
 
 .item-info-actions {
@@ -815,7 +835,7 @@ body {
   align-items: center;
   justify-content: center;
   gap: 8px;
-  color: crimson;
+  color: midnightblue;
   background: #0008;
   pointer-events: none;
 }
@@ -841,8 +861,8 @@ body {
   align-items: center;
   justify-content: center;
   gap: 5px;
-  color: #888;
-  background: rgba(20, 20, 20, .88);
+  color: coral;
+  background: rgba(20, 20, 20, .72);
   border-radius: 4px;
   pointer-events: none;
 }
@@ -858,10 +878,36 @@ body {
 }
 
 .wrench-overlay span {
-  color: #888;
+  color: coral;
   font-size: 13px;
   font-weight: bold;
   letter-spacing: 1.5px;
+}
+
+.coffee-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 15;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  color: sienna;
+  background: #0008;
+  pointer-events: none;
+}
+
+.coffee-overlay svg {
+  width: 54px;
+  height: 54px;
+  stroke-width: 1.7;
+}
+
+.coffee-overlay span {
+  font-size: 14px;
+  font-weight: bold;
+  letter-spacing: 2px;
 }
 
 .item {
@@ -1075,6 +1121,22 @@ body {
   border-radius: 0;
 }
 
+.player-list .pl-list.team-red {
+  background: rgba(150, 35, 35, .34);
+}
+
+.player-list .pl-list.team-blue {
+  background: rgba(35, 75, 150, .34);
+}
+
+.player-list .pl-list.current-turn.team-red {
+  background: rgba(185, 55, 55, .58);
+}
+
+.player-list .pl-list.current-turn.team-blue {
+  background: rgba(60, 105, 190, .58);
+}
+
 .player-list .pl-list.current-turn {
   background: #222222;
   border-bottom: none;
@@ -1082,6 +1144,14 @@ body {
   border-radius: 6px;
   padding: 8px;
   margin: 0;
+}
+
+.player-list .pl-list.current-turn.team-red {
+  background: rgba(185, 55, 55, .58);
+}
+
+.player-list .pl-list.current-turn.team-blue {
+  background: rgba(60, 105, 190, .58);
 }
 
 .player-list .pl-user {
@@ -1159,7 +1229,7 @@ body {
 .player-list .pl-lock {
   width: 16px;
   height: 16px;
-  color: crimson;
+  color: midnightblue;
   flex-shrink: 0;
 }
 
@@ -1185,11 +1255,19 @@ body {
   stroke-width: 1.7;
 }
 
+.player-list .pl-coffee {
+  width: 16px;
+  height: 16px;
+  flex: 0 0 16px;
+  color: sienna;
+  stroke-width: 1.7;
+}
+
 .player-list .pl-wrench {
   width: 16px;
   height: 16px;
   flex: 0 0 16px;
-  color: #888;
+  color: coral;
   stroke-width: 1.7;
 }
 
@@ -1830,8 +1908,6 @@ body {
 }
 
 .settings-item-grid {
-  max-height: 280px;
-  overflow-y: auto;
   padding-right: 2px;
 }
 
@@ -2014,18 +2090,6 @@ body {
 }
 
 
-.game-profile-leave {
-  width: 100%;
-  margin-top: 14px;
-  padding: 10px;
-  border: none;
-  border-radius: 5px;
-  background: crimson;
-  color: white;
-  font-size: 15px;
-  font-weight: bold;
-  cursor: pointer;
-}
 
 @media (max-width: 360px) {
   .settings-item-grid {
@@ -2209,6 +2273,9 @@ body {
   padding-right: 10px;
 }
 
+
+.target-action-item { display:inline-flex; align-items:center; gap:5px; font-weight:600; }
+.target-action-item svg { width:16px; height:16px; flex:none; }
 </style>
 
 
@@ -2479,6 +2546,22 @@ body {
       </label>
     </div>
 
+    <div class="settings-row">
+      <span class="settings-label">Team Mode</span>
+      <label class="settings-toggle">
+        <input id="settingTeamMode" type="checkbox">
+        <span class="settings-slider"></span>
+      </label>
+    </div>
+
+    <div class="settings-row">
+      <span class="settings-label">Team Friendly Fire</span>
+      <label class="settings-toggle">
+        <input id="settingTeamFriendlyFire" type="checkbox">
+        <span class="settings-slider"></span>
+      </label>
+    </div>
+
     <div class="settings-section-title">Item</div>
     <div class="settings-item-grid" id="settingsItemGrid"></div>
 
@@ -2528,7 +2611,6 @@ body {
     </div>
     <div class="game-profile-items-title">List Item</div>
     <div id="gameProfileItems"></div>
-    <button class="game-profile-leave" id="gameProfileLeave" type="button">Leave Game</button>
   </div>
 </div>
 
@@ -2688,9 +2770,14 @@ body {
       <span>HANDCUFFED</span>
     </div>
 
+    <div class="coffee-overlay hidden" id="coffeeOverlay">
+      <i data-lucide="coffee"></i>
+      <span>Chill</span>
+    </div>
+
     <div class="shot-btn">
       <button class="other" disabled>Player</button>
-      <button class="self" disabled>Self</button>
+      <button class="self">Self</button>
     </div>
 
     <div class="items-have">
@@ -2716,9 +2803,11 @@ body {
 <div class="item-info-popup hidden" id="itemInfoPopup">
   <div class="item-info-card">
     <div class="item-info-top">
-      <span id="itemInfoTitle">Item</span>
-      <div class="item-info-actions">
+      <div class="item-info-title-wrap">
         <i id="itemInfoIcon" data-lucide="package" title="Item"></i>
+        <span id="itemInfoTitle">Item</span>
+      </div>
+      <div class="item-info-actions">
         <i id="itemInfoClose" data-lucide="x" title="Tutup"></i>
       </div>
     </div>
@@ -3102,12 +3191,13 @@ const settingsRarityPanel = document.querySelector("#settingsRarityPanel");
 const settingsRarityGrid = document.querySelector("#settingsRarityGrid");
 const settingRealtimeShell = document.querySelector("#settingRealtimeShell");
 const settingShowShellNumber = document.querySelector("#settingShowShellNumber");
+const settingTeamMode = document.querySelector("#settingTeamMode");
+const settingTeamFriendlyFire = document.querySelector("#settingTeamFriendlyFire");
 const itemListPopup = document.querySelector("#itemListPopup");
 const itemListClose = document.querySelector("#itemListClose");
 const itemListItems = document.querySelector("#itemListItems");
 const gameProfilePopup = document.querySelector("#gameProfilePopup");
 const gameProfileClose = document.querySelector("#gameProfileClose");
-const gameProfileLeave = document.querySelector("#gameProfileLeave");
 const gameProfileAvatar = document.querySelector("#gameProfileAvatar");
 const gameProfileName = document.querySelector("#gameProfileName");
 const gameProfileHp = document.querySelector("#gameProfileHp");
@@ -4211,7 +4301,7 @@ async function renderRoom() {
 
   joinBtn.disabled =
     !joined &&
-    playerCount >= 6;
+    playerCount >= 10;
 
   startLeft.classList.toggle(
     "hidden",
@@ -4476,7 +4566,7 @@ joinBtn.addEventListener(
               return room;
             }
 
-            if (Object.keys(players).length >= 6) {
+            if (Object.keys(players).length >= 10) {
               return;
             }
 
@@ -4500,9 +4590,9 @@ joinBtn.addEventListener(
           const count =
             Object.keys(room.players || {}).length;
 
-          if (count >= 6) {
+          if (count >= 10) {
             roomMessage.textContent =
-              "Room penuh. Maksimal 6 pemain.";
+              "Room penuh. Maksimal 10 pemain.";
           } else if (room.status === "playing") {
             roomMessage.textContent =
               "Game sedang berjalan.";
@@ -4696,13 +4786,14 @@ const DEFAULT_ITEM_RARITIES = {
   burner_phone: "uncommon", remote: "rare", jammer: "rare", reflector_mirror: "rare",
   dynamite: "uncommon", dice: "rare", rewind_film: "legend", coin_flip: "uncommon",
   life_steal: "rare", megazine: "legend", ace_card: "legend", magnet: "uncommon",
-  clapperboard: "rare", wrench: "rare", eraser: "uncommon", hook: "uncommon", future_mail: "uncommon", stamp: "rare", hourglass: "rare", overtake_ticket: "legend", dead_battery: "rare", floppy_disk: "uncommon"
+  clapperboard: "rare", wrench: "rare", eraser: "uncommon", hook: "uncommon", future_mail: "uncommon", stamp: "rare", hourglass: "rare", overtake_ticket: "legend", dead_battery: "rare", coffee: "rare", radio: "epic"
 };
 
 const DEFAULT_GAME_SETTINGS = {
   maxHealth: 4, minShell: 5, maxShell: 8, minEach: 3,
   startingItemCount: 2, itemRewardCount: 2, rarityEnabled: false,
-  itemRarities: DEFAULT_ITEM_RARITIES, realtimeShellInfo: true, showShellNumber: true, enabledItems: {}
+  itemRarities: DEFAULT_ITEM_RARITIES, realtimeShellInfo: true, showShellNumber: true,
+  teamMode: false, teamFriendlyFire: false, enabledItems: {}
 };
 
 function getGameSettings(source = roomData?.settings) {
@@ -4730,6 +4821,8 @@ function getGameSettings(source = roomData?.settings) {
     itemRarities,
     realtimeShellInfo: source?.realtimeShellInfo !== false,
     showShellNumber: source?.showShellNumber !== false,
+    teamMode: source?.teamMode === true,
+    teamFriendlyFire: source?.teamFriendlyFire === true,
     enabledItems
   };
 }
@@ -4773,6 +4866,8 @@ function populateSettingsUI(settings = getGameSettings()) {
   updateRarityPanelVisibility();
   settingRealtimeShell.checked = settings.realtimeShellInfo;
   settingShowShellNumber.checked = settings.showShellNumber;
+  settingTeamMode.checked = settings.teamMode === true;
+  settingTeamFriendlyFire.checked = settings.teamFriendlyFire === true;
   settingsMessage.textContent = "";
   settingsItemGrid.innerHTML = "";
   settingsItemGrid.scrollTop = 0;
@@ -4858,6 +4953,8 @@ function collectSettingsFromUI() {
       rarityEnabled: settingRarity.checked, itemRarities,
       realtimeShellInfo: settingRealtimeShell.checked,
       showShellNumber: settingShowShellNumber.checked,
+      teamMode: settingTeamMode.checked,
+      teamFriendlyFire: settingTeamFriendlyFire.checked,
       enabledItems
     }
   };
@@ -5072,16 +5169,29 @@ const ITEM_DEFINITIONS = {
     info: "Menghilangkan informasi game untuk 1 ronde. Pemain dengan Ace Card tidak terpengaruh.",
     target: false
   },
-  floppy_disk: {
-    name: "Floppy Disk",
-    icon: "save",
-    info: "Menyimpan jenis shell saat ini untuk digunakan pada giliran berikutnya.",
-    target: false
-  },
   overtake_ticket: {
     name: "Overtake Ticket",
     icon: "tickets",
     info: "Setelah pemain berikutnya menyelesaikan gilirannya, pengguna mendapatkan 1 giliran tambahan sebelum urutan kembali normal.",
+    target: false
+  },
+  floppy_disk: {
+    name: "Floppy Disk",
+    icon: "save",
+    info: "Mengembalikan shell ke posisi sebelumnya. Contoh: Shell 4 kembali ke Shell 3.",
+    target: false
+  }
+,  
+  coffee: {
+    name: "Coffee",
+    icon: "coffee",
+    info: "Chill selama 1 ronde. Tidak dapat ditembak, terkena efek item, atau mendapatkan giliran sampai ronde berikutnya.",
+    target: false
+  },
+  radio: {
+    name: "Radio",
+    icon: "microwave",
+    info: "Menyadap permainan selama 1 magazine. Magnifying Glass, Future Mail, dan Burner Phone tidak dapat digunakan dan informasi shell membeku sampai reload.",
     target: false
   }
 
@@ -5152,10 +5262,12 @@ function renderMyItems() {
   const myState = gameData?.players?.[currentPlayerId];
   const isWrenched = myState?.wrenched === true;
 
-  const canSelectItems =
+  const canInspectItems =
     gameData?.phase === "playing" &&
     !gameData?.itemPending &&
-    !shootingLocked &&
+    !shootingLocked;
+  const canUseItems =
+    canInspectItems &&
     gameData?.turn?.current === currentPlayerId &&
     !isWrenched;
 
@@ -5168,7 +5280,7 @@ function renderMyItems() {
     visibleItems = visibleItems.slice(0, Math.max(0, visibleItems.length - pendingRewards.length));
   }
 
-  if (!canSelectItems && itemMode) {
+  if (!canInspectItems && itemMode) {
     resetItemSelection();
   }
 
@@ -5186,12 +5298,13 @@ function renderMyItems() {
     }
 
     const definition = ITEM_DEFINITIONS[type];
-    const usedThisShell = false;
+    const usedThisShell = type === "hourglass"
+      && gameData?.players?.[currentPlayerId]?.shellItemUses?.hourglass === true;
     const expiredFull = type === "expired_medicine" && Number(gameData?.players?.[currentPlayerId]?.hp ?? 0) >= Number(gameData?.settings?.maxHealth ?? 4);
     const borrowedAdrenaline = adrenalineActive && sourceId !== currentPlayerId && type === "adrenaline";
     const itemDisabledBySettings = gameData?.settings?.enabledItems?.[type] === false;
     item.classList.toggle("adrenaline-item", type === "adrenaline");
-    item.classList.toggle("disabled", !canSelectItems || usedThisShell || expiredFull || borrowedAdrenaline || itemDisabledBySettings);
+    item.classList.toggle("disabled", !canInspectItems);
     item.classList.toggle(
       "selected",
       itemMode && selectedItemSlot === logicalIndex
@@ -5209,8 +5322,6 @@ function renderMyItems() {
 function setItemMode(type, slotIndex) {
   if (!gameData || gameData.phase !== "playing") return;
   if (shootingLocked) return;
-  if (gameData.turn?.current !== currentPlayerId) return;
-  if (gameData.players?.[currentPlayerId]?.wrenched === true) return;
 
   const sourceId = adrenalineActive && adrenalineTargetId
     ? adrenalineTargetId
@@ -5218,8 +5329,6 @@ function setItemMode(type, slotIndex) {
   const items = gameData.players?.[sourceId]?.items || [];
   if (items[slotIndex] !== type || !ITEM_DEFINITIONS[type]) return;
   if (adrenalineActive && sourceId !== currentPlayerId && type === "adrenaline") return;
-  if (type === "expired_medicine" && Number(gameData.players?.[currentPlayerId]?.hp ?? 0) >= Number(gameData.settings?.maxHealth ?? 4)) return;
-
   selectedItemType = type;
   selectedItemSlot = slotIndex;
   selectedItemSourceId = sourceId;
@@ -5235,54 +5344,50 @@ function setItemMode(type, slotIndex) {
 
   playerBtn.textContent = "Use";
   selfBtn.textContent = "Info";
+  selfBtn.disabled = false;
+  selfBtn.removeAttribute("disabled");
   selfBtn.classList.add("info-mode");
   playerBtn.classList.add("use-mode");
   enableShotButtons();
+  // Info selalu boleh dibuka setelah item dipilih, meskipun bukan giliran.
+  selfBtn.disabled = false;
+  selfBtn.removeAttribute("disabled");
+  selfBtn.classList.add("info-mode");
 }
 
 function showSelectedItemInfo() {
-  if (!selectedItemType || !gameData || !itemInfoPopup) return;
-  const definition = ITEM_DEFINITIONS[selectedItemType];
-  if (!definition) return;
+  const type = selectedItemType;
+  if (!type || !gameData) return false;
 
-  const index = Number(gameData.shells?.current || 0);
-  const sequence = Array.isArray(gameData.shells?.sequence) ? gameData.shells.sequence : [];
-  let html = definition.info || "";
+  const popup = document.querySelector("#itemInfoPopup");
+  const title = document.querySelector("#itemInfoTitle");
+  const text = document.querySelector("#itemInfoText");
+  if (!popup || !title || !text) return false;
 
-  if (selectedItemType === "magnifying_glass") {
-    const type = sequence[index];
-    const label = type === "live"
-      ? '<span style="color:crimson">LIVE</span>'
-      : type === "blank"
-        ? '<span style="color:#999">BLANK</span>'
-        : 'tidak diketahui';
-    html = `Peluru saat ini: ${label}`;
-  } else if (selectedItemType === "future_mail") {
-    const nextOne = sequence[index + 1] || null;
-    const nextTwo = sequence[index + 2] || null;
-    if (nextOne && nextTwo) {
-      const a = nextOne === "live" ? '<span style="color:crimson">LIVE</span>' : '<span style="color:#999">BLANK</span>';
-      const b = nextTwo === "live" ? '<span style="color:crimson">LIVE</span>' : '<span style="color:#999">BLANK</span>';
-      html = `Peluru berikutnya ${a} ${b}`;
-    }
-  }
+  const definition = ITEM_DEFINITIONS[type];
+  if (!definition) return false;
 
-  itemInfoIcon?.remove();
-  const actions = document.querySelector(".item-info-actions");
-  if (actions) {
-    const icon = document.createElement("i");
-    icon.id = "itemInfoIcon";
-    icon.dataset.lucide = definition.icon;
-    icon.title = definition.name;
-    actions.insertBefore(icon, itemInfoClose);
-    itemInfoIcon = icon;
-  }
+  const html = definition.info || "";
 
-  itemInfoTitle.textContent = definition.name;
-  itemInfoText.innerHTML = html;
-  itemInfoText.style.color = "#ddd";
-  itemInfoPopup.classList.remove("hidden");
-  lucide.createIcons();
+  title.textContent = definition.name;
+  text.innerHTML = html;
+  text.style.color = "#ddd";
+  popup.classList.remove("hidden");
+  popup.style.display = "flex";
+  popup.style.pointerEvents = "auto";
+
+  const iconHolder = document.querySelector("#itemInfoIcon");
+  if (iconHolder) iconHolder.setAttribute("data-lucide", definition.icon || "circle-help");
+  if (window.lucide) lucide.createIcons();
+  return true;
+}
+
+function isCoffeeChilledPlayer(player) {
+  return player?.coffeeChilled === true;
+}
+
+function isRadioBlockedItem(type) {
+  return ["magnifying_glass", "future_mail", "burner_phone"].includes(type);
 }
 
 function reorderNonAcePlayers(players, ids, mode = "shuffle") {
@@ -5313,7 +5418,7 @@ async function useSelectedItem(targetId = null) {
   const isBorrowed = adrenalineActive && sourceId !== currentPlayerId;
   const definition = ITEM_DEFINITIONS[type];
   if (!definition) return;
-  if (gameData?.settings?.enabledItems?.[type] === false) {
+  if (gameData?.settings?.enabledItems?.[type] === false && type !== "floppy_disk") {
     resetItemSelection();
     return;
   }
@@ -5332,7 +5437,8 @@ async function useSelectedItem(targetId = null) {
   let hourglassRewards = null;
   let overtakeActivated = false;
   let deadBatteryActivated = false;
-  let floppyStoredShell = null;
+  let itemRewards = {};
+  let reload = false;
   let adrenalineStolenFromId = null;
   let inventoryHandled = false;
 
@@ -5382,7 +5488,7 @@ async function useSelectedItem(targetId = null) {
         const target = game.players?.[targetId];
         if (!player || Number(player.hp ?? 0) <= 0) return;
         if (!target || Number(target.hp ?? 0) <= 0) return;
-        if (target.aceCardActive === true) return;
+        if (target.aceCardActive === true || isCoffeeChilledPlayer(target)) return;
 
         const inventory = Array.isArray(player.items) ? [...player.items] : [];
         const adrenalineIndex = inventory.indexOf("adrenaline");
@@ -5391,8 +5497,15 @@ async function useSelectedItem(targetId = null) {
         const targetInventory = Array.isArray(target.items) ? target.items : [];
         if (!targetInventory.length) return;
 
-        inventory.splice(adrenalineIndex, 1);
-        player.items = inventory;
+        const stampedAdrenaline = player.stampActive === true;
+        if (!stampedAdrenaline) {
+          inventory.splice(adrenalineIndex, 1);
+          player.items = inventory;
+        } else {
+          /* Stamp melindungi Adrenaline yang digunakan untuk meminjam item.
+             Item lawan tetap dikonsumsi saat benar-benar digunakan. */
+          player.stampActive = false;
+        }
 
         game.lastEvent = {
           id: Date.now().toString(36) + Math.random().toString(36).slice(2, 8),
@@ -5447,6 +5560,9 @@ async function useSelectedItem(targetId = null) {
       const inventory = Array.isArray(sourcePlayer.items) ? [...sourcePlayer.items] : [];
       if (inventory[slotIndex] !== type) return;
 
+      if (type === "hourglass" && player.shellItemUses?.hourglass === true) return;
+      if (game.radioActive === true && isRadioBlockedItem(type)) return;
+
       const stampedUse = player.stampActive === true && type !== "stamp";
       if (stampedUse) {
         player.stampActive = false;
@@ -5454,7 +5570,68 @@ async function useSelectedItem(targetId = null) {
 
       if (type === "expired_medicine" && Number(player.hp ?? 0) >= Number(game.settings?.maxHealth ?? 4)) return;
 
-      if (type === "cigarette") {
+      if (type === "coffee") {
+        /* Coffee langsung mengakhiri giliran pemakai. Efek Chill tetap aktif
+           sampai giliran pemain tersebut kembali, tetapi tidak membuatnya
+           kehilangan giliran kedua kalinya. */
+        player.coffeeChilled = true;
+        player.coffeeSkipPending = false;
+        player.coffeeActivatedTurn = Number(game.turn?.counter ?? 0);
+
+        const playerIds = Object.keys(game.players || {})
+          .filter(id => game.players[id] && Number(game.players[id].hp ?? 0) > 0)
+          .sort((a, b) => Number(game.players[a]?.turnOrder ?? 0) - Number(game.players[b]?.turnOrder ?? 0));
+        const currentIndex = playerIds.indexOf(currentPlayerId);
+        const overtakeOwnerId = playerIds.find(id => id !== currentPlayerId && game.players[id]?.overtakePending === true) || null;
+        if (overtakeOwnerId) {
+          /* Coffee juga mengakhiri giliran, tetapi tidak boleh melewati efek
+             Overtake Ticket yang sedang menunggu giliran pemiliknya kembali. */
+          game.players[overtakeOwnerId].overtakePending = false;
+          game.players[overtakeOwnerId].handcuffed = false;
+          game.players[overtakeOwnerId].coinFlipLocked = false;
+          game.players[overtakeOwnerId].skipTurns = 0;
+          game.turn.current = overtakeOwnerId;
+          game.turn.index = playerIds.indexOf(overtakeOwnerId);
+          game.turn.counter = Number(game.turn.counter ?? 0) + 1;
+        } else if (playerIds.length > 1 && currentIndex >= 0) {
+          let nextIndex = (currentIndex + 1) % playerIds.length;
+          let checked = 0;
+          while (checked < playerIds.length) {
+            const candidateId = playerIds[nextIndex];
+            const candidate = game.players[candidateId];
+            if (candidate && Number(candidate.hp ?? 0) > 0) {
+              if (Number(candidate.skipTurns ?? 0) > 0) {
+                candidate.skipTurns = Number(candidate.skipTurns ?? 0) - 1;
+                candidate.handcuffed = false;
+                candidate.coinFlipLocked = false;
+                nextIndex = (nextIndex + 1) % playerIds.length;
+                checked++;
+                continue;
+              }
+              if (candidate.coffeeChilled === true && Number(candidate.coffeeActivatedTurn ?? -1) < Number(game.turn?.counter ?? 0) + 1) {
+                candidate.coffeeChilled = false;
+                candidate.coffeeSkipPending = false;
+                candidate.coffeeActivatedTurn = null;
+              }
+              break;
+            }
+            nextIndex = (nextIndex + 1) % playerIds.length;
+            checked++;
+          }
+          game.turn.current = playerIds[nextIndex];
+          game.turn.index = nextIndex;
+          game.turn.counter = Number(game.turn.counter ?? 0) + 1;
+        }
+      } else if (type === "radio") {
+        const shell = game.shells || {};
+        game.radioActive = true;
+        game.radioShellSnapshot = {
+          total: Number(shell.total ?? 0),
+          current: Number(shell.current ?? 0),
+          alive: Number(shell.alive ?? 0),
+          blank: Number(shell.blank ?? 0)
+        };
+      } else if (type === "cigarette") {
         if (Number(player.hp) >= Number(game.settings?.maxHealth ?? 4)) return;
         player.hp = Math.min(Number(game.settings?.maxHealth ?? 4), Number(player.hp) + 1);
       } else if (type === "hand_saw") {
@@ -5465,7 +5642,7 @@ async function useSelectedItem(targetId = null) {
         if (!targetId || targetId === currentPlayerId) return;
         const target = game.players?.[targetId];
         if (!target || Number(target.hp ?? 0) <= 0) return;
-        if (target.aceCardActive === true) return;
+        if (target.aceCardActive === true || isCoffeeChilledPlayer(target)) return;
         target.skipTurns = Number(target.skipTurns ?? 0) + 1;
         target.handcuffed = true;
       } else if (type === "clapperboard") {
@@ -5474,7 +5651,7 @@ async function useSelectedItem(targetId = null) {
         if (!targetId || targetId === currentPlayerId) return;
         const target = game.players?.[targetId];
         if (!target || Number(target.hp ?? 0) <= 0) return;
-        if (target.aceCardActive === true || target.wrenched === true) return;
+        if (target.aceCardActive === true || target.wrenched === true || isCoffeeChilledPlayer(target)) return;
         target.wrenched = true;
         target.wrenchedById = currentPlayerId;
         target.wrenchedActivatedTurn = Number(game.turn?.counter ?? 0);
@@ -5482,7 +5659,7 @@ async function useSelectedItem(targetId = null) {
         if (!targetId || targetId === currentPlayerId) return;
         const target = game.players?.[targetId];
         const targetItems = Array.isArray(target?.items) ? target.items : [];
-        if (!target || Number(target.hp ?? 0) <= 0 || target.aceCardActive === true || !targetItems.length) return;
+        if (!target || Number(target.hp ?? 0) <= 0 || target.aceCardActive === true || isCoffeeChilledPlayer(target) || !targetItems.length) return;
         const randomIndex = Math.floor(Math.random() * targetItems.length);
         eraserRemovedItem = targetItems[randomIndex];
         target.items = targetItems.filter((_, index) => index !== randomIndex);
@@ -5490,7 +5667,7 @@ async function useSelectedItem(targetId = null) {
         if (!targetId || targetId === currentPlayerId) return;
         const target = game.players?.[targetId];
         const targetItems = Array.isArray(target?.items) ? target.items : [];
-        if (!target || Number(target.hp ?? 0) <= 0 || target.aceCardActive === true || !targetItems.length) return;
+        if (!target || Number(target.hp ?? 0) <= 0 || target.aceCardActive === true || isCoffeeChilledPlayer(target) || !targetItems.length) return;
         const sourceItems = Array.isArray(sourcePlayer.items) ? sourcePlayer.items : [];
         const sourceItemsWithoutHook = stampedUse ? [...sourceItems] : sourceItems.filter((_, index) => index !== slotIndex);
         if (sourceItemsWithoutHook.length >= 8) return;
@@ -5510,6 +5687,10 @@ async function useSelectedItem(targetId = null) {
         sourcePlayer.items = rewardResult.inventory;
         hourglassRewards = rewardResult.added;
         player.skipNextReloadReward = true;
+        player.shellItemUses = {
+          ...(player.shellItemUses || {}),
+          hourglass: true
+        };
         inventoryHandled = true;
       } else if (type === "dead_battery") {
         if (player.aceCardActive === true) return;
@@ -5518,14 +5699,6 @@ async function useSelectedItem(targetId = null) {
         game.deadBatteryActive = true;
         game.deadBatteryExpiresTurn = Number(game.turn?.counter ?? 0) + Math.max(1, aliveCount);
         deadBatteryActivated = true;
-      } else if (type === "floppy_disk") {
-        const shellIndex = Number(game.shells?.current ?? 0);
-        const shellType = game.shells?.sequence?.[shellIndex];
-        if (!shellType) return;
-        player.floppyStoredShell = shellType;
-        player.floppyStoredAtTurn = Number(game.turn?.counter ?? 0);
-        player.floppyReady = false;
-        floppyStoredShell = shellType;
       } else if (type === "overtake_ticket") {
         player.overtakePending = true;
         overtakeActivated = true;
@@ -5542,10 +5715,28 @@ async function useSelectedItem(targetId = null) {
           game.shells.blank = Math.max(0, Number(game.shells.blank ?? 0) - 1);
         }
         if (game.shells.current >= Number(game.shells.total || 0)) {
-          game.shells = createShellSet(Object.keys(game.players || {}).length, game.settings || getGameSettings());
-          Object.values(game.players || {}).forEach(p => {
-            if (p) p.shellItemUses = {};
+          const playerIds = Object.keys(game.players || {});
+          game.shells = createShellSet(playerIds.length, game.settings || getGameSettings());
+          playerIds.forEach(id => {
+            const p = game.players?.[id];
+            if (!p) return;
+
+            const suppressReward = p.skipNextReloadReward === true;
+            if (!suppressReward) {
+              const rewards = createItemRewards(
+                Number(game.settings?.itemRewardCount ?? 2),
+                game.settings || getGameSettings()
+              );
+              const result = addItemRewards(p.items, rewards, 8);
+              p.items = result.inventory;
+              itemRewards[id] = result.added;
+            }
+
+            p.skipNextReloadReward = false;
+            p.sawActive = false;
+            p.shellItemUses = {};
           });
+          reload = true;
         }
       } else if (type === "inverter") {
         const shellIndex = Number(game.shells?.current ?? 0);
@@ -5581,13 +5772,13 @@ async function useSelectedItem(targetId = null) {
       } else if (type === "dynamite") {
         if (!targetId || targetId === currentPlayerId) return;
         const target = game.players?.[targetId];
-        if (!target || Number(target.hp ?? 0) <= 0 || target.dynamiteTrapped) return;
+        if (!target || Number(target.hp ?? 0) <= 0 || target.dynamiteTrapped || isCoffeeChilledPlayer(target)) return;
         if (target.aceCardActive === true) return;
         target.dynamiteTrapped = true;
         target.dynamiteTrappedById = currentPlayerId;
         target.dynamiteActivatedTurn = Number(game.turn?.counter ?? 0);
       } else if (type === "dice") {
-        const ids = Object.keys(game.players || {}).filter(id => game.players[id] && Number(game.players[id].hp ?? 0) > 0 && !game.players[id].aceCardActive);
+        const ids = Object.keys(game.players || {}).filter(id => game.players[id] && Number(game.players[id].hp ?? 0) > 0 && !game.players[id].aceCardActive && !isCoffeeChilledPlayer(game.players[id]));
         if (ids.length < 2) return;
         if (!stampedUse) inventory.splice(slotIndex, 1);
         sourcePlayer.items = inventory;
@@ -5616,12 +5807,21 @@ async function useSelectedItem(targetId = null) {
           alive: Number(game.shells.alive ?? 0),
           blank: Number(game.shells.blank ?? 0)
         };
+      } else if (type === "floppy_disk") {
+        const shellIndex = Number(game.shells?.current ?? 0);
+        if (!Array.isArray(game.shells?.sequence) || shellIndex <= 0) return;
+
+        game.shells.current = shellIndex - 1;
+
+        const remainingSequence = game.shells.sequence.slice(game.shells.current);
+        game.shells.alive = remainingSequence.filter(type => type === "live").length;
+        game.shells.blank = remainingSequence.filter(type => type === "blank").length;
       } else if (type === "coin_flip") {
         coinFlipResult = Math.random() < 0.5 ? "all" : "self";
         if (coinFlipResult === "all") {
           /* Semua pemain lain terkena Handcuff. Diri sendiri tetap mendapat giliran. */
           Object.entries(game.players || {}).forEach(([id, target]) => {
-            if (id === currentPlayerId || !target || Number(target.hp ?? 0) <= 0 || target.aceCardActive === true) return;
+            if (id === currentPlayerId || !target || Number(target.hp ?? 0) <= 0 || target.aceCardActive === true || isCoffeeChilledPlayer(target)) return;
             target.skipTurns = Number(target.skipTurns ?? 0) + 1;
             target.handcuffed = true;
             target.coinFlipLocked = true;
@@ -5650,11 +5850,13 @@ async function useSelectedItem(targetId = null) {
         player.aceCardActivatedTurn = Number(game.turn?.counter ?? 0);
         player.aceCardExpiresTurn = Number(game.turn?.counter ?? 0) + Math.max(1, aliveCount);
       } else if (type === "magnet") {
-        /* Magnet hanya bisa digunakan jika ada minimal 2 item di inventory,
-           sehingga setelah Magnet dipakai masih ada 1 item lain yang dapat dipilih. */
-        const candidateIndexes = inventory
+        /* Jika Magnet dipinjam melalui Adrenaline, Magnet tetap berasal dari
+           inventory target, tetapi item yang ditarik harus berasal dari
+           inventory pemain yang menggunakan Adrenaline (bukan inventory target). */
+        const ownInventory = Array.isArray(player.items) ? [...player.items] : [];
+        const candidateIndexes = ownInventory
           .map((item, index) => ({ item, index }))
-          .filter(entry => entry.item !== "magnet");
+          .filter(entry => !(sourceId === currentPlayerId && entry.item === "magnet") && entry.item !== "magnet");
         if (!candidateIndexes.length) return;
 
         const chosenEntry = candidateIndexes[Math.floor(Math.random() * candidateIndexes.length)];
@@ -5662,10 +5864,19 @@ async function useSelectedItem(targetId = null) {
 
         magnetResult = chosenEntry.item;
 
-        /* Hapus tepat 2 item: Magnet yang digunakan + 1 item random. */
-        sourcePlayer.items = stampedUse
-          ? inventory.filter((_, index) => index !== chosenEntry.index)
-          : inventory.filter((_, index) => index !== slotIndex && index !== chosenEntry.index);
+        if (sourceId === currentPlayerId) {
+          /* Magnet milik sendiri: hapus Magnet + 1 item sendiri. */
+          sourcePlayer.items = stampedUse
+            ? inventory.filter((_, index) => index !== chosenEntry.index)
+            : inventory.filter((_, index) => index !== slotIndex && index !== chosenEntry.index);
+        } else {
+          /* Magnet hasil Adrenaline: hapus Magnet pinjaman, lalu hapus item
+             milik sendiri yang dipilih. Stamp melindungi Magnet pinjaman. */
+          sourcePlayer.items = stampedUse
+            ? [...inventory]
+            : inventory.filter((_, index) => index !== slotIndex);
+          player.items = ownInventory.filter((_, index) => index !== chosenEntry.index);
+        }
 
         player.hp = Math.min(
           Number(game.settings?.maxHealth ?? 4),
@@ -5674,6 +5885,8 @@ async function useSelectedItem(targetId = null) {
         inventoryHandled = true;
       } else if (type === "megazine") {
         game.shells = createShellSet(Object.keys(game.players || {}).length, game.settings || getGameSettings());
+        game.radioActive = false;
+        game.radioShellSnapshot = null;
         Object.values(game.players || {}).forEach(p => {
           if (p) p.shellItemUses = {};
         });
@@ -5715,11 +5928,14 @@ async function useSelectedItem(targetId = null) {
         hookTakenItem,
         futureMailResults,
         hourglassRewards,
-        itemRewards: hourglassRewards ? { [currentPlayerId]: hourglassRewards } : {},
+        itemRewards: reload
+          ? itemRewards
+          : (hourglassRewards ? { [currentPlayerId]: hourglassRewards } : {}),
+        reload,
         overtakeActivated,
         deadBatteryActivated,
-        floppyStoredShell,
         adrenalineStolenFromId: isBorrowed ? sourceId : null,
+        usedItemType: isBorrowed ? type : null,
         at: Date.now()
       };
 
@@ -5747,6 +5963,8 @@ async function useSelectedItem(targetId = null) {
     }
 
     if (type === "magnet" && magnetResult) {
+      const popupIcon = document.querySelector("#itemInfoIcon");
+      if (popupIcon) popupIcon.setAttribute("data-lucide", definition.icon || "circle-help");
       itemInfoTitle.textContent = definition.name;
       itemInfoText.textContent = `${ITEM_DEFINITIONS[magnetResult]?.name || magnetResult} berubah menjadi +1 HP`;
       itemInfoText.style.color = "#ddd";
@@ -5756,10 +5974,7 @@ async function useSelectedItem(targetId = null) {
 
     if (type === "magnifying_glass" && magnifyLabel) {
       const popupIcon = document.querySelector("#itemInfoIcon");
-      if (popupIcon) {
-        popupIcon.outerHTML = `<i id="itemInfoIcon" data-lucide="${definition.icon}"></i>`;
-        itemInfoIcon = document.querySelector("#itemInfoIcon");
-      }
+      if (popupIcon) popupIcon.setAttribute("data-lucide", definition.icon || "circle-help");
       itemInfoTitle.textContent = definition.name;
       itemInfoText.textContent = `Peluru saat ini: ${magnifyLabel}`;
       itemInfoText.style.color = magnifyLabel === "LIVE" ? "crimson" : magnifyLabel === "BLANK" ? "#999" : "#ddd";
@@ -5769,10 +5984,7 @@ async function useSelectedItem(targetId = null) {
 
     if (type === "future_mail" && futureMailResults) {
       const popupIcon = document.querySelector("#itemInfoIcon");
-      if (popupIcon) {
-        popupIcon.outerHTML = `<i id="itemInfoIcon" data-lucide="${definition.icon}"></i>`;
-        itemInfoIcon = document.querySelector("#itemInfoIcon");
-      }
+      if (popupIcon) popupIcon.setAttribute("data-lucide", definition.icon || "circle-help");
       const labels = futureMailResults.map(type => type === "live" ? `<span style="color:crimson">LIVE</span>` : `<span style="color:#999">BLANK</span>`);
       itemInfoTitle.textContent = definition.name;
       itemInfoText.innerHTML = `Peluru berikutnya ${labels[0]} ${labels[1]}`;
@@ -5783,10 +5995,7 @@ async function useSelectedItem(targetId = null) {
 
     if (type === "burner_phone" && burnerResult) {
       const popupIcon = document.querySelector("#itemInfoIcon");
-      if (popupIcon) {
-        popupIcon.outerHTML = `<i id="itemInfoIcon" data-lucide="${definition.icon}"></i>`;
-        itemInfoIcon = document.querySelector("#itemInfoIcon");
-      }
+      if (popupIcon) popupIcon.setAttribute("data-lucide", definition.icon || "circle-help");
       const burnerLabel = burnerResult.type === "live" ? "LIVE" : "BLANK";
       itemInfoTitle.textContent = definition.name;
       itemInfoText.textContent = `#${burnerResult.offset} ${burnerLabel}`;
@@ -5797,10 +6006,7 @@ async function useSelectedItem(targetId = null) {
 
     if (type === "rewind_film" && rewindResult) {
       const popupIcon = document.querySelector("#itemInfoIcon");
-      if (popupIcon) {
-        popupIcon.outerHTML = `<i id="itemInfoIcon" data-lucide="${definition.icon}"></i>`;
-        itemInfoIcon = document.querySelector("#itemInfoIcon");
-      }
+      if (popupIcon) popupIcon.setAttribute("data-lucide", definition.icon || "circle-help");
       itemInfoTitle.textContent = definition.name;
       itemInfoText.textContent = `Kembali ke Shell 1 • Total ${rewindResult.total} • Alive ${rewindResult.alive} • Blank ${rewindResult.blank}`;
       itemInfoText.style.color = "#ddd";
@@ -5861,9 +6067,11 @@ async function useSelectedItem(targetId = null) {
               if (Number(game.players[candidateId]?.hp ?? 0) > 0) {
                 if (Number(game.players[candidateId]?.skipTurns ?? 0) > 0) {
                   skippedPlayerId = candidateId;
-                  game.players[candidateId].skipTurns = Number(game.players[candidateId].skipTurns) - 1;
-                  game.players[candidateId].handcuffed = false;
-                  game.players[candidateId].coinFlipLocked = false;
+                  {
+                    game.players[candidateId].skipTurns = Number(game.players[candidateId].skipTurns) - 1;
+                    game.players[candidateId].handcuffed = false;
+                    game.players[candidateId].coinFlipLocked = false;
+                  }
                   nextIndex = (nextIndex + 1) % playerIds.length;
                   checked++;
                   continue;
@@ -5997,25 +6205,38 @@ function createGameState(
   const shuffledPlayers =
     shuffleArray(playerIds);
 
+  let teamAssignment = {};
+  if (settings.teamMode) {
+    const redSize = shuffledPlayers.length % 2 === 1
+      ? (Math.random() < 0.5 ? Math.floor(shuffledPlayers.length / 2) : Math.ceil(shuffledPlayers.length / 2))
+      : shuffledPlayers.length / 2;
+    shuffledPlayers.forEach((playerId, index) => {
+      teamAssignment[playerId] = index < redSize ? "red" : "blue";
+    });
+  }
+
   const gamePlayersData =
     {};
+  const initialItemRewards = {};
 
   shuffledPlayers.forEach(
     (playerId, index) => {
+      const startingItems = createItemRewards(settings.startingItemCount, settings);
+      initialItemRewards[playerId] = [...startingItems];
 
       gamePlayersData[playerId] = {
 
         hp: settings.maxHealth,
+        team: settings.teamMode ? teamAssignment[playerId] : null,
 
         turnOrder: index,
-        items: createItemRewards(settings.startingItemCount, settings),
+        items: startingItems,
         sawActive: false,
         skipTurns: 0,
         handcuffed: false,
         coinFlipLocked: false,
         shellItemUses: {},
         skipNextReloadReward: false,
-        floppyStoredShell: null, floppyStoredAtTurn: null, floppyReady: false,
         deadBatteryActivatedAt: null,
         shieldActive: false, shieldActivatedTurn: null,
         dynamiteTrapped: false, dynamiteTrappedById: null, dynamiteActivatedTurn: null,
@@ -6023,7 +6244,8 @@ function createGameState(
         clapperboardActive: false,
         stampActive: false,
         overtakePending: false,
-        wrenched: false, wrenchedById: null, wrenchedActivatedTurn: null
+        wrenched: false, wrenchedById: null, wrenchedActivatedTurn: null,
+        coffeeChilled: false, coffeeSkipPending: false, coffeeActivatedTurn: null
 
       };
 
@@ -6069,6 +6291,7 @@ function createGameState(
         Math.random().toString(36).slice(2, 8),
       type: "start",
       playerId: shuffledPlayers[0],
+      itemRewards: initialItemRewards,
       at: now
     },
 
@@ -6107,14 +6330,21 @@ startBtn.addEventListener(
         if (!room || room.status !== "lobby") return;
         const players = room.players || {};
         const playerIds = Object.keys(players);
-        if (playerIds.length < 2 || !players[currentPlayerId]) return;
+        const settings = getGameSettings(room.settings);
+        const minimumPlayers = settings.teamMode ? 4 : 2;
+        if (playerIds.length < minimumPlayers || !players[currentPlayerId]) return;
         return { ...room, status: "starting", startAt: Date.now() + 3000 };
       });
 
       if (!result.committed) {
         const snapshot = await get(ref(db, "room"));
-        if (snapshot.exists() && Object.keys(snapshot.val().players || {}).length < 2) {
-          roomMessage.textContent = "Minimal 2 pemain untuk memulai.";
+        if (snapshot.exists()) {
+          const currentRoom = snapshot.val();
+          const count = Object.keys(currentRoom.players || {}).length;
+          const minimumPlayers = getGameSettings(currentRoom.settings).teamMode ? 4 : 2;
+          if (count < minimumPlayers) {
+            roomMessage.textContent = `Minimal ${minimumPlayers} pemain untuk memulai${minimumPlayers === 4 ? " dalam Team Mode" : ""}.`;
+          }
         }
       }
     } catch (error) {
@@ -6134,7 +6364,9 @@ async function finishStartingGame() {
       if (!room || room.status !== "starting") return;
       if (Date.now() < Number(room.startAt || 0)) return;
       const playerIds = Object.keys(room.players || {});
-      if (playerIds.length < 2) return { ...room, status: "lobby", startAt: null };
+      const settings = getGameSettings(room.settings);
+      const minimumPlayers = settings.teamMode ? 4 : 2;
+      if (playerIds.length < minimumPlayers) return { ...room, status: "lobby", startAt: null };
       return { ...room, status: "playing", startAt: null, game: createGameState(playerIds, room.settings) };
     });
   } catch (error) {
@@ -6325,6 +6557,10 @@ function renderGamePlayerList() {
 
     row.className = "pl-list";
 
+    if (gameData.settings?.teamMode && player.team) {
+      row.classList.add(player.team === "red" ? "team-red" : "team-blue");
+    }
+
     if (
       gameData.turn?.current === player.id &&
       player.hp > 0
@@ -6424,6 +6660,14 @@ function renderGamePlayerList() {
       nameStatus.appendChild(lock);
     }
 
+    if (gameData.players?.[player.id]?.coffeeChilled) {
+      const coffee = document.createElement("i");
+      coffee.setAttribute("data-lucide", "coffee");
+      coffee.className = "pl-coffee";
+      coffee.setAttribute("title", "Chill");
+      nameStatus.appendChild(coffee);
+    }
+
     if (gameData.players?.[player.id]?.wrenched) {
       const wrench = document.createElement("i");
       wrench.setAttribute("data-lucide", "wrench");
@@ -6462,7 +6706,7 @@ function renderGamePlayerList() {
     /* Reward hasil item spin baru ditampilkan di List Player setelah
        animasi spin lokal selesai. */
     const spinEvent = gameData?.lastEvent &&
-      (gameData.lastEvent.reload || gameData.lastEvent.itemType === "hourglass")
+      (gameData.lastEvent.reload || gameData.lastEvent.itemType === "hourglass" || gameData.lastEvent.type === "start")
       ? gameData.lastEvent
       : null;
     if (spinEvent && revealedItemSpinEventId !== spinEvent.id && player.id === currentPlayerId) {
@@ -6601,6 +6845,60 @@ function getPlayerNameById(id) {
   )?.name || "Unknown";
 }
 
+function showTargetActionPopup(eventData) {
+  if (!eventData) return false;
+  const effectiveTargetId = eventData.targetId || eventData.adrenalineStolenFromId || null;
+  if (effectiveTargetId !== currentPlayerId) return false;
+
+  let title = null;
+  let titleIcon = "circle-help";
+  let body = null;
+
+  if (eventData.itemType === "adrenaline" && eventData.adrenalineStolenFromId === currentPlayerId) {
+    const user = getPlayerNameById(eventData.playerId);
+    const itemDef = ITEM_DEFINITIONS[eventData.itemType];
+    const stolenDef = ITEM_DEFINITIONS[eventData.usedItemType || eventData.hookTakenItem || eventData.eraserRemovedItem];
+    title = itemDef?.name || "Adrenaline";
+    titleIcon = itemDef?.icon || "syringe";
+    body = `${user} mengambil <span class="target-action-item"><i data-lucide="${stolenDef?.icon || "package"}"></i>${stolenDef?.name || "item"}</span> dari mu`;
+  } else if (eventData.itemType === "hook" && eventData.targetId === currentPlayerId) {
+    const user = getPlayerNameById(eventData.playerId);
+    const itemDef = ITEM_DEFINITIONS[eventData.hookTakenItem];
+    title = "Hook";
+    titleIcon = "fishing-hook";
+    body = `${user} mengambil <span class="target-action-item"><i data-lucide="${itemDef?.icon || "package"}"></i>${itemDef?.name || "item"}</span> dari mu`;
+  } else if (eventData.itemType === "eraser" && eventData.targetId === currentPlayerId) {
+    const user = getPlayerNameById(eventData.playerId);
+    const itemDef = ITEM_DEFINITIONS[eventData.eraserRemovedItem];
+    title = "Eraser";
+    titleIcon = "eraser";
+    body = `${user} menghapus <span class="target-action-item"><i data-lucide="${itemDef?.icon || "package"}"></i>${itemDef?.name || "item"}</span> dari mu`;
+  } else if (eventData.type === "shot" && eventData.targetId === currentPlayerId && Number(eventData.targetHp ?? 1) <= 0 && eventData.result === "live" && !eventData.isSelf) {
+    const user = getPlayerNameById(eventData.playerId);
+    title = "Death";
+    titleIcon = "skull";
+    body = `${user} telah membunuh mu`;
+  }
+
+  if (!title || !body || !itemInfoPopup || !itemInfoTitle || !itemInfoText) return false;
+
+  itemInfoTitle.textContent = title;
+  itemInfoText.innerHTML = body;
+  itemInfoText.style.color = "#ddd";
+  const iconHolder = document.querySelector("#itemInfoIcon");
+  if (iconHolder) {
+    iconHolder.outerHTML = `<i id="itemInfoIcon" data-lucide="${titleIcon}"></i>`;
+  }
+  itemInfoPopup.classList.remove("hidden");
+  itemInfoPopup.style.display = "flex";
+  itemInfoPopup.style.pointerEvents = "auto";
+  lucide.createIcons();
+  /* Popup target-action tetap terbuka sampai pengguna menutupnya. */
+  clearTimeout(window.__targetActionPopupTimer);
+  window.__targetActionPopupTimer = null;
+  return true;
+}
+
 function showGameEvent(eventData) {
   if (!eventData?.id) {
     return;
@@ -6611,6 +6909,8 @@ function showGameEvent(eventData) {
   }
 
   messageSequenceId = eventData.id;
+
+  showTargetActionPopup(eventData);
 
   const shooterName =
     getPlayerNameById(eventData.playerId);
@@ -6645,6 +6945,18 @@ function showGameEvent(eventData) {
       }, 900)
     );
 
+    /* Saat game pertama dimulai: Random Shell tampil lebih dulu, lalu item spin. */
+    if (eventData.playerId === currentPlayerId) {
+      const initialRewards = Array.isArray(eventData.itemRewards?.[currentPlayerId])
+        ? eventData.itemRewards[currentPlayerId]
+        : [];
+      if (initialRewards.length) {
+        messageTimers.push(
+          setTimeout(() => showItemSpin(eventData), 1050)
+        );
+      }
+    }
+
     return;
   }
 
@@ -6675,8 +6987,16 @@ function showGameEvent(eventData) {
       eraser: "eraser",
       hook: "hook",
       future_mail: "future-mail",
+      stamp: "stamp",
+      hourglass: "hourglass",
       dead_battery: "dead-battery",
-      floppy_disk: "floppy-disk"
+      life_steal: "life-steal",
+      ace_card: "ace-card",
+      magnet: "magnet",
+      overtake_ticket: "overtake-ticket",
+      floppy_disk: "save",
+      coffee: "coffee",
+      radio: "microwave"
     };
     playGameSound(soundMap[eventData.itemType] || "get-item");
 
@@ -6687,6 +7007,25 @@ function showGameEvent(eventData) {
         definition?.icon || "syringe",
         3600
       );
+      return;
+    }
+
+    if (eventData.itemType === "coffee") {
+      appendGameMessage(`${userName} menggunakan Coffee dan Chill 1 ronde.`, "info", definition?.icon || "coffee", 3600);
+      return;
+    }
+
+    if (eventData.itemType === "radio") {
+      appendGameMessage(`${userName} menggunakan Radio. Saat ini sedang disadap.`, "info", definition?.icon || "microwave", 3600);
+      if (eventData.playerId === currentPlayerId && itemInfoPopup && itemInfoTitle && itemInfoText) {
+        const popupIcon = document.querySelector("#itemInfoIcon");
+        if (popupIcon) popupIcon.setAttribute("data-lucide", definition?.icon || "microwave");
+        itemInfoTitle.textContent = "Radio";
+        itemInfoText.textContent = "Saat ini sedang disadap. Magnifying Glass, Future Mail, dan Burner Phone dinonaktifkan sampai reload.";
+        itemInfoText.style.color = "#ddd";
+        itemInfoPopup.classList.remove("hidden");
+        lucide.createIcons();
+      }
       return;
     }
 
@@ -6741,11 +7080,6 @@ function showGameEvent(eventData) {
       return;
     }
 
-    if (eventData.itemType === "floppy_disk") {
-      appendGameMessage(`${userName} menyimpan shell untuk giliran berikutnya.`, "info", definition?.icon || "save", 3600);
-      return;
-    }
-
     if (eventData.itemType === "hourglass") {
       appendGameMessage(`${userName} menggunakan Hourglass dan mendapatkan 2 item.`, "info", definition?.icon || "hourglass", 3600);
       messageTimers.push(setTimeout(() => showItemSpin(eventData), 450));
@@ -6753,19 +7087,9 @@ function showGameEvent(eventData) {
     }
 
     if (eventData.itemType === "future_mail") {
-      const labels = Array.isArray(eventData.futureMailResults)
-        ? eventData.futureMailResults.map(type => type === "live" ? "LIVE" : "BLANK")
-        : [];
-      const line = document.createElement("div");
-      line.className = "message-line info";
-      const icon = document.createElement("i");
-      icon.setAttribute("data-lucide", definition?.icon || "mail");
-      line.appendChild(icon);
-      const text = document.createElement("span");
-      line.appendChild(text);
-      gameMessage.appendChild(line);
-      lucide.createIcons();
-      messageTimers.push(setTimeout(() => { line.classList.add("removing"); setTimeout(() => line.remove(), 250); }, 3600));
+      /* Hasil Future Mail hanya ditampilkan pada popup pemain yang menggunakannya.
+         Popup tersebut dibuat di sisi lokal setelah transaksi berhasil. */
+      if (eventData.playerId !== currentPlayerId) return;
       return;
     }
 
@@ -6786,6 +7110,11 @@ function showGameEvent(eventData) {
 
     if (eventData.itemType === "overtake_ticket") {
       appendGameMessage(`${userName} menggunakan Overtake Ticket. Giliran akan kembali setelah pemain berikutnya selesai.`, "info", definition?.icon || "tickets", 3600);
+      return;
+    }
+
+    if (eventData.itemType === "floppy_disk") {
+      appendGameMessage(`${userName} menggunakan Floppy Disk. Kembali ke shell sebelumnya.`, "info", definition?.icon || "save", 3600);
       return;
     }
 
@@ -6849,6 +7178,12 @@ function showGameEvent(eventData) {
           3200
         );
       }, 650));
+
+      if (eventData.reload) {
+        messageTimers.push(setTimeout(() => {
+          showItemSpin(eventData);
+        }, 4050));
+      }
     }
 
     if (eventData.itemType === "expired_medicine" && eventData.expiredResult) {
@@ -7127,6 +7462,7 @@ async function renderGameState() {
   updateGameHealth();
   updateHandcuffOverlay();
   updateWrenchOverlay();
+  updateCoffeeOverlay();
   updateDeadBatteryUI();
 
   updateNextPlayer();
@@ -7145,8 +7481,17 @@ async function renderGameState() {
 }
 
 
+async function awardTeamWins(team, gameId) {
+  if (!team || !gameId || !gameData?.players) return;
+  const winnerIds = Object.entries(gameData.players)
+    .filter(([, player]) => player?.team === team)
+    .map(([id]) => id);
+  await Promise.all(winnerIds.map(id => awardWinnerWin(id, gameId)));
+}
+
 async function awardWinnerWin(winnerId, gameId) {
   if (!winnerId || !gameId) return;
+  if (!gameData?.settings?.teamMode && Object.keys(gameData?.players || {}).length <= 2) return;
   try {
     await runTransaction(ref(db, "players/" + winnerId), player => {
       if (!player) return;
@@ -7212,7 +7557,10 @@ function handleGameFinished() {
     "Unknown";
 
   const winnerGameId = String(gameData.startedAt || gameData.winner || Date.now());
-  awardWinnerWin(winnerId, winnerGameId);
+  const playerCount = Object.keys(gameData.players || {}).filter(id => gameData.players[id]).length;
+  if (playerCount > 2) {
+    awardWinnerWin(winnerId, winnerGameId);
+  }
   playGameSound("win", 1);
 
   showWinnerScreen(
@@ -7396,12 +7744,22 @@ function renderShellInfo() {
     ? Math.max(0, Number(gameData.shells.initialBlank))
     : fallbackRemaining.filter(type => type === "blank").length;
 
-  const alive = realtime
-    ? (Number.isFinite(Number(gameData.shells?.alive)) ? Math.max(0, Number(gameData.shells.alive)) : initialAlive)
-    : initialAlive;
-  const blank = realtime
-    ? (Number.isFinite(Number(gameData.shells?.blank)) ? Math.max(0, Number(gameData.shells.blank)) : initialBlank)
-    : initialBlank;
+  const radioSnapshot = gameData?.radioActive === true && gameData?.radioShellSnapshot
+    ? gameData.radioShellSnapshot
+    : null;
+  const alive = radioSnapshot
+    ? Math.max(0, Number(radioSnapshot.alive ?? 0))
+    : (realtime
+      ? (Number.isFinite(Number(gameData.shells?.alive)) ? Math.max(0, Number(gameData.shells.alive)) : initialAlive)
+      : initialAlive);
+  const blank = radioSnapshot
+    ? Math.max(0, Number(radioSnapshot.blank ?? 0))
+    : (realtime
+      ? (Number.isFinite(Number(gameData.shells?.blank)) ? Math.max(0, Number(gameData.shells.blank)) : initialBlank)
+      : initialBlank);
+  const displayedCurrent = radioSnapshot
+    ? Math.max(0, Number(radioSnapshot.current ?? current))
+    : current;
 
   aliveCount.textContent =
     "Peluru Alive : " + alive;
@@ -7417,7 +7775,7 @@ function renderShellInfo() {
     gameBlankCount.textContent = blank;
   }
 
-  const shellNumber = Math.min(total, current + 1);
+  const shellNumber = Math.min(total, displayedCurrent + 1);
   const shellNumberText = total > 0 ? `Shell ${shellNumber} / ${total}` : "Shell -";
   const gameShellNumber = document.querySelector(".game-shell-number");
   const randomShellNumber = document.querySelector(".shell-number");
@@ -7606,7 +7964,7 @@ function showShellReveal() {
       if (gameData?.phase === "playing") {
         shellElement.classList.add("hidden");
       }
-    }, 3500);
+    }, 900);
   }, revealDelay);
 
 }
@@ -8194,60 +8552,7 @@ function closeGameProfile() {
   gameProfilePopup.classList.add("hidden");
 }
 
-async function leaveGame() {
-  if (!currentPlayerId || !roomData || roomData.status !== "playing") return;
-  gameProfileLeave.disabled = true;
-  gameProfileLeave.textContent = "Leaving...";
-
-  try {
-    const roomRef = ref(db, "room");
-    const result = await runTransaction(roomRef, room => {
-      if (!room || room.status !== "playing") return;
-
-      const players = { ...(room.players || {}) };
-      delete players[currentPlayerId];
-
-      const game = room.game ? { ...room.game } : null;
-      if (game?.players) {
-        const gamePlayers = { ...game.players };
-        delete gamePlayers[currentPlayerId];
-        game.players = gamePlayers;
-      }
-
-      const ids = Object.keys(game?.players || {}).filter(id => game.players[id]);
-      if (!ids.length) return null;
-
-      if (ids.length === 1) {
-        game.phase = "finished";
-        game.winner = ids[0];
-        game.turn = { ...(game.turn || {}), current: ids[0], index: 0 };
-      } else if (game.turn?.current === currentPlayerId) {
-        const ordered = ids.sort((a,b) => Number(game.players[a].turnOrder ?? 0) - Number(game.players[b].turnOrder ?? 0));
-        const nextId = ordered.find(id => Number(game.players[id].hp ?? 0) > 0) || ordered[0];
-        game.turn.current = nextId;
-        game.turn.index = ordered.indexOf(nextId);
-        game.turn.counter = Number(game.turn.counter ?? 0) + 1;
-      }
-
-      return { ...room, players, game };
-    });
-
-    if (!result.committed) return;
-
-    closeGameProfile();
-    gameData = null;
-    showLobby();
-  } catch (error) {
-    console.error("Leave game error:", error);
-    alert("Gagal keluar dari game.");
-  } finally {
-    gameProfileLeave.disabled = false;
-    gameProfileLeave.textContent = "Leave Game";
-  }
-}
-
 gameProfileClose.addEventListener("click", closeGameProfile);
-gameProfileLeave.addEventListener("click", leaveGame);
 gameProfilePopup.addEventListener("click", event => {
   if (event.target === gameProfilePopup) closeGameProfile();
 });
@@ -8400,51 +8705,32 @@ playerBtn.addEventListener(
    SELF BUTTON
 ========================= */
 
-selfBtn.addEventListener(
-  "click",
-  () => {
-
-    /* Info item tetap dapat dibuka walaupun animasi/item spin sedang
-       mengunci tombol aksi. Info tidak mengonsumsi item. */
-    if (shootingLocked && !(itemMode && selectedItemType)) {
-      return;
-    }
-
-    if (itemMode && selectedItemType) {
-      itemInfoMode = true;
-      showSelectedItemInfo();
-      return;
-    }
-
-    if (!shotMode && !itemMode) {
-      return;
-    }
-
-    const target =
-      gamePlayers.find(
-        player =>
-          player.id ===
-          currentPlayerId
-      );
-
-
-    if (!target) {
-      return;
-    }
-
-
-    selectedTarget =
-      target;
-
-
-    closeShotPopup();
-
-    shoot(
-      currentPlayerId
-    );
-
+selfBtn.addEventListener("click", event => {
+  if (itemMode && selectedItemType) {
+    event.preventDefault();
+    event.stopPropagation();
+    event.stopImmediatePropagation();
+    showSelectedItemInfo();
+    return;
   }
-);
+
+  if (!shotMode) return;
+  const target = gamePlayers.find(player => player.id === currentPlayerId);
+  if (!target) return;
+  selectedTarget = target;
+  closeShotPopup();
+  shoot(currentPlayerId);
+});
+
+selfBtn.addEventListener("pointerdown", event => {
+  if (!itemMode || !selectedItemType) return;
+  event.preventDefault();
+  event.stopPropagation();
+  event.stopImmediatePropagation();
+});
+
+// Jangan gunakan document-level handler untuk Info. Tombol sendiri menangani event.
+
 
 
 /* =========================
@@ -8609,11 +8895,13 @@ function renderPlayerPopup() {
         <button
           class="st-player-btn"
           data-id="${player.id}"
+          ${gameData?.players?.[player.id]?.coffeeChilled ? "disabled" : ""}
           ${itemMode && ["handcuff", "adrenaline"].includes(selectedItemType) && gameData?.turn?.current !== currentPlayerId ? "disabled" : ""}
-          ${itemMode && selectedItemType === "adrenaline" && (gameData?.players?.[player.id]?.aceCardActive || !(Array.isArray(gameData?.players?.[player.id]?.items) && gameData.players[player.id].items.length)) ? "disabled" : ""}
-          ${itemMode && selectedItemType === "dynamite" && (gameData?.players?.[player.id]?.aceCardActive || gameData?.players?.[player.id]?.dynamiteTrapped) ? "disabled" : ""}
-          ${itemMode && selectedItemType === "wrench" && (gameData?.players?.[player.id]?.aceCardActive || gameData?.players?.[player.id]?.wrenched) ? "disabled" : ""}
-          ${itemMode && ["eraser", "hook"].includes(selectedItemType) && gameData?.players?.[player.id]?.aceCardActive ? "disabled" : ""}>
+          ${itemMode && selectedItemType === "adrenaline" && (gameData?.players?.[player.id]?.aceCardActive || gameData?.players?.[player.id]?.coffeeChilled || !(Array.isArray(gameData?.players?.[player.id]?.items) && gameData.players[player.id].items.length)) ? "disabled" : ""}
+          ${itemMode && selectedItemType === "dynamite" && (gameData?.players?.[player.id]?.aceCardActive || gameData?.players?.[player.id]?.coffeeChilled || gameData?.players?.[player.id]?.dynamiteTrapped) ? "disabled" : ""}
+          ${itemMode && selectedItemType === "wrench" && (gameData?.players?.[player.id]?.aceCardActive || gameData?.players?.[player.id]?.coffeeChilled || gameData?.players?.[player.id]?.wrenched) ? "disabled" : ""}
+          ${itemMode && ["eraser", "hook"].includes(selectedItemType) && (gameData?.players?.[player.id]?.aceCardActive || gameData?.players?.[player.id]?.coffeeChilled) ? "disabled" : ""}
+          ${shotMode && gameData?.settings?.teamMode && gameData?.settings?.teamFriendlyFire === true && gameData?.players?.[player.id]?.team && gameData?.players?.[player.id]?.team === gameData?.players?.[currentPlayerId]?.team ? "disabled" : ""}>
 
           ${itemMode && selectedItemType === "handcuff" ? "Lock" : itemMode && selectedItemType === "wrench" ? "Wrench" : itemMode && selectedItemType === "adrenaline" ? "Steal" : itemMode && selectedItemType === "dynamite" ? "Trap" : itemMode && selectedItemType === "eraser" ? "Erase" : itemMode && selectedItemType === "hook" ? "Hook" : "Shot"}
 
@@ -8768,7 +9056,11 @@ async function shoot(targetId) {
       }
 
       const targetPlayer = currentGame.players?.[targetId];
-      if (!targetPlayer || Number(targetPlayer.hp ?? 0) <= 0) {
+      if (!targetPlayer || Number(targetPlayer.hp ?? 0) <= 0 || isCoffeeChilledPlayer(targetPlayer)) {
+        return;
+      }
+      if (currentGame.settings?.teamMode && currentGame.settings?.teamFriendlyFire === true
+          && targetPlayer.team && currentGame.players?.[currentPlayerId]?.team === targetPlayer.team) {
         return;
       }
 
@@ -8831,7 +9123,11 @@ async function shoot(targetId) {
 
       const players = currentGame.players || {};
       const targetPlayer = players[targetId];
-      if (!targetPlayer || Number(targetPlayer.hp ?? 0) <= 0) {
+      if (!targetPlayer || Number(targetPlayer.hp ?? 0) <= 0 || isCoffeeChilledPlayer(targetPlayer)) {
+        return;
+      }
+      if (currentGame.settings?.teamMode && currentGame.settings?.teamFriendlyFire === true
+          && targetPlayer.team && players[currentPlayerId]?.team === targetPlayer.team) {
         return;
       }
 
@@ -8851,8 +9147,7 @@ async function shoot(targetId) {
       }
 
       const shooterStateBeforeShot = players[currentPlayerId];
-      const floppyShotActive = shooterStateBeforeShot?.floppyReady === true && !!shooterStateBeforeShot?.floppyStoredShell;
-      const currentShellType = floppyShotActive ? shooterStateBeforeShot.floppyStoredShell : shells.sequence[currentShell];
+      const currentShellType = shells.sequence[currentShell];
       if (!currentShellType) {
         return;
       }
@@ -8937,11 +9232,7 @@ async function shoot(targetId) {
       const shooterState = players[currentPlayerId];
       clapperboardRepeat = shooterState?.clapperboardActive === true;
 
-      if (floppyShotActive) {
-        shooterState.floppyStoredShell = null;
-        shooterState.floppyStoredAtTurn = null;
-        shooterState.floppyReady = false;
-      } else if (!clapperboardRepeat) {
+      if (!clapperboardRepeat) {
         currentGame.shells.current = currentShell + 1;
         if (originalShellType === "live") {
           currentGame.shells.alive = Math.max(0, Number(currentGame.shells.alive ?? 0) - 1);
@@ -8972,9 +9263,17 @@ async function shoot(targetId) {
         id => Number(players[id]?.hp ?? 0) > 0
       );
 
-      if (livingPlayerIds.length <= 1) {
+      const livingTeams = currentGame.settings?.teamMode
+        ? [...new Set(livingPlayerIds.map(id => players[id]?.team).filter(Boolean))]
+        : [];
+      const teamFinished = currentGame.settings?.teamMode === true && livingTeams.length <= 1;
+
+      if (currentGame.settings?.teamMode ? teamFinished : livingPlayerIds.length <= 1) {
         currentGame.phase = "finished";
-        currentGame.winner = livingPlayerIds[0] || null;
+        currentGame.winnerTeam = currentGame.settings?.teamMode ? (livingTeams[0] || null) : null;
+        currentGame.winner = currentGame.settings?.teamMode
+          ? (livingPlayerIds.find(id => players[id]?.team === currentGame.winnerTeam) || null)
+          : (livingPlayerIds[0] || null);
         currentGame.turn.current = livingPlayerIds[0] || currentPlayerId;
         currentGame.turn.index = livingPlayerIds[0] ? playerIds.indexOf(livingPlayerIds[0]) : 0;
 
@@ -9006,6 +9305,9 @@ async function shoot(targetId) {
       let itemRewards = {};
       if (!clapperboardRepeat && currentGame.shells.current >= Number(currentGame.shells.total || 0)) {
         currentGame.shells = createShellSet(playerIds.length, currentGame.settings || getGameSettings());
+        /* Reload otomatis mengakhiri penyadapan Radio. */
+        currentGame.radioActive = false;
+        currentGame.radioShellSnapshot = null;
         playerIds.forEach(id => {
           if (players[id]) {
             const suppressReward = players[id].skipNextReloadReward === true;
@@ -9023,17 +9325,52 @@ async function shoot(targetId) {
         shellReloaded = true;
       }
 
+      const currentPlayerHasOvertake = players[currentPlayerId]?.overtakePending === true;
       const overtakeOwnerId = playerIds.find(id => id !== currentPlayerId && players[id]?.overtakePending === true && Number(players[id]?.hp ?? 0) > 0) || null;
-      if (overtakeOwnerId) {
-        /* Pemilik tiket sudah menunggu: setelah pemain berikutnya selesai, giliran kembali ke pemilik. */
+
+      if (currentPlayerHasOvertake) {
+        /* Pemilik tiket sudah selesai bermain. Tiket memaksa giliran berikutnya
+           ke pemain normal setelahnya, bukan memberi pemilik giliran kedua langsung.
+           Tiket tetap menunggu sampai pemain berikutnya selesai. */
+        const currentIndex = playerIds.indexOf(currentPlayerId);
+        let nextIndex = (currentIndex + 1) % playerIds.length;
+        let checked = 0;
+        while (checked < playerIds.length) {
+          const candidateId = playerIds[nextIndex];
+          if (candidateId !== currentPlayerId && Number(players[candidateId]?.hp ?? 0) > 0) {
+            if (Number(players[candidateId]?.skipTurns ?? 0) > 0) {
+              skippedPlayerId = candidateId;
+              {
+                players[candidateId].skipTurns = Number(players[candidateId].skipTurns) - 1;
+                players[candidateId].handcuffed = false;
+                players[candidateId].coinFlipLocked = false;
+              }
+              nextIndex = (nextIndex + 1) % playerIds.length;
+              checked++;
+              continue;
+            }
+            break;
+          }
+          nextIndex = (nextIndex + 1) % playerIds.length;
+          checked++;
+        }
+        const nextId = playerIds[nextIndex];
+        if (nextId && nextId !== currentPlayerId && Number(players[nextId]?.hp ?? 0) > 0) {
+          currentGame.turn.current = nextId;
+          currentGame.turn.index = nextIndex;
+          currentGame.turn.counter = Number(currentGame.turn.counter ?? 0) + 1;
+        }
+      } else if (overtakeOwnerId) {
+        /* Pemain berikutnya selesai. Sekarang giliran kembali ke pemilik tiket.
+           Handcuff/Coinflip yang berasal dari diri sendiri selama menunggu
+           Overtake Ticket tidak boleh terbawa ke giliran yang kembali ini. */
         players[overtakeOwnerId].overtakePending = false;
+        players[overtakeOwnerId].handcuffed = false;
+        players[overtakeOwnerId].coinFlipLocked = false;
+        players[overtakeOwnerId].skipTurns = 0;
         currentGame.turn.current = overtakeOwnerId;
         currentGame.turn.index = playerIds.indexOf(overtakeOwnerId);
         currentGame.turn.counter = Number(currentGame.turn.counter ?? 0) + 1;
-        const overtakingPlayer = players[overtakeOwnerId];
-        if (overtakingPlayer?.floppyStoredShell && Number(overtakingPlayer.floppyStoredAtTurn ?? -1) < Number(currentGame.turn.counter ?? 0)) {
-          overtakingPlayer.floppyReady = true;
-        }
       } else if ((currentShellType === "blank" && isSelf) || clapperboardRepeat) {
         const currentIndex = playerIds.indexOf(currentPlayerId);
         currentGame.turn.current = currentPlayerId;
@@ -9053,9 +9390,11 @@ async function shoot(targetId) {
           if (Number(players[candidateId]?.hp ?? 0) > 0) {
             if (Number(players[candidateId]?.skipTurns ?? 0) > 0) {
               skippedPlayerId = candidateId;
-              players[candidateId].skipTurns = Number(players[candidateId].skipTurns) - 1;
-              players[candidateId].handcuffed = false;
-              players[candidateId].coinFlipLocked = false;
+              {
+                players[candidateId].skipTurns = Number(players[candidateId].skipTurns) - 1;
+                players[candidateId].handcuffed = false;
+                players[candidateId].coinFlipLocked = false;
+              }
               nextIndex = (nextIndex + 1) % playerIds.length;
               checked++;
               continue;
@@ -9069,10 +9408,6 @@ async function shoot(targetId) {
         currentGame.turn.current = playerIds[nextIndex];
         currentGame.turn.index = nextIndex;
         currentGame.turn.counter = Number(currentGame.turn.counter ?? 0) + 1;
-        const nextPlayerState = players[currentGame.turn.current];
-        if (nextPlayerState?.floppyStoredShell && Number(nextPlayerState.floppyStoredAtTurn ?? -1) < Number(currentGame.turn.counter ?? 0)) {
-          nextPlayerState.floppyReady = true;
-        }
 
         const activeAliveCount = Object.values(players).filter(p => p && Number(p.hp ?? 0) > 0).length;
         if (currentGame.deadBatteryActive && Number(currentGame.turn.counter ?? 0) > Number(currentGame.deadBatteryExpiresTurn ?? -1)) {
@@ -9178,13 +9513,19 @@ async function shoot(targetId) {
 ========================= */
 
 function closeItemInfoPopup() {
-  if (itemInfoPopup) itemInfoPopup.classList.add("hidden");
+  if (itemInfoPopup) {
+    itemInfoPopup.classList.add("hidden");
+    itemInfoPopup.style.display = "";
+    itemInfoPopup.style.pointerEvents = "";
+  }
 }
 
 /* Lucide mengganti <i> menjadi <svg>, jadi gunakan event delegation. */
 if (itemInfoPopup) {
   itemInfoPopup.addEventListener("click", event => {
     if (event.target.closest("#itemInfoClose")) {
+      event.preventDefault();
+      event.stopPropagation();
       closeItemInfoPopup();
       return;
     }
@@ -9220,6 +9561,22 @@ function updateHandcuffOverlay() {
     text.textContent = isDead ? "DEAD" : (isCoinFlipped ? "Coin Flipped" : "HANDCUFFED");
   }
   lucide.createIcons();
+}
+
+
+function updateCoffeeOverlay() {
+  const overlay = document.querySelector("#coffeeOverlay");
+  if (!overlay) return;
+  const myState = gameData?.players?.[currentPlayerId];
+  const showOverlay = gameData?.phase === "playing" && isCoffeeChilledPlayer(myState) && Number(myState?.hp ?? 0) > 0;
+  overlay.classList.toggle("hidden", !showOverlay);
+  if (showOverlay) {
+    const icon = overlay.querySelector("svg, i");
+    if (icon) icon.outerHTML = `<i data-lucide="coffee"></i>`;
+    const text = overlay.querySelector("span");
+    if (text) text.textContent = "Chill";
+    lucide.createIcons();
+  }
 }
 
 
@@ -9260,8 +9617,24 @@ function enableShotButtons() {
     selfBtn.textContent = "Info";
     selfBtn.classList.add("info-mode");
     playerBtn.classList.add("use-mode");
-    playerBtn.disabled = !myTurn || shootingLocked;
+    const selectedDefinition = ITEM_DEFINITIONS[selectedItemType];
+    const selectedUsedThisShell = selectedItemType === "hourglass"
+      && gameData?.players?.[currentPlayerId]?.shellItemUses?.hourglass === true;
+    const selectedExpiredFull = selectedItemType === "expired_medicine"
+      && Number(gameData?.players?.[currentPlayerId]?.hp ?? 0) >= Number(gameData?.settings?.maxHealth ?? 4);
+    const selectedDisabledBySettings = gameData?.settings?.enabledItems?.[selectedItemType] === false;
+    const selectedRadioBlocked = gameData?.radioActive === true && isRadioBlockedItem(selectedItemType);
+    const selectedFloppyUnavailable = selectedItemType === "floppy_disk"
+      && Number(gameData?.shells?.current ?? 0) <= 0;
+    const selectedCanUse = !!selectedDefinition && myTurn && !shootingLocked
+      && gameData?.players?.[currentPlayerId]?.wrenched !== true
+      && !selectedUsedThisShell && !selectedExpiredFull
+      && (!selectedDisabledBySettings || selectedItemType === "floppy_disk")
+      && !selectedRadioBlocked && !selectedFloppyUnavailable;
+    playerBtn.disabled = !selectedCanUse;
     selfBtn.disabled = false;
+    selfBtn.removeAttribute("disabled");
+    selfBtn.classList.add("info-mode");
     if (randomShotBtn) randomShotBtn.disabled = true;
     return;
   }
@@ -9352,6 +9725,7 @@ if (randomShotBtn) {
 
     const candidates = Object.entries(gameData.players || {})
       .filter(([id, player]) => id !== currentPlayerId && Number(player?.hp ?? 0) > 0)
+      .filter(([id, player]) => !(gameData.settings?.teamMode && gameData.settings?.teamFriendlyFire === true && player?.team && player.team === gameData.players?.[currentPlayerId]?.team))
       .map(([id]) => id);
 
     if (!candidates.length) return;
