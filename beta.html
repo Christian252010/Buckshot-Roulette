@@ -835,7 +835,7 @@ body {
   align-items: center;
   justify-content: center;
   gap: 8px;
-  color: midnightblue;
+  color: #3da5ff;
   background: #0008;
   pointer-events: none;
 }
@@ -1152,6 +1152,32 @@ body {
 
 .player-list .pl-list.current-turn.team-blue {
   background: rgba(60, 105, 190, .58);
+}
+
+.team-summary {
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid #555;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 12px;
+  font-weight: bold;
+}
+
+.team-summary-line {
+  padding: 4px 6px;
+  border-radius: 4px;
+}
+
+.team-summary-blue {
+  color: #6ea8ff;
+  background: rgba(35, 75, 150, .18);
+}
+
+.team-summary-red {
+  color: #ff8b8b;
+  background: rgba(150, 35, 35, .18);
 }
 
 .player-list .pl-user {
@@ -4221,14 +4247,15 @@ async function renderRoom() {
   }
 
   if (roomData.status === "playing" && roomData.game?.phase === "finished") {
-    // Game sudah selesai tetapi room belum sempat dihapus oleh client pemenang.
-    // Semua pemain dikembalikan ke lobby sementara dan leaderboard tetap tampil.
+    /* Kembali ke lobby segera; penghapusan Firebase dilakukan oleh
+       handleGameFinished setelah pencatatan kemenangan selesai. */
     hideWinnerScreen();
+    gameData = null;
     showLobby();
     createBtn.classList.add("hidden");
     joinBtn.classList.add("hidden");
     startLeft.classList.add("hidden");
-    roomMessage.textContent = "Game selesai. Menunggu kembali ke lobby...";
+    roomMessage.textContent = "";
     updateLeaderboardVisibility();
     returningFromWinner = false;
     return;
@@ -5571,29 +5598,18 @@ async function useSelectedItem(targetId = null) {
       if (type === "expired_medicine" && Number(player.hp ?? 0) >= Number(game.settings?.maxHealth ?? 4)) return;
 
       if (type === "coffee") {
-        /* Coffee langsung mengakhiri giliran pemakai. Efek Chill tetap aktif
-           sampai giliran pemain tersebut kembali, tetapi tidak membuatnya
-           kehilangan giliran kedua kalinya. */
+        /* Coffee selalu mengakhiri giliran saat ini. Jika pemain sebelumnya
+           memasang Overtake Ticket lalu memilih Coffee, tiket tersebut dibatalkan. */
         player.coffeeChilled = true;
         player.coffeeSkipPending = false;
         player.coffeeActivatedTurn = Number(game.turn?.counter ?? 0);
+        player.overtakePending = false;
 
         const playerIds = Object.keys(game.players || {})
           .filter(id => game.players[id] && Number(game.players[id].hp ?? 0) > 0)
           .sort((a, b) => Number(game.players[a]?.turnOrder ?? 0) - Number(game.players[b]?.turnOrder ?? 0));
         const currentIndex = playerIds.indexOf(currentPlayerId);
-        const overtakeOwnerId = playerIds.find(id => id !== currentPlayerId && game.players[id]?.overtakePending === true) || null;
-        if (overtakeOwnerId) {
-          /* Coffee juga mengakhiri giliran, tetapi tidak boleh melewati efek
-             Overtake Ticket yang sedang menunggu giliran pemiliknya kembali. */
-          game.players[overtakeOwnerId].overtakePending = false;
-          game.players[overtakeOwnerId].handcuffed = false;
-          game.players[overtakeOwnerId].coinFlipLocked = false;
-          game.players[overtakeOwnerId].skipTurns = 0;
-          game.turn.current = overtakeOwnerId;
-          game.turn.index = playerIds.indexOf(overtakeOwnerId);
-          game.turn.counter = Number(game.turn.counter ?? 0) + 1;
-        } else if (playerIds.length > 1 && currentIndex >= 0) {
+        if (playerIds.length > 1 && currentIndex >= 0) {
           let nextIndex = (currentIndex + 1) % playerIds.length;
           let checked = 0;
           while (checked < playerIds.length) {
@@ -5607,11 +5623,6 @@ async function useSelectedItem(targetId = null) {
                 nextIndex = (nextIndex + 1) % playerIds.length;
                 checked++;
                 continue;
-              }
-              if (candidate.coffeeChilled === true && Number(candidate.coffeeActivatedTurn ?? -1) < Number(game.turn?.counter ?? 0) + 1) {
-                candidate.coffeeChilled = false;
-                candidate.coffeeSkipPending = false;
-                candidate.coffeeActivatedTurn = null;
               }
               break;
             }
@@ -6012,6 +6023,25 @@ async function useSelectedItem(targetId = null) {
       itemInfoText.style.color = "#ddd";
       itemInfoPopup.classList.remove("hidden");
       lucide.createIcons();
+    }
+
+    if (type === "coffee") {
+      /* Safeguard: bila ada state lama/concurrent write yang membuat turn masih
+         menunjuk ke pemakai Coffee, paksa maju sekali lagi. */
+      await runTransaction(gameRef, game => {
+        if (!game || game.phase !== "playing" || game.turn?.current !== currentPlayerId) return;
+        const ids = Object.keys(game.players || {})
+          .filter(id => game.players[id] && Number(game.players[id].hp ?? 0) > 0)
+          .sort((a, b) => Number(game.players[a]?.turnOrder ?? 0) - Number(game.players[b]?.turnOrder ?? 0));
+        if (ids.length <= 1) return;
+        const index = ids.indexOf(currentPlayerId);
+        if (index < 0) return;
+        const nextIndex = (index + 1) % ids.length;
+        game.turn.current = ids[nextIndex];
+        game.turn.index = nextIndex;
+        game.turn.counter = Number(game.turn.counter ?? 0) + 1;
+        return game;
+      });
     }
 
     const snapshot = await get(gameRef);
@@ -6743,6 +6773,24 @@ function renderGamePlayerList() {
 
   });
 
+  if (gameData.settings?.teamMode) {
+    const teamSummary = document.createElement("div");
+    teamSummary.className = "team-summary";
+    const teamPlayers = { blue: [], red: [] };
+    players.forEach(player => {
+      const team = gameData.players?.[player.id]?.team;
+      if (team === "blue") teamPlayers.blue.push(player.name || "Unknown");
+      if (team === "red") teamPlayers.red.push(player.name || "Unknown");
+    });
+    ["blue", "red"].forEach(team => {
+      const line = document.createElement("div");
+      line.className = `team-summary-line team-summary-${team}`;
+      line.textContent = `${team === "blue" ? "Blue" : "Red"} : ${teamPlayers[team].join(", ") || "-"}`;
+      teamSummary.appendChild(line);
+    });
+    playersListContainer.appendChild(teamSummary);
+  }
+
   lucide.createIcons();
 
 }
@@ -6946,6 +6994,7 @@ function showGameEvent(eventData) {
     );
 
     /* Saat game pertama dimulai: Random Shell tampil lebih dulu, lalu item spin. */
+    showShellReveal();
     if (eventData.playerId === currentPlayerId) {
       const initialRewards = Array.isArray(eventData.itemRewards?.[currentPlayerId])
         ? eventData.itemRewards[currentPlayerId]
@@ -7558,7 +7607,10 @@ function handleGameFinished() {
 
   const winnerGameId = String(gameData.startedAt || gameData.winner || Date.now());
   const playerCount = Object.keys(gameData.players || {}).filter(id => gameData.players[id]).length;
-  if (playerCount > 2) {
+  const winnerTeam = gameData.settings?.teamMode ? gameData.winnerTeam : null;
+  if (gameData.settings?.teamMode && winnerTeam) {
+    awardTeamWins(winnerTeam, winnerGameId);
+  } else if (playerCount > 2) {
     awardWinnerWin(winnerId, winnerGameId);
   }
   playGameSound("win", 1);
@@ -7640,7 +7692,7 @@ function showWinnerScreen(
       // game finished sebagai lobby sementara sampai room benar-benar hilang.
       updateLeaderboardVisibility();
     },
-    7000
+    500
   );
 
 }
@@ -8058,21 +8110,13 @@ function updatePreparation() {
   ) {
 
     clearPreparationTimer();
-
-    if (
-      !gameData ||
-      gameData.phase === "finished"
-    ) {
-      clearTimeout(shellRevealTimer);
-      document.querySelector(
-        ".random-shell"
-      ).classList.add("hidden");
-    }
-
+    /* Random Shell hanya boleh tampil melalui showShellReveal() saat animasi
+       awal/reload. Jangan biarkan fase playing membuatnya menetap. */
+    const randomShell = document.querySelector(".random-shell");
+    if (randomShell) randomShell.classList.add("hidden");
     return;
 
   }
-
 
   document.querySelector(
     ".random-shell"
@@ -9559,6 +9603,10 @@ function updateHandcuffOverlay() {
   }
   if (text) {
     text.textContent = isDead ? "DEAD" : (isCoinFlipped ? "Coin Flipped" : "HANDCUFFED");
+    text.style.color = isDead ? "crimson" : (isCoinFlipped ? "#ffd43b" : "#3da5ff");
+  }
+  if (icon) {
+    icon.style.color = isDead ? "crimson" : (isCoinFlipped ? "#ffd43b" : "#3da5ff");
   }
   lucide.createIcons();
 }
