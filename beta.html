@@ -1010,10 +1010,19 @@ body {
 
 .st-list {
   display: flex;
-  padding: 8px 0;
+  padding: 8px;
   justify-content: space-between;
   align-items: center;
   border-bottom: 1.5px solid #555;
+  border-radius: 5px;
+}
+
+.st-list.team-same {
+  background: rgba(150, 35, 35, .52);
+}
+
+.st-list.team-same .st-nama {
+  color: #fff;
 }
 
 .st-list:last-child {
@@ -1155,9 +1164,9 @@ body {
 }
 
 .team-summary {
-  margin-top: 8px;
+  margin-bottom: 8px;
   padding-top: 8px;
-  border-top: 1px solid #555;
+  border-bottom: 1px solid #555;
   display: flex;
   flex-direction: column;
   gap: 4px;
@@ -1450,6 +1459,18 @@ body {
   z-index: 2;
   transition: color 0.3s ease;
 }
+
+.winner-team-members {
+  z-index: 2;
+  margin-top: 8px;
+  max-width: 90%;
+  text-align: center;
+  color: #9ec5ff;
+  font-size: 15px;
+  font-weight: bold;
+}
+
+.winner-team-members.hidden { display: none !important; }
 
 .winner-name {
   font-family: "Archivo", sans-serif;
@@ -2856,6 +2877,7 @@ body {
   <div class="winner-card">
     <span class="winner-title"></span>
     <span class="winner-name"></span>
+    <span class="winner-team-members hidden"></span>
   </div>
 
 
@@ -3121,6 +3143,8 @@ const winnerTitle =
 
 const winnerName =
   document.querySelector(".winner-name");
+const winnerTeamMembers =
+  document.querySelector(".winner-team-members");
 
 const winnerTrophy =
   document.querySelector(".winner-trophy");
@@ -5038,187 +5062,187 @@ const ITEM_DEFINITIONS = {
   magnifying_glass: {
     name: "Magnifying Glass",
     icon: "search",
-    info: "Melihat jenis peluru yang sedang berada di posisi sekarang.",
+    info: "Mengetahui apakah peluru yang siap ditembak saat ini adalah Live atau Blank. Tidak menghabiskan peluru.",
     target: false
   },
   hand_saw: {
     name: "Hand Saw",
     icon: "pocket-knife",
-    info: "Tembakan live berikutnya memberikan double damage (2 HP).",
+    info: "Membuat tembakan Live berikutnya memberikan 2 HP damage, lalu efeknya habis.",
     target: false
   },
   cigarette: {
     name: "Cigarette Pack",
     icon: "cigarette",
-    info: "Memulihkan 1 HP. Tidak dapat digunakan jika HP sudah penuh.",
+    info: "Memulihkan 1 HP. Tidak bisa digunakan jika HP sudah penuh.",
     target: false
   },
   handcuff: {
     name: "Handcuff",
     icon: "lock-keyhole-open",
-    info: "Membuat pemain yang terkena dilewati 1 giliran.",
+    info: "Memborgol target sehingga giliran target berikutnya dilewati.",
     target: true
   },
   beer: {
     name: "Beer",
     icon: "can-soda",
-    info: "Membuang peluru yang sedang berada di posisi sekarang tanpa menembaknya.",
+    info: "Membuang peluru yang sedang berada di chamber tanpa menembakkan efek damage-nya.",
     target: false
   },
   inverter: {
     name: "Inverter",
     icon: "camera",
-    info: "Menukar jenis peluru saat ini: Live menjadi Blank atau Blank menjadi Live.",
+    info: "Membalik jenis peluru yang sedang berada di chamber: Live menjadi Blank atau Blank menjadi Live.",
     target: false
   },
   expired_medicine: {
     name: "Expired Medicine",
     icon: "pill",
-    info: "Gambling 50%: mendapatkan +2 HP atau kehilangan 1 HP.",
+    info: "Memiliki peluang 50% untuk mendapatkan +2 HP atau kehilangan 1 HP.",
     target: false
   },
   adrenaline: {
     name: "Adrenaline",
     icon: "syringe",
-    info: "Mencuri 1 item dari pemain lain dan menggunakannya sebelum menembak.",
+    info: "Mengambil 1 item dari pemain lain lalu langsung menggunakannya.",
     target: true
   },
   burner_phone: {
     name: "Burner Phone",
     icon: "phone",
-    info: "Memberi informasi acak tentang salah satu peluru yang akan datang.",
+    info: "Memberi tahu jenis dan posisi salah satu peluru yang akan datang.",
     target: false
   },
   remote: {
     name: "Remote",
     icon: "smartphone",
-    info: "Membalik seluruh urutan giliran pemain.",
+    info: "Membalik urutan giliran seluruh pemain.",
     target: false
   },
   jammer: {
     name: "Jammer",
     icon: "turntable",
-    info: "Mengacak seluruh urutan giliran pemain.",
+    info: "Mengacak ulang urutan giliran seluruh pemain.",
     target: false
   },
   reflector_mirror: {
     name: "Mirror Reflector",
     icon: "mirror-rectangular",
-    info: "Memberikan Shield sampai pemain menyelesaikan 1 giliran berikutnya. Live dari pemain lain memantulkan damage kepada penembak, Blank menghancurkan Shield, dan Live saat menembak diri sendiri menjadi 2 damage.",
+    info: "Memberikan Shield sampai giliran berikutnya selesai. Live dari pemain lain memantulkan damage ke penembak; Blank menghancurkan Shield.",
     target: false
   },
   dynamite: {
     name: "Dynamite",
     icon: "bomb",
-    info: "Memasang Trap pada pemain. Jika target terkena Live, penembak dan target sama-sama menerima damage.",
+    info: "Memasang Dynamite pada target. Jika target terkena Live, target dan pemasang sama-sama menerima damage.",
     target: true
   },
   dice: {
     name: "Dice",
     icon: "dice-3",
-    info: "Menukar inventory item antar pemain secara acak dalam satu siklus.",
+    info: "Mengacak dan menukar item inventory antar pemain.",
     target: false
   },
   rewind_film: {
     name: "Rewind Film",
     icon: "film",
-    info: "Mengulang kembali ke Shell 1 dengan jumlah Live, Blank, dan urutan yang sama.",
+    info: "Mengembalikan posisi ke Shell 1 dengan susunan peluru yang sama.",
     target: false
   },
   coin_flip: {
     name: "Coin Flip",
     icon: "circle-euro",
-    info: "Chance 50%: Handcuff semua pemain kecuali diri sendiri atau Handcuff diri sendiri dan kehilangan 1 giliran.",
+    info: "Peluang 50% memborgol pemain lain atau memborgol diri sendiri dan kehilangan 1 giliran.",
     target: false
   },
   life_steal: {
     name: "Life Steal",
     icon: "sword",
-    info: "Tembakan Live berikutnya memberikan 1 HP kepada penembak, baik menembak pemain lain maupun diri sendiri.",
+    info: "Jika tembakan berikutnya adalah Live, penembak mendapatkan kembali 1 HP.",
     target: false
   },
   megazine: {
-    name: "Megazine", icon: "package-2", info: "Reload shell dan memulai set shell baru.", target: false
+    name: "Megazine", icon: "package-2", info: "Membuat magazine/shell baru dan mengembalikan informasi shell ke kondisi normal.", target: false
   },
   ace_card: {
     name: "Ace Card", icon: "playing-card",
-    info: "Menonaktifkan efek item pemain lain terhadap pemilik selama 1 ronde. Tidak dapat diborgol, dipengaruhi Hand Saw, Remote, Jammer, Dice, Shield, Dynamite, atau Adrenaline.", target: false
+    info: "Melindungi pemilik dari berbagai efek item pemain lain selama 1 ronde.", target: false
   },
   magnet: {
     name: "Magnet", icon: "magnet",
-    info: "Mengambil 1 item random yang dimiliki lalu mengubahnya menjadi +1 HP. Tidak berfungsi jika hanya memiliki Magnet.", target: false
+    info: "Menghapus Magnet dan 1 item milik sendiri secara acak, lalu memulihkan 1 HP.", target: false
   },
   clapperboard: {
     name: "Clapperboard",
     icon: "clapperboard",
-    info: "Mengulangi aksi: setelah selesai menembak, pemain mendapat giliran lagi dan menggunakan shell sebelumnya.",
+    info: "Membuat aksi berikutnya dapat diulang sehingga pemain mendapatkan giliran tambahan.",
     target: false
   },
   wrench: {
     name: "Wrench",
     icon: "wrench",
-    info: "Mengunci inventory pemain yang terkena selama 1 giliran. Item tidak dapat digunakan selama Wrenched.",
+    info: "Mengunci inventory target selama 1 giliran sehingga target tidak bisa menggunakan item.",
     target: true
   },
   eraser: {
     name: "Eraser",
     icon: "eraser",
-    info: "Menghapus 1 item secara acak dari inventory pemain lain.",
+    info: "Menghapus 1 item secara acak dari inventory target.",
     target: true
   },
   hook: {
     name: "Hook",
     icon: "fishing-hook",
-    info: "Mengambil 1 item secara acak dari inventory pemain lain.",
+    info: "Mengambil 1 item secara acak dari inventory target.",
     target: true
   },
   future_mail: {
     name: "Future Mail",
     icon: "mail",
-    info: "Melihat 2 peluru berikutnya setelah peluru saat ini.",
+    info: "Mengetahui jenis 2 peluru yang berada tepat setelah peluru saat ini.",
     target: false
   },
   stamp: {
     name: "Stamp",
     icon: "stamp",
-    info: "Membuat penggunaan 1 item berikutnya tidak menghilangkan item tersebut dari inventory.",
+    info: "Membuat 1 penggunaan item berikutnya tidak mengonsumsi item tersebut.",
     target: false
   },
   hourglass: {
     name: "Hourglass",
     icon: "hourglass",
-    info: "Mendapatkan 2 item sekarang melalui item spin. Setelah reload shell tidak mendapatkan item lagi pada reload tersebut.",
+    info: "Memberikan 2 item melalui spin sekarang dan meniadakan reward item pada reload berikutnya.",
     target: false
   },
   dead_battery: {
     name: "Dead Battery",
     icon: "battery-low",
-    info: "Menghilangkan informasi game untuk 1 ronde. Pemain dengan Ace Card tidak terpengaruh.",
+    info: "Menyembunyikan informasi game selama 1 ronde. Ace Card tetap dapat melihat informasi.",
     target: false
   },
   overtake_ticket: {
     name: "Overtake Ticket",
     icon: "tickets",
-    info: "Setelah pemain berikutnya menyelesaikan gilirannya, pengguna mendapatkan 1 giliran tambahan sebelum urutan kembali normal.",
+    info: "Menandai pemakai untuk mendapatkan giliran tambahan setelah pemain berikutnya selesai.",
     target: false
   },
   floppy_disk: {
     name: "Floppy Disk",
     icon: "save",
-    info: "Mengembalikan shell ke posisi sebelumnya. Contoh: Shell 4 kembali ke Shell 3.",
+    info: "Memundurkan posisi shell 1 langkah, misalnya Shell 4 kembali ke Shell 3.",
     target: false
   }
 ,  
   coffee: {
     name: "Coffee",
     icon: "coffee",
-    info: "Chill selama 1 ronde. Tidak dapat ditembak, terkena efek item, atau mendapatkan giliran sampai ronde berikutnya.",
+    info: "Mengakhiri giliran sekarang dan membuat pemakai tidak dapat ditarget atau mendapat giliran pada 1 putaran berikutnya.",
     target: false
   },
   radio: {
     name: "Radio",
     icon: "microwave",
-    info: "Menyadap permainan selama 1 magazine. Magnifying Glass, Future Mail, dan Burner Phone tidak dapat digunakan dan informasi shell membeku sampai reload.",
+    info: "Menyadap permainan sampai reload. Magnifying Glass, Future Mail, dan Burner Phone diblokir; info shell dibekukan selama Radio aktif.",
     target: false
   }
 
@@ -5601,7 +5625,7 @@ async function useSelectedItem(targetId = null) {
         /* Coffee selalu mengakhiri giliran saat ini. Jika pemain sebelumnya
            memasang Overtake Ticket lalu memilih Coffee, tiket tersebut dibatalkan. */
         player.coffeeChilled = true;
-        player.coffeeSkipPending = false;
+        player.coffeeSkipPending = true;
         player.coffeeActivatedTurn = Number(game.turn?.counter ?? 0);
         player.overtakePending = false;
 
@@ -6580,6 +6604,24 @@ function renderGamePlayerList() {
 
   playersListContainer.innerHTML = "";
 
+  if (gameData.settings?.teamMode) {
+    const teamSummary = document.createElement("div");
+    teamSummary.className = "team-summary team-summary-top";
+    const teamPlayers = { blue: [], red: [] };
+    players.forEach(player => {
+      const team = gameData.players?.[player.id]?.team;
+      if (team === "blue") teamPlayers.blue.push(player.name || "Unknown");
+      if (team === "red") teamPlayers.red.push(player.name || "Unknown");
+    });
+    ["blue", "red"].forEach(team => {
+      const line = document.createElement("div");
+      line.className = `team-summary-line team-summary-${team}`;
+      line.textContent = `${team === "blue" ? "Blue" : "Red"} : ${teamPlayers[team].join(", ") || "-"}`;
+      teamSummary.appendChild(line);
+    });
+    playersListContainer.appendChild(teamSummary);
+  }
+
   players.forEach(player => {
 
     const row =
@@ -6772,24 +6814,6 @@ function renderGamePlayerList() {
     playersListContainer.appendChild(row);
 
   });
-
-  if (gameData.settings?.teamMode) {
-    const teamSummary = document.createElement("div");
-    teamSummary.className = "team-summary";
-    const teamPlayers = { blue: [], red: [] };
-    players.forEach(player => {
-      const team = gameData.players?.[player.id]?.team;
-      if (team === "blue") teamPlayers.blue.push(player.name || "Unknown");
-      if (team === "red") teamPlayers.red.push(player.name || "Unknown");
-    });
-    ["blue", "red"].forEach(team => {
-      const line = document.createElement("div");
-      line.className = `team-summary-line team-summary-${team}`;
-      line.textContent = `${team === "blue" ? "Blue" : "Red"} : ${teamPlayers[team].join(", ") || "-"}`;
-      teamSummary.appendChild(line);
-    });
-    playersListContainer.appendChild(teamSummary);
-  }
 
   lucide.createIcons();
 
@@ -7060,12 +7084,12 @@ function showGameEvent(eventData) {
     }
 
     if (eventData.itemType === "coffee") {
-      appendGameMessage(`${userName} menggunakan Coffee dan Chill 1 ronde.`, "info", definition?.icon || "coffee", 3600);
+      appendGameMessage(`${userName} menggunakan Coffee. Gilirannya berakhir dan ia tidak dapat ditarget selama 1 putaran.`, "info", definition?.icon || "coffee", 3600);
       return;
     }
 
     if (eventData.itemType === "radio") {
-      appendGameMessage(`${userName} menggunakan Radio. Saat ini sedang disadap.`, "info", definition?.icon || "microwave", 3600);
+      appendGameMessage(`${userName} menggunakan Radio. Info shell dibekukan dan 3 item informasi diblokir sampai reload.`, "info", definition?.icon || "microwave", 3600);
       if (eventData.playerId === currentPlayerId && itemInfoPopup && itemInfoTitle && itemInfoText) {
         const popupIcon = document.querySelector("#itemInfoIcon");
         if (popupIcon) popupIcon.setAttribute("data-lucide", definition?.icon || "microwave");
@@ -7148,17 +7172,17 @@ function showGameEvent(eventData) {
     }
 
     if (eventData.itemType === "megazine") {
-      appendGameMessage(`${userName} menggunakan Megazine dan melakukan reload shell.`, "info", definition?.icon || "package-2", 3600);
+      appendGameMessage(`${userName} menggunakan Megazine. Shell di-reload dan efek Radio dihentikan.`, "info", definition?.icon || "package-2", 3600);
       return;
     }
 
     if (eventData.itemType === "stamp") {
-      appendGameMessage(`${userName} menggunakan Stamp. Item berikutnya tidak akan hilang.`, "info", definition?.icon || "stamp", 3600);
+      appendGameMessage(`${userName} menggunakan Stamp. Penggunaan item berikutnya tidak akan mengonsumsi item tersebut.`, "info", definition?.icon || "stamp", 3600);
       return;
     }
 
     if (eventData.itemType === "overtake_ticket") {
-      appendGameMessage(`${userName} menggunakan Overtake Ticket. Giliran akan kembali setelah pemain berikutnya selesai.`, "info", definition?.icon || "tickets", 3600);
+      appendGameMessage(`${userName} menggunakan Overtake Ticket. Setelah pemain berikutnya selesai, giliran kembali kepada ${userName}.`, "info", definition?.icon || "tickets", 3600);
       return;
     }
 
@@ -7173,7 +7197,7 @@ function showGameEvent(eventData) {
     }
 
     if (eventData.itemType === "wrench") {
-      appendGameMessage(`${userName} menggunakan Wrench pada ${getPlayerNameById(eventData.targetId)}.`, "info", definition?.icon || "wrench", 3600);
+      appendGameMessage(`${userName} menggunakan Wrench pada ${getPlayerNameById(eventData.targetId)}. Inventory target terkunci selama 1 giliran.`, "info", definition?.icon || "wrench", 3600);
       return;
     }
 
@@ -7641,6 +7665,18 @@ function showWinnerScreen(
 
   winnerTitle.textContent = "";
   winnerName.textContent = name;
+  if (winnerTeamMembers) {
+    if (gameData?.settings?.teamMode && gameData?.winnerTeam) {
+      const members = Object.values(gameData.players || {})
+        .filter(player => player?.team === gameData.winnerTeam)
+        .map(player => player.name || "Unknown");
+      winnerTeamMembers.textContent = `Team : ${members.join(", ")}`;
+      winnerTeamMembers.classList.remove("hidden");
+    } else {
+      winnerTeamMembers.textContent = "";
+      winnerTeamMembers.classList.add("hidden");
+    }
+  }
   winnerTitle.style.color = "white";
   winnerName.style.transform =
     "scaleY(0)";
@@ -7711,6 +7747,10 @@ function hideWinnerScreen() {
 
   winnerTitle.textContent = "";
   winnerName.textContent = "";
+  if (winnerTeamMembers) {
+    winnerTeamMembers.textContent = "";
+    winnerTeamMembers.classList.add("hidden");
+  }
   winnerTitle.style.color = "white";
   winnerName.style.transform =
     "scaleY(0)";
@@ -8881,6 +8921,14 @@ function renderPlayerPopup() {
       item.className =
         "st-list";
 
+      if (
+        gameData?.settings?.teamMode &&
+        player.team &&
+        player.team === gameData?.players?.[currentPlayerId]?.team
+      ) {
+        item.classList.add("team-same");
+      }
+
 
       const firstLetter =
         player.name
@@ -9382,8 +9430,13 @@ async function shoot(targetId) {
         while (checked < playerIds.length) {
           const candidateId = playerIds[nextIndex];
           if (candidateId !== currentPlayerId && Number(players[candidateId]?.hp ?? 0) > 0) {
-            if (Number(players[candidateId]?.skipTurns ?? 0) > 0) {
+            if (Number(players[candidateId]?.skipTurns ?? 0) > 0 || players[candidateId]?.coffeeSkipPending === true) {
               skippedPlayerId = candidateId;
+              if (players[candidateId]?.coffeeSkipPending === true) {
+                players[candidateId].coffeeSkipPending = false;
+                players[candidateId].coffeeChilled = false;
+                players[candidateId].coffeeActivatedTurn = null;
+              }
               {
                 players[candidateId].skipTurns = Number(players[candidateId].skipTurns) - 1;
                 players[candidateId].handcuffed = false;
@@ -9412,8 +9465,43 @@ async function shoot(targetId) {
         players[overtakeOwnerId].handcuffed = false;
         players[overtakeOwnerId].coinFlipLocked = false;
         players[overtakeOwnerId].skipTurns = 0;
+        players[overtakeOwnerId].coffeeSkipPending = false;
+        players[overtakeOwnerId].coffeeChilled = false;
+        players[overtakeOwnerId].coffeeActivatedTurn = null;
+
+        /* Setelah pemilik tiket mendapatkan giliran tambahannya, lanjutkan
+           dari pemain setelah pemain yang tadi dilewati (A -> B -> A -> C),
+           bukan mengulang B. */
+        const ownerIndex = playerIds.indexOf(overtakeOwnerId);
+        const previousPlayerIndex = playerIds.indexOf(currentPlayerId);
+        let resumeIndex = (previousPlayerIndex + 1) % playerIds.length;
+        let resumeChecked = 0;
+        while (resumeChecked < playerIds.length && Number(players[playerIds[resumeIndex]]?.hp ?? 0) <= 0) {
+          resumeIndex = (resumeIndex + 1) % playerIds.length;
+          resumeChecked++;
+        }
+        currentGame.turn.overtakeResumeId = playerIds[resumeIndex] || null;
         currentGame.turn.current = overtakeOwnerId;
-        currentGame.turn.index = playerIds.indexOf(overtakeOwnerId);
+        currentGame.turn.index = ownerIndex >= 0 ? ownerIndex : 0;
+        currentGame.turn.counter = Number(currentGame.turn.counter ?? 0) + 1;
+      } else if (currentGame.turn?.overtakeResumeId === currentPlayerId) {
+        const resumeId = currentGame.turn.overtakeResumeId;
+        const resumeIndex = playerIds.indexOf(resumeId);
+        currentGame.turn.overtakeResumeId = null;
+        if (resumeId && resumeIndex >= 0 && Number(players[resumeId]?.hp ?? 0) > 0) {
+          currentGame.turn.current = resumeId;
+          currentGame.turn.index = resumeIndex;
+        } else {
+          const currentIndex = playerIds.indexOf(currentPlayerId);
+          let nextIndex = (currentIndex + 1) % playerIds.length;
+          let checked = 0;
+          while (checked < playerIds.length && Number(players[playerIds[nextIndex]]?.hp ?? 0) <= 0) {
+            nextIndex = (nextIndex + 1) % playerIds.length;
+            checked++;
+          }
+          currentGame.turn.current = playerIds[nextIndex];
+          currentGame.turn.index = nextIndex;
+        }
         currentGame.turn.counter = Number(currentGame.turn.counter ?? 0) + 1;
       } else if ((currentShellType === "blank" && isSelf) || clapperboardRepeat) {
         const currentIndex = playerIds.indexOf(currentPlayerId);
