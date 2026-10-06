@@ -1,0 +1,122 @@
+{
+  "Alat Dapur": [
+    "Pisau",
+    "Piring",
+    "Sendok",
+    "Garpu",
+    "Panci",
+    "Talenan"
+  ],
+  "Alat Tulis": [
+    "Pulpen",
+    "Pensil",
+    "Penghapus",
+    "Penggaris",
+    "Spidol",
+    "Buku Tulis"
+  ],
+  "Perabotan": [
+    "Meja",
+    "Kursi",
+    "Pintu",
+    "Lemari",
+    "Sofa",
+    "Rak"
+  ],
+  "Elektronik": [
+    "Televisi",
+    "Kipas Angin",
+    "Radio",
+    "Kamera",
+    "Laptop",
+    "Headset"
+  ],
+  "Pakaian": [
+    "Kaos",
+    "Jaket",
+    "Celana",
+    "Topi",
+    "Sepatu",
+    "Kaus Kaki"
+  ],
+  "Kendaraan": [
+    "Sepeda",
+    "Motor",
+    "Mobil",
+    "Bus",
+    "Kereta",
+    "Kapal"
+  ],
+  "Sekolah": [
+    "Tas",
+    "Buku",
+    "Papan Tulis",
+    "Kapur",
+    "Proyektor",
+    "Seragam"
+  ],
+  "Kamar Mandi": [
+    "Sabun",
+    "Sampo",
+    "Sikat Gigi",
+    "Handuk",
+    "Cermin",
+    "Ember"
+  ],
+  "Buah": [
+    "Apel",
+    "Pisang",
+    "Jeruk",
+    "Mangga",
+    "Semangka",
+    "Pepaya"
+  ],
+  "Hewan": [
+    "Kucing",
+    "Anjing",
+    "Kelinci",
+    "Kuda",
+    "Ayam",
+    "Burung"
+  ],
+  "Olahraga": [
+    "Bola",
+    "Raket",
+    "Net",
+    "Sepatu Lari",
+    "Peluit",
+    "Matras"
+  ],
+  "Alat Kerja": [
+    "Palu",
+    "Obeng",
+    "Tang",
+    "Gergaji",
+    "Bor",
+    "Meteran"
+  ],
+  "Minuman": [
+    "Teh",
+    "Kopi",
+    "Susu",
+    "Jus",
+    "Air Mineral",
+    "Soda"
+  ],
+  "Makanan": [
+    "Nasi Goreng",
+    "Mie",
+    "Roti",
+    "Sate",
+    "Bakso",
+    "Pizza"
+  ],
+  "Alat Musik": [
+    "Gitar",
+    "Piano",
+    "Drum",
+    "Biola",
+    "Seruling",
+    "Ukulele"
+  ]
+}
