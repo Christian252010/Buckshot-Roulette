@@ -9,7 +9,7 @@
     name="viewport"
     content="width=device-width, initial-scale=1.0">
 
-  <title>Buckshot Roulette</title>
+  <title>Buckshot Roulette V5</title>
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -2879,45 +2879,21 @@ body {
 .game.impostor-mode .game-panel {
   background:#1a1a1a;
 }
+.game.impostor-mode .game-panel.current-turn {
+  background:crimson;
+  box-shadow:0 2px 16px 0 #dc143c;
+}
 .game.impostor-mode .gp-top {
   align-items:center;
 }
 .game.impostor-mode .game-current-name {
-  display:inline-flex;
-  flex-direction:column;
-  align-items:flex-start;
-  justify-content:center;
-  gap:2px;
-  min-width:150px;
-  max-width:70%;
-  padding:7px 10px;
-  border-radius:6px;
-  background:crimson;
-  color:white;
-  font-weight:bold;
-  line-height:1.15;
-  box-sizing:border-box;
-}
-.game.impostor-mode .game-current-name .turn-label {
-  font-size:10px;
-  font-weight:600;
-  opacity:.8;
-  text-transform:uppercase;
-  letter-spacing:.3px;
-}
-.game.impostor-mode .game-current-name .turn-player {
-  font-size:15px;
-  color:white;
-  overflow:hidden;
-  text-overflow:ellipsis;
-  white-space:nowrap;
-  max-width:100%;
+  display:none !important;
 }
 .impostor-center {
   position:absolute;
   left:0;
   right:0;
-  top:78px;
+  top:132px;
   bottom:0;
   display:flex;
   flex-direction:column;
@@ -2936,6 +2912,35 @@ body {
   font-size:13px;
 }
 .impostor-status strong { color:white; }
+.impostor-turn-player {
+  display:flex;
+  flex-direction:column;
+  align-items:flex-start;
+  gap:2px;
+  margin:0 10px;
+  padding:7px 10px;
+  background:#2f2f2f;
+  border:1px solid #444;
+  border-radius:6px;
+  color:white;
+  line-height:1.15;
+}
+.impostor-turn-player .turn-label {
+  color:#aaa;
+  font-size:10px;
+  font-weight:600;
+  text-transform:uppercase;
+  letter-spacing:.3px;
+}
+.impostor-turn-player .turn-player {
+  color:white;
+  font-size:15px;
+  font-weight:bold;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+  max-width:100%;
+}
 .impostor-chat {
   flex:1;
   min-height:0;
@@ -10157,6 +10162,10 @@ function ensureImpostorCenter() {
       <span id="impostorPhaseText">Giliran</span>
       <strong id="impostorTimerText"></strong>
     </div>
+    <div class="impostor-turn-player" id="impostorTurnPlayer">
+      <span class="turn-label">Pemain yang sedang giliran</span>
+      <span class="turn-player">-</span>
+    </div>
     <div class="impostor-chat" id="impostorChat"></div>
     <form class="impostor-chat-form" id="impostorChatForm">
       <input class="impostor-chat-input" id="impostorChatInput" maxlength="160" autocomplete="off" placeholder="Tulis pesan...">
@@ -10346,6 +10355,42 @@ async function resolveImpostorVotes() {
   });
 }
 
+function renderImpostorPlayerProfile(playerId) {
+  const player = impostorPlayerCache[playerId] || {};
+  const state = gameData?.players?.[playerId];
+  if (!state) return;
+
+  applyAvatarStyle(gameProfileAvatar, player);
+  gameProfileAvatar.innerHTML = "";
+  if (player.profile) {
+    attachProfileImage(gameProfileAvatar, player.profile, (player.name || "?").charAt(0).toUpperCase());
+  } else {
+    gameProfileAvatar.textContent = (player.name || "?").charAt(0).toUpperCase();
+  }
+
+  gameProfileName.textContent = player.name || "Unknown";
+  gameProfileHp.textContent = state.alive === false ? "Status : Tereliminasi" : "Status : Aktif";
+
+  if (playerId === currentPlayerId) {
+    const role = state.role === "impostor" ? "Impostor" : "Innocent";
+    gameProfileItems.innerHTML = `
+      <div class="impostor-profile-role">${role}</div>
+      <div class="impostor-profile-row"><span>Category</span><span>${escapeImpostorHTML(state.category || gameData.category || "-")}</span></div>
+      ${state.role === "innocent"
+        ? `<div class="impostor-profile-row"><span>Barang</span><span>${escapeImpostorHTML(state.item || "-")}</span></div>`
+        : ""}
+    `;
+  } else {
+    gameProfileItems.innerHTML = `
+      <div class="impostor-profile-role">Pemain</div>
+      <div class="impostor-profile-row"><span>Status</span><span>${state.alive === false ? "Tereliminasi" : "Aktif"}</span></div>
+    `;
+  }
+
+  document.querySelector(".game-profile-items-title").textContent = "";
+  gameProfilePopup.classList.remove("hidden");
+}
+
 async function renderImpostorPlayerList() {
   const ids = Array.isArray(gameData?.order) ? gameData.order : Object.keys(gameData?.players || {});
   await loadImpostorPlayerProfiles(ids);
@@ -10376,6 +10421,11 @@ async function renderImpostorPlayerList() {
     name.textContent = player.name || "Unknown";
 
     row.append(order, avatar, name);
+    row.style.cursor = "pointer";
+    row.addEventListener("click", event => {
+      if (event.target.closest("button")) return;
+      renderImpostorPlayerProfile(id);
+    });
 
     if (gameData.phase === "discussion" && state.alive !== false && id !== currentPlayerId) {
       const vote = document.createElement("button");
@@ -10503,10 +10553,24 @@ async function renderImpostorGame() {
   const ids = Array.isArray(gameData.order) ? gameData.order : Object.keys(gameData.players || {});
   await loadImpostorPlayerProfiles(ids);
   const currentId = gameData.turn?.current;
+  const currentName = currentId ? impostorName(currentId) : "-";
   const currentNameElement = document.querySelector(".game-current-name");
-  if (currentNameElement) {
-    currentNameElement.innerHTML = `<span class="turn-label">Pemain yang sedang giliran</span><span class="turn-player">${escapeImpostorHTML(currentId ? impostorName(currentId) : "-")}</span>`;
+  if (currentNameElement) currentNameElement.textContent = currentName;
+
+  const turnPlayerElement = document.querySelector("#impostorTurnPlayer");
+  if (turnPlayerElement) {
+    const turnPlayer = turnPlayerElement.querySelector(".turn-player");
+    if (turnPlayer) turnPlayer.textContent = currentName;
   }
+
+  const gamePanel = document.querySelector(".game-panel");
+  if (gamePanel) {
+    gamePanel.classList.toggle(
+      "current-turn",
+      gameData.phase === "turns" && currentId === currentPlayerId
+    );
+  }
+
   document.querySelector(".game-online").textContent = ids.filter(id => gameData.players?.[id]?.alive !== false).length;
 
   renderImpostorChat();
